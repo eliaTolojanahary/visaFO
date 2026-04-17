@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS demande_piece (
 );
 
 
-CREATE INDEX IF NOT EXISTS idx_demande_demandeur ON demande(demandeur_id);
+CREATE INDEX IF NOT EXISTS idx_demande_demandeur ON demande(id);
 CREATE INDEX IF NOT EXISTS idx_demande_statut ON demande(statut_id);
 CREATE INDEX IF NOT EXISTS idx_demande_type ON demande(type_demande_id, type_titre_id);
 CREATE INDEX IF NOT EXISTS idx_demande_piece_demande ON demande_piece(demande_id);
