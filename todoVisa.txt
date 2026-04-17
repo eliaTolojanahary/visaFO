@@ -1,0 +1,102 @@
+Sprint 1 - Demande de visa transformable
+
+Contexte et objectif
+- Livrer uniquement la fonctionnalite "Nouveau titre" pour visa transformable.
+- Profils cibles : investisseur et travailleur
+
+Organisation des branches
+- Jemima : sprint/1/feature/formDemande-back
+- Mioty : sprint/1/feature/formDemande-front
+
+Fonctionnalite du Sprint 1 :
+- Section "Type de demande" : "Nouveau titre" est le seul actif.
+- Le formulaire change selon le choix : investisseur ou travailleur.
+- Le numero de passeport reste identique.
+- Le statut "demande creee" est attribue uniquement si tous les obligatoires sont valides.
+
+Jemima - Backend 
+1. Models a preparer
+- Demande
+- Demandeur
+- Passeport
+- Visa
+- PieceJustificative
+- InfosSpecifiquesInvestisseur
+- InfosSpecifiquesTravailleur
+
+2. Controller
+- DemandeController.java
+
+3. Routes
+- Acces formulaire
+    - @MethodeAnnotation("/visa/form")
+    - @GetMapping
+- Soumission formulaire
+    - @MethodeAnnotation("/visa/form")
+    - @PostMapping
+- Retour erreur validation
+    - @MethodeAnnotation("/visa/form/error")
+    - @GetMapping
+- Enregistrement demande
+    - @MethodeAnnotation("/visa/form/save")
+    - @PostMapping
+- Mise a jour demande existante
+    - @MethodeAnnotation("/visa/form/update")
+    - @PostMapping
+
+4. Fonctions metier a implementer
+- Validation des champs obligatoires : isObligatoire()
+- Creation demande : saveDemande() -> statut "demande creee"
+- Differenciation investisseur/travailleur : getInfoSpecifique(idType)
+- Modification demande existante : updateDemande()
+
+5. Regles de validation metier
+- Si obligatoires valides : sauvegarder et mettre statut "demande creee".
+- Sinon : rediriger vers l'ecran d'erreur avec details de validation.
+
+
+Mioty - Frontend 
+1. Vue principale
+- Creer nouvelleDemande.jsp.
+- Ajouter un select "Type de demande" avec :
+    - Nouveau titre 
+    - Duplicata 
+    - Transfert de visa 
+
+2. Affichage conditionnel des champs
+- Champs obligatoires 
+    - Etat civil : nom, nom de jeune fille, date de naissance, situation de famille (id), nationalite (id), adresse Madagascar, numero telephone, profession
+    - Passeport : numero, date de delivrance, date d'expiration, pays de delivrance
+    - Visa : date d'entree, lieu d'entree, date d'expiration, categorie de demande
+    - les piece justificatives a coches
+- Champs optionnels
+    - prenom
+    - email
+
+3. Pieces justificatives (cases a cocher)
+- En commun
+    - 02 photos d'identite
+    - Notice de renseignement
+    - Demande adressee a Mr le Ministre de l'Interieur et de la Decentralisation (avec e-mail et numero portable)
+    - Photocopie certifiee du visa en cours de validite
+    - Photocopie certifiee de la premiere page du passeport
+    - Photocopie certifiee de la carte de resident en cours de validite
+    - Certificat de residence a Madagascar
+    - Extrait de casier judiciaire de moins de 3 mois
+
+- Si investisseur, on ajoute
+    - Statut de la societe
+    - Extrait d'inscription au registre du commerce
+    - Carte fiscale
+- Si travailleur, on ajoute
+    - Autorisation d'emploi delivree a Madagascar par le Ministere de la Fonction publique
+    - Attestation d'emploi delivree par l'employeur (original)
+
+- Activer "Soumettre" seulement si les obligatoires sont completes.
+- Afficher clairement les erreurs/champs incomplets avant envoi.
+- Permettre la modification d'une demande deja creee en rechargeant les donnees dans le formulaire.
+
+
+
+
+
