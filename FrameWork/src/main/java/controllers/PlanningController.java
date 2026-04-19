@@ -95,7 +95,7 @@ public class PlanningController {
             mv.addData("count", reservations.size());
         } catch (SQLException e) {
             e.printStackTrace();
-            mv.addData("error", "Erreur lors du chargement des réservations: " + e.getMessage());
+            mv.addData("error", "Erreur lors du chargement des reservations: " + e.getMessage());
         }
         
         return mv;
@@ -181,7 +181,7 @@ public class PlanningController {
             
         } catch (Exception e) {
             e.printStackTrace();
-            mv.addData("error", "Erreur lors du chargement des détails: " + e.getMessage());
+            mv.addData("error", "Erreur lors du chargement des details: " + e.getMessage());
         }
         
         return mv;

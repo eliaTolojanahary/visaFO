@@ -80,7 +80,7 @@ public class PlanningService {
             .orElse(null);
 
         if (aeroport == null) {
-            result.put("error", "Erreur: A�roport IVATO non trouv�");
+            result.put("error", "Erreur: Aeroport IVATO non trouve");
             return result;
         }
 
@@ -693,7 +693,7 @@ public class PlanningService {
             .orElse(null);
 
         if (aeroport == null) {
-            result.put("error", "Erreur: A�roport IVATO non trouv�");
+            result.put("error", "Erreur: Aeroport IVATO non trouve");
             return result;
         }
 
@@ -703,7 +703,7 @@ public class PlanningService {
             .orElse(null);
 
         if (vehicule == null) {
-            result.put("error", "V�hicule non trouv�");
+            result.put("error", "Vehicule non trouve");
             return result;
         }
 
@@ -853,7 +853,7 @@ public class PlanningService {
             .orElse(null);
 
         if (planning == null) {
-            result.put("error", "Aucun client assign� � ce v�hicule pour cette date");
+            result.put("error", "Aucun client assigne e ce vehicule pour cette date");
             result.put("vehicule", vehicule);
             result.put("datePlanning", datePlanning);
             return result;
@@ -1047,7 +1047,7 @@ public class PlanningService {
             planning.setDateHeureRetour(formatter.format(heureRetourVehicule));
             planning.setHeureRetourParsed(heureRetourVehicule);
         } catch (Exception e) {
-            System.err.println("Erreur parsing heure de d�part: " + e.getMessage());
+            System.err.println("Erreur parsing heure de depart: " + e.getMessage());
         }
     }
 
@@ -1708,7 +1708,7 @@ public class PlanningService {
         etapeRetour.setLieuArrivee(aeroport.getLibelle());
         etapeRetour.setDistance(distanceRetour);
         etapeRetour.setHeureArrivee(heureArriveeAeroport);
-        etapeRetour.setNomClient("Retour a�roport");
+        etapeRetour.setNomClient("Retour aeroport");
         etapeRetour.setNbPassager(0);
         
         itineraire.add(etapeRetour);
