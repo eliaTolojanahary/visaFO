@@ -5,8 +5,8 @@ set "BUILD_PATH=%PROJECT_PATH%build"
 set "WEBAPP_PATH=%PROJECT_PATH%src\main\webapp"
 set "CATALINA_HOME=C:\xampp\tomcat"
 set "LIB_PATH=%PROJECT_PATH%lib"
-set "APP_WAR=reservation.war"
 set "COMMON_CLASSPATH=%BUILD_PATH%\WEB-INF\classes;%CATALINA_HOME%\lib\servlet-api.jar;%LIB_PATH%\*"
+set "APP_WAR=visa.war"
 
 rem Vérifier si le dossier "build" existe et le supprimer
 if exist "%BUILD_PATH%" (
@@ -86,12 +86,12 @@ xcopy "%WEBAPP_PATH%\*" "%BUILD_PATH%\" /E /Y
 rem Créer le fichier .war de ce qui se trouve dans build
 echo Création du fichier WAR...
 pushd "%BUILD_PATH%"
-jar -cvf reservation.war *
+jar -cvf "%APP_WAR%" *
 popd
 
 rem Déplacer le fichier .war dans le répertoire webapps de Tomcat
 echo Déploiement du fichier WAR dans Tomcat...
-move /Y "%BUILD_PATH%\reservation.war" "%CATALINA_HOME%\webapps\"
+move /Y "%BUILD_PATH%\%APP_WAR%" "%CATALINA_HOME%\webapps\"
 
 echo Projet Servlet déployé et Tomcat prêt à démarrer.
 pause
