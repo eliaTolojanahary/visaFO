@@ -23,10 +23,10 @@ if %ERRORLEVEL% neq 0 ( echo ERREUR etape 2 & exit /b 1 )
 
 echo [3/4] Insertion des donnees de test...
 psql -U %User% -d %DB% -f sql/donnees_mini_test.sql
-if %ERRORLEVEL% neq 0 ( echo ERREUR etape 4 & exit /b 1 )
+if %ERRORLEVEL% neq 0 ( echo ERREUR etape 3 & exit /b 1 )
 
 echo [4/4] Alteration de la table piece_justificative_ref...
 psql -U %User% -d %DB% -f sql/alter_piece_justificative_ref_nullable.sql
-if %ERRORLEVEL% neq 0 ( echo ERREUR etape 5 & exit /b 1 )
+if %ERRORLEVEL% neq 0 ( echo ERREUR etape 4 & exit /b 1 )
 
 echo Initialisation terminee avec succes.
