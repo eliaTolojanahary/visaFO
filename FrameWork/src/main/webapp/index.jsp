@@ -4,191 +4,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Mr Vahatra</title>
+    <title>Dashboard - Visa</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: Arial, sans-serif;
+            margin: 50px;
+            background-color: #f4f4f4;
         }
-        
         .container {
-            max-width: 1200px;
+            max-width: 900px;
             margin: 0 auto;
-        }
-        
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
+            background-color: #fff;
             padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        
-        .header h1 {
-            font-size: 3em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-        
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            padding: 20px;
-        }
-        
-        .card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-        }
-        
-        .card-icon {
-            font-size: 3em;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        
-        .card-title {
-            font-size: 1.5em;
+        h1 {
             color: #333;
+            text-align: center;
             margin-bottom: 10px;
-            text-align: center;
-            font-weight: bold;
         }
-        
-        .card-description {
-            color: #666;
+        .subtitle {
             text-align: center;
-            margin-bottom: 20px;
+            color: #666;
+            margin-bottom: 24px;
+        }
+        .module-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+            background: #fafafa;
+        }
+        .module-card h2 {
+            margin: 0 0 8px;
+            color: #333;
+        }
+        .module-card p {
+            margin: 0 0 16px;
+            color: #555;
             line-height: 1.5;
         }
-        
-        .card-actions {
+        .actions {
             display: flex;
-            flex-direction: column;
             gap: 10px;
+            flex-wrap: wrap;
         }
-        
         .btn {
-            display: block;
-            padding: 12px 20px;
+            display: inline-block;
             text-decoration: none;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 600;
-            transition: all 0.3s ease;
+            color: #fff;
+            border-radius: 4px;
+            padding: 10px 16px;
+            font-weight: bold;
         }
-        
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background-color: #4CAF50;
         }
-        
         .btn-primary:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            background-color: #45a049;
         }
-        
         .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
+            background-color: #2196F3;
         }
-        
         .btn-secondary:hover {
-            background: #e0e0e0;
+            background-color: #0b7dda;
         }
-        
-        .card.reservation {
-            border-top: 5px solid #667eea;
-        }
-        
-        .card.vehicule {
-            border-top: 5px solid #f093fb;
-        }
-        
-        .card.planning {
-            border-top: 5px solid #4facfe;
-        }
-        
-        .footer {
-            text-align: center;
-            color: white;
-            margin-top: 50px;
-            padding: 20px;
-            opacity: 0.8;
+        .classes {
+            margin-top: 12px;
+            color: #666;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🚗 Mr Vahatra</h1>
-            <p>Système de gestion de réservation et de planning</p>
-        </div>
-        
-        <div class="dashboard-grid">
-            <!-- Card Réservations -->
-            <div class="card reservation">
-                <div class="card-icon">📅</div>
-                <h2 class="card-title">Réservations</h2>
-                <p class="card-description">
-                    Gérer les réservations des clients, consulter les réservations existantes et créer de nouvelles réservations.
-                </p>
-                <div class="card-actions">
-                    <a href="reservation/form" class="btn btn-primary">Nouvelle réservation</a>
-                    <a href="reservation/list" class="btn btn-secondary">Liste des réservations</a>
-                </div>
+        <h1>Module Visa Transformable</h1>
+        <p class="subtitle">Sprint 1: gestion de la demande de visa (Nouveau titre)</p>
+
+        <div class="module-card">
+            <h2>Demande de visa</h2>
+            <p>Creer, valider et enregistrer une demande pour profil Investisseur ou Travailleur.</p>
+            <div class="actions">
+                <a href="<%= request.getContextPath() %>/visa/form" class="btn btn-primary">Nouvelle demande</a>
+                <a href="<%= request.getContextPath() %>/visa/form/error" class="btn btn-secondary">Voir ecran erreur</a>
             </div>
-            
-            <!-- Card Véhicules -->
-            <div class="card vehicule">
-                <div class="card-icon">🚙</div>
-                <h2 class="card-title">Véhicules</h2>
-                <p class="card-description">
-                    Gérer le parc automobile, ajouter de nouveaux véhicules, modifier ou supprimer les véhicules existants.
-                </p>
-                <div class="card-actions">
-                    <a href="vehicule/form" class="btn btn-primary">Ajouter un véhicule</a>
-                    <a href="vehicule/list" class="btn btn-secondary">Liste des véhicules</a>
-                </div>
+            <div class="classes">
+                Classes utilisees: Demande, Demandeur, Passeport, PieceJustificative, VisaDTO
             </div>
-            
-            <!-- Card Planning -->
-            <div class="card planning">
-                <div class="card-icon">🗺️</div>
-                <h2 class="card-title">Planning</h2>
-                <p class="card-description">
-                    Configurer les paramètres du planning, visualiser les réservations par date et gérer les itinéraires.
-                </p>
-                <div class="card-actions">
-                    <a href="planning/config/form" class="btn btn-primary">Configuration système</a>
-                    <a href="planning/selection-date" class="btn btn-secondary">Planning par date</a>
-                </div>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>© 2026 Mr Vahatra - Tous droits réservés</p>
         </div>
     </div>
 </body>
