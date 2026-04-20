@@ -30,8 +30,7 @@ CREATE TABLE IF NOT EXISTS statut_demande (
 CREATE TABLE IF NOT EXISTS piece_justificative_ref (
     id SERIAL PRIMARY KEY,
     libelle VARCHAR(255) NOT NULL,
-    id_type_titre BIGINT NOT NULL REFERENCES type_titre(id)
-    
+    id_type_titre BIGINT REFERENCES type_titre(id)
 );
 
 CREATE TABLE IF NOT EXISTS demandeur (
