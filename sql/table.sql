@@ -1,6 +1,9 @@
+-- PostgreSQL:
+-- 1) Creer la base (voir create_database.sql)
+-- 2) Executer ce script en etant connecte a la base visa
 
 CREATE SCHEMA IF NOT EXISTS visa;
-
+SET search_path TO visa;
 
 CREATE TABLE IF NOT EXISTS situation_famille (
     id SERIAL PRIMARY KEY,

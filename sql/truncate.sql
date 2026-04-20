@@ -1,3 +1,4 @@
+SET search_path TO visa;
 
 DROP TABLE IF EXISTS demande_piece;
 DROP TABLE IF EXISTS demande;
