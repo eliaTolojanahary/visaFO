@@ -47,9 +47,9 @@ Jemima - Backend
 - Creation demande : saveDemande() -> statut "demande creee"
 - Differenciation investisseur/travailleur : getInfoSpecifique(idType)
 - Modification demande existante : updateDemande()
-- Recuperation des info specifiques selon le type de titre : 
-    - InfosSpecifiquesInvestisseur()
-    - InfosSpecifiquesTravailleur()
+- Recuperation des pieces selon le type de titre :
+    - type_titre IS NULL -> pieces communes
+    - type_titre = investisseur/travailleur -> pieces specifiques
 
 5. Regles de validation metier
 - Si obligatoires valides : sauvegarder et mettre statut "demande creee".
