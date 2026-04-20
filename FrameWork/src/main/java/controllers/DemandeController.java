@@ -77,16 +77,16 @@ public class DemandeController {
             mv.addData("success", true);
             mv.addData("demande", demande);
             mv.addData("message", "Demande enregistrée avec le statut 'demande creee'.");
+        } catch (SQLException e) {
+            mv.setView("/visaFormError.jsp");
+            mv.addData("success", false);
+            mv.addData("error", "Erreur base de donnees: " + e.getMessage());
+            mv.addData("formData", formData);
         } catch (IllegalArgumentException e) {
             mv.setView("/visaFormError.jsp");
             mv.addData("success", false);
             mv.addData("error", e.getMessage());
             mv.addData("validationErrors", demandeService.isObligatoire(formData));
-            mv.addData("formData", formData);
-        } catch (SQLException e) {
-            mv.setView("/visaFormError.jsp");
-            mv.addData("success", false);
-            mv.addData("error", "Erreur SQL lors de l'enregistrement: " + e.getMessage());
             mv.addData("formData", formData);
         }
 
@@ -104,19 +104,18 @@ public class DemandeController {
             mv.addData("success", updated);
             mv.addData("message", updated ? "Demande mise à jour avec succès." : "Aucune demande mise à jour.");
             mv.addData("action", "update");
+        } catch (SQLException e) {
+            mv.setView("/visaFormError.jsp");
+            mv.addData("success", false);
+            mv.addData("error", "Erreur base de donnees: " + e.getMessage());
+            mv.addData("formData", formData);
         } catch (IllegalArgumentException e) {
             mv.setView("/visaFormError.jsp");
             mv.addData("success", false);
             mv.addData("error", e.getMessage());
             mv.addData("validationErrors", demandeService.isObligatoire(formData));
             mv.addData("formData", formData);
-        } catch (SQLException e) {
-            mv.setView("/visaFormError.jsp");
-            mv.addData("success", false);
-            mv.addData("error", "Erreur SQL lors de la mise à jour: " + e.getMessage());
-            mv.addData("formData", formData);
         }
-
         return mv;
     }
 }
