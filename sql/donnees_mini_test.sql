@@ -27,6 +27,7 @@ INSERT INTO statut_demande (libelle) VALUES
 ('Scan termine');
 
 INSERT INTO piece_justificative_ref (libelle, id_type_titre) VALUES
+
 ('02 photos d''identite', NULL),
 ('Notice de renseignement', NULL),
 ('Demande adressee au Ministere de l''Interieur et de la Decentralisation', NULL),

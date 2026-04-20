@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demande de Visa - Titre Transformable</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Demande de Visa - Titre Transformable</h1>
+            <p class="subtitle">Veuillez remplir tous les champs marqués d'un <span class="required">*</span></p>
+        </header>
+
+        <form id="demandeForm" th:action="@{/visa/form/save}" th:object="${demande}" method="post" novalidate>
+            
+            <!-- Section Type de Demande -->
+            <section class="form-section">
+                <h2>Type de Demande</h2>
+                <div class="form-group">
+                    <label for="typeDemande">Type de demande <span class="required">*</span></label>
+                    <select id="typeDemande" th:field="*{typeDemande}" required onchange="updateFormDisplay()">
+                        <option value="">-- Sélectionner --</option>
+                        <option value="NOUVEAU" selected>Nouveau titre</option>
+                        <option value="DUPLICATA" disabled>Duplicata</option>
+                        <option value="TRANSFERT" disabled>Transfert de visa</option>
+                    </select>
+                    <span class="error-message" id="typeDemandeError"></span>
+                </div>
+            </section>
+
+            <!-- Section Profil (Investisseur/Travailleur) -->
+            <section class="form-section">
+                <h2>Profil du Demandeur</h2>
+                <div class="form-group">
+                    <label>Type de profil <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="profil" value="investisseur" onchange="updateDynamicFields()" required>
+                            <span>Investisseur</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="profil" value="travailleur" onchange="updateDynamicFields()" required>
+                            <span>Travailleur</span>
+                        </label>
+                    </div>
+                    <span class="error-message" id="profilError"></span>
+                </div>
+            </section>
+
+            <!-- Section Etat Civil -->
+            <section class="form-section">
+                <h2>État Civil</h2>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="nom">Nom <span class="required">*</span></label>
+                        <input type="text" id="nom" th:field="*{demandeur.nom}" placeholder="Nom de famille" required>
+                        <span class="error-message" id="nomError"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group half-width">
+                        <label for="prenom">Prénom <span class="optional">(optionnel)</span></label>
+                        <input type="text" id="prenom" th:field="*{demandeur.prenom}" placeholder="Prénom">
+                    </div>
+                    <div class="form-group half-width">
+                        <label for="nomJeuneFille">Nom de jeune fille <span class="required">*</span></label>
+                        <input type="text" id="nomJeuneFille" th:field="*{demandeur.nom_jeune_fille}" placeholder="Nom de jeune fille" required>
+                        <span class="error-message" id="nomJeuneFilleError"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group half-width">
+                        <label for="dateNaissance">Date de naissance <span class="required">*</span></label>
+                        <input type="date" id="dateNaissance" th:field="*{demandeur.date_naissance}" required>
+                        <span class="error-message" id="dateNaissanceError"></span>
+                    </div>
+                    <!-- <div class="form-group half-width">
+                        <label for="lieuNaissance">Lieu de naissance</label>
+                        <input type="text" id="lieuNaissance" th:field="*{demandeur.lieu_naissance}" placeholder="Lieu de naissance">
+                    </div> -->
+                </div>
+                <div class="form-row">
+                    <div class="form-group half-width">
+                        <label for="situationFamille">Situation de famille <span class="required">*</span></label>
+                        <select id="situationFamille" th:field="*{demandeur.situationFamille}" required>
+                            <option value="">-- Sélectionner --</option>
+                            <option th:each="s : ${situationsFamille}" th:value="${s.id}" th:text="${s.libelle}"></option>
+                        </select>
+                        <span class="error-message" id="situationFamilleError"></span>
+                    </div>
+                    <div class="form-group half-width">
+                        <label for="nationalite">Nationalité <span class="required">*</span></label>
+                        <select id="nationalite" th:field="*{demandeur.nationalite}" required>
+                            <option value="">-- Sélectionner --</option>
+                            <option th:each="n : ${nationalites}" th:value="${n.id}" th:text="${n.libelle}"></option>
+                        </select>
+                        <span class="error-message" id="nationaliteError"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="adresseMadagascar">Adresse à Madagascar <span class="required">*</span></label>
+                        <textarea id="adresseMadagascar" th:field="*{demandeur.adresseMadagascar}" placeholder="Rue, numéro, quartier, ville" rows="3" required></textarea>
+                        <span class="error-message" id="adresseMadagascarError"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group half-width">
+                        <label for="numeroTelephone">Numéro de téléphone <span class="required">*</span></label>
+                        <input type="tel" id="numeroTelephone" th:field="*{demandeur.numeroTelephone}" placeholder="+261..." required>
+                        <span class="error-message" id="numeroTelephoneError"></span>
+                    </div>
+                    <div class="form-group half-width">
+                        <label for="email">Email <span class="optional">(optionnel)</span></label>
+                        <input type="email" id="email" th:field="*{demandeur.email}" placeholder="email@exemple.com">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="profession">Profession <span class="required">*</span></label>
+                        <input type="text" id="profession" th:field="*{demandeur.profession}" placeholder="Votre profession" required>
+                        <span class="error-message" id="professionError"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section Passeport -->
+            <section class="form-section">
+                <h2>Passeport</h2>
+                <div class="form-row">
+                    <div class="form-group half-width">
+                        <label for="passNumeroPas">Numéro de passeport <span class="required">*</span></label>
+                        <input type="text" id="passNumeroPas" th:field="*{passeport.numero}" placeholder="Numéro de passeport" required>
+                        <span class="error-message" id="passNumeroError"></span>
+                    </div>
+                    <div class="form-group half-width">
+                        <label for="passDateDelivrance">Date de délivrance <span class="required">*</span></label>
+                        <input type="date" id="passDateDelivrance" th:field="*{passeport.dateDelivrance}" required>
+                        <span class="error-message" id="passDateDelivranceError"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group half-width">
+                        <label for="passDateExpiration">Date d'expiration <span class="required">*</span></label>
+                        <input type="date" id="passDateExpiration" th:field="*{passeport.dateExpiration}" required>
+                        <span class="error-message" id="passDateExpirationError"></span>
+                    </div>
+                    <div class="form-group half-width">
+                        <label for="passLieuDelivrance">Pays de délivrance <span class="required">*</span></label>
+                        <input type="text" id="passLieuDelivrance" th:field="*{passeport.lieuDelivrance}" placeholder="Pays de délivrance" required>
+                        <span class="error-message" id="passLieuDelivranceError"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section Visa -->
+            <section class="form-section">
+                <h2>Visa Actuel</h2>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="visaDateEntree">Date d'entrée à Madagascar <span class="required">*</span></label>
+                        <input type="date" id="visaDateEntree" th:field="*{visa.dateDelivrance}" required>
+                        <span class="error-message" id="visaDateEntreeError"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group half-width">
+                        <label for="visaLieuEntree">Lieu d'entrée <span class="required">*</span></label>
+                        <input type="text" id="visaLieuEntree" placeholder="Aéroport, port, route..." required>
+                        <span class="error-message" id="visaLieuEntreeError"></span>
+                    </div>
+                    <div class="form-group half-width">
+                        <label for="visaDateExpiration">Date d'expiration du visa <span class="required">*</span></label>
+                        <input type="date" id="visaDateExpiration" th:field="*{visa.dateExpiration}" required>
+                        <span class="error-message" id="visaDateExpirationError"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="visaCategorie">Catégorie de demande <span class="required">*</span></label>
+                        <input type="text" id="visaCategorie" placeholder="Ex: Court séjour, Long séjour" required>
+                        <span class="error-message" id="visaCategorieError"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section Pièces Justificatives Communes -->
+            <section class="form-section">
+                <h2>Pièces Justificatives Requises</h2>
+                
+                <div class="subsection">
+                    <h3>Pièces Communes à Tous <span class="required">*</span></h3>
+                    
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceCommune" value="PHOTOS_IDENTITE" required>
+                            <span>02 photos d'identité</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceCommune" value="NOTICE_RENSEIGNEMENT" required>
+                            <span>Notice de renseignement</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceCommune" value="DEMANDE_MINISTRE" required>
+                            <span>Demande adressée à Mr le Ministre de l'Intérieur et de la Décentralisation (avec e-mail et numéro portable)</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceCommune" value="PHOTOCOPIE_VISA" required>
+                            <span>Photocopie certifiée du visa en cours de validité</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceCommune" value="PHOTOCOPIE_PASSEPORT" required>
+                            <span>Photocopie certifiée de la première page du passeport</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceCommune" value="CARTE_RESIDENT" required>
+                            <span>Photocopie certifiée de la carte de résident en cours de validité</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceCommune" value="CERTIFICAT_RESIDENCE" required>
+                            <span>Certificat de résidence à Madagascar</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceCommune" value="EXTRAIT_CASIER" required>
+                            <span>Extrait de casier judiciaire (moins de 3 mois)</span>
+                        </label>
+                    </div>
+                    <span class="error-message" id="pieceCommuneError"></span>
+                </div>
+
+                <!-- Pièces Spécifiques Investisseur -->
+                <div id="piecesInvestisseur" class="subsection" style="display:none;">
+                    <h3>Pièces Spécifiques pour Investisseur <span class="required">*</span></h3>
+                    
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceInvestisseur" value="STATUT_SOCIETE">
+                            <span>Statut de la société</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceInvestisseur" value="EXTRAIT_RCS">
+                            <span>Extrait d'inscription au registre du commerce</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceInvestisseur" value="CARTE_FISCALE">
+                            <span>Carte fiscale</span>
+                        </label>
+                    </div>
+                    <span class="error-message" id="pieceInvestisseurError"></span>
+                </div>
+
+                <!-- Pièces Spécifiques Travailleur -->
+                <div id="piecesTravailleur" class="subsection" style="display:none;">
+                    <h3>Pièces Spécifiques pour Travailleur <span class="required">*</span></h3>
+                    
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceTravailleur" value="AUTORISATION_EMPLOI">
+                            <span>Autorisation d'emploi délivrée à Madagascar par le Ministère de la Fonction publique</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pieceTravailleur" value="ATTESTATION_EMPLOI">
+                            <span>Attestation d'emploi délivrée par l'employeur (original)</span>
+                        </label>
+                    </div>
+                    <span class="error-message" id="pieceTravailleurError"></span>
+                </div>
+            </section>
+
+            <!-- Erreur globale -->
+            <div id="globalError" class="error-banner" style="display:none;"></div>
+
+            <!-- Bouton de soumission -->
+            <section class="form-actions">
+                <button type="reset" class="btn btn-secondary">Effacer le formulaire</button>
+                <button type="submit" id="submitBtn" class="btn btn-primary" disabled>Soumettre la Demande</button>
+            </section>
+
+        </form>
+    </div>
+
+    <script src="/js/dynamicFieelds.js"></script>
+    <script src="/js/validation.js"></script>
+    <script src="/js/form.js"></script>
+</body>
+</html>
