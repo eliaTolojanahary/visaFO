@@ -1,0 +1,13 @@
+# Build artifacts (Java/Tomcat)
+FrameWork/build/
+FrameWork copy/build/
+
+# Compiled bytecode and packaged archives
+*.class
+*.war
+
+# Keep backup workspace out of git
+FrameWork copy/
+
+# PR review 
+PR_TEMPLATE.md

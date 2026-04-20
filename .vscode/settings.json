@@ -1,0 +1,9 @@
+{
+  "java.project.sourcePaths": [
+    "FrameWork/src/main/java"
+  ],
+  "java.project.outputPath": "FrameWork/build/WEB-INF/classes",
+  "java.project.referencedLibraries": [
+    "FrameWork/lib/**/*.jar"
+  ]
+}
