@@ -47,12 +47,12 @@ xcopy "%WEBAPP_PATH%\*" "%BUILD_PATH%\" /E /Y
 rem Créer le fichier .war de ce qui se trouve dans build
 echo Création du fichier WAR...
 pushd "%BUILD_PATH%"
-jar -cvf reservation.war *
+jar -cvf visa.war *
 popd
 
 rem Déplacer le fichier .war dans le répertoire webapps de Tomcat
 echo Déploiement du fichier WAR dans Tomcat...
-move /Y "%BUILD_PATH%\reservation.war" "%CATALINA_HOME%\webapps\"
+move /Y "%BUILD_PATH%\visa.war" "%CATALINA_HOME%\webapps\"
 
 echo Projet Servlet déployé et Tomcat prêt à démarrer.
 pause
