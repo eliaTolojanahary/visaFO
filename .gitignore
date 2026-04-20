@@ -1,6 +1,6 @@
 # Build artifacts (Java/Tomcat)
-# FrameWork/build/
-# FrameWork copy/build/
+FrameWork/build/
+FrameWork copy/build/
 
 # Compiled bytecode and packaged archives
 *.class
