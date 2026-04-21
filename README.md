@@ -10,7 +10,7 @@ Application servlet Java pour la gestion d'une demande de visa transformable.
   - formulaire de demande
   - page d'erreur de validation
   - page de resultat
-- Reprise de l'accueil pour ne garder que le flux Visa.
+- Reprise de l'accueil pour ne garder que le flux  
 - Mise en place du schema PostgreSQL `visa` et des scripts SQL associes.
 - Ajout de donnees de test pour initialiser l'environnement local.
 - Rendu les pieces justificatives compatibles avec la logique:

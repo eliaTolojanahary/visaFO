@@ -1,7 +1,7 @@
 -- PostgreSQL:
 -- 1) Creer la base (voir create_database.sql)
 -- 2) Executer ce script en etant connecte a la base visa
-CREATE DATABASE IF NOT EXISTS visa;
+CREATE DATABASE visa;
 \c visa 
 
 CREATE TABLE IF NOT EXISTS situation_famille (
@@ -93,5 +93,5 @@ CREATE INDEX IF NOT EXISTS idx_demande_type ON demande(type_demande_id, type_tit
 CREATE INDEX IF NOT EXISTS idx_demande_piece_demande ON demande_piece(demande_id);
 CREATE INDEX IF NOT EXISTS idx_demande_piece_cochee ON demande_piece(demande_id, cochee);
 
-ALTER TABLE IF EXISTS visa.piece_justificative_ref
-    ALTER COLUMN id_type_titre DROP NOT NULL;
+ALTER TABLE piece_justificative_ref
+ALTER COLUMN id_type_titre DROP NOT NULL;

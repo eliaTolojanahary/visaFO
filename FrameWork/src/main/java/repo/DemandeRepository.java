@@ -20,7 +20,7 @@ public class DemandeRepository implements DemandeDao {
 
     @Override
     public long save(Demande demande) throws SQLException {
-        String sql = "INSERT INTO visa.demande (passeport_id, type_demande_id, type_titre_id, statut_id, visa_date_entree, visa_lieu_entree, visa_date_expiration, created_at, updated_at) "
+        String sql = "INSERT INTO demande (passeport_id, type_demande_id, type_titre_id, statut_id, visa_date_entree, visa_lieu_entree, visa_date_expiration, created_at, updated_at) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -50,7 +50,7 @@ public class DemandeRepository implements DemandeDao {
 
     @Override
     public boolean update(Demande demande) throws SQLException {
-        String sql = "UPDATE visa.demande SET passeport_id = ?, type_demande_id = ?, type_titre_id = ?, statut_id = ?, visa_date_entree = ?, visa_lieu_entree = ?, visa_date_expiration = ?, updated_at = NOW() WHERE id = ?";
+        String sql = "UPDATE demande SET passeport_id = ?, type_demande_id = ?, type_titre_id = ?, statut_id = ?, visa_date_entree = ?, visa_lieu_entree = ?, visa_date_expiration = ?, updated_at = NOW() WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -74,7 +74,7 @@ public class DemandeRepository implements DemandeDao {
 
     @Override
     public Demande findById(long id) throws SQLException {
-        String sql = "SELECT id, passeport_id, type_demande_id, type_titre_id, statut_id, visa_date_entree, visa_lieu_entree, visa_date_expiration, created_at, updated_at FROM visa.demande WHERE id = ?";
+        String sql = "SELECT id, passeport_id, type_demande_id, type_titre_id, statut_id, visa_date_entree, visa_lieu_entree, visa_date_expiration, created_at, updated_at FROM  demande WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -134,7 +134,7 @@ public class DemandeRepository implements DemandeDao {
             return;
         }
 
-        String sql = "INSERT INTO visa.demande_piece (demande_id, piece_id, cochee, created_at) VALUES (?, ?, TRUE, NOW()) ON CONFLICT (demande_id, piece_id) DO UPDATE SET cochee = EXCLUDED.cochee";
+        String sql = "INSERT INTO demande_piece (demande_id, piece_id, cochee, created_at) VALUES (?, ?, TRUE, NOW()) ON CONFLICT (demande_id, piece_id) DO UPDATE SET cochee = EXCLUDED.cochee";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -149,8 +149,8 @@ public class DemandeRepository implements DemandeDao {
 
     @Override
     public void replaceDemandePieces(long demandeId, List<Long> pieceIds) throws SQLException {
-        String deleteSql = "DELETE FROM visa.demande_piece WHERE demande_id = ?";
-        String insertSql = "INSERT INTO visa.demande_piece (demande_id, piece_id, cochee, created_at) VALUES (?, ?, TRUE, NOW())";
+        String deleteSql = "DELETE FROM  demande_piece WHERE demande_id = ?";
+        String insertSql = "INSERT INTO  demande_piece (demande_id, piece_id, cochee, created_at) VALUES (?, ?, TRUE, NOW())";
 
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);

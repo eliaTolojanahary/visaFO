@@ -15,16 +15,22 @@ public class PieceJustificativeRepository implements PieceJustificativeDao {
 
     @Override
     public List<PieceJustificative> findAll() throws SQLException {
-        String sql = "SELECT p.id, p.libelle, p.id_type_titre, t.libelle AS type_titre_libelle FROM visa.piece_justificative_ref p LEFT JOIN visa.type_titre t ON t.id = p.id_type_titre ORDER BY p.id";
+        System.out.println("[DEBUG REPO] findAll() PieceJustificative appel\u00e9");
+        String sql = "SELECT p.id, p.libelle, p.id_type_titre, t.libelle AS type_titre_libelle FROM  piece_justificative_ref p LEFT JOIN  type_titre t ON t.id = p.id_type_titre ORDER BY p.id";
         List<PieceJustificative> pieces = new ArrayList<>();
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
 
+            System.out.println("[DEBUG REPO] SQL ex\u00e9cut\u00e9: " + sql);
             while (rs.next()) {
                 pieces.add(mapPiece(rs));
             }
+            System.out.println("[DEBUG REPO] Pi\u00e8ces justificatives charg\u00e9es: " + pieces.size());
+        } catch (SQLException e) {
+            System.err.println("[DEBUG REPO] ERREUR SQL: " + e.getMessage());
+            throw e;
         }
 
         return pieces;
@@ -32,7 +38,7 @@ public class PieceJustificativeRepository implements PieceJustificativeDao {
 
     @Override
     public List<PieceJustificative> findByTypeTitreId(Long typeTitreId) throws SQLException {
-        String sql = "SELECT p.id, p.libelle, p.id_type_titre, t.libelle AS type_titre_libelle FROM visa.piece_justificative_ref p LEFT JOIN visa.type_titre t ON t.id = p.id_type_titre WHERE (p.id_type_titre = ? OR p.id_type_titre IS NULL) ORDER BY p.id";
+        String sql = "SELECT p.id, p.libelle, p.id_type_titre, t.libelle AS type_titre_libelle FROM  piece_justificative_ref p LEFT JOIN  type_titre t ON t.id = p.id_type_titre WHERE (p.id_type_titre = ? OR p.id_type_titre IS NULL) ORDER BY p.id";
         List<PieceJustificative> pieces = new ArrayList<>();
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -56,7 +62,7 @@ public class PieceJustificativeRepository implements PieceJustificativeDao {
 
     @Override
     public PieceJustificative findById(long id) throws SQLException {
-        String sql = "SELECT p.id, p.libelle, p.id_type_titre, t.libelle AS type_titre_libelle FROM visa.piece_justificative_ref p LEFT JOIN visa.type_titre t ON t.id = p.id_type_titre WHERE p.id = ?";
+        String sql = "SELECT p.id, p.libelle, p.id_type_titre, t.libelle AS type_titre_libelle FROM  piece_justificative_ref p LEFT JOIN  type_titre t ON t.id = p.id_type_titre WHERE p.id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {

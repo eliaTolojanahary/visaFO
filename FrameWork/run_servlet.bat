@@ -13,6 +13,14 @@ if exist "%BUILD_PATH%" (
     rmdir /s /q "%BUILD_PATH%"
 )
 
+rem Nettoyer les artefacts de déploiement mal nommés (espaces accidentels)
+if exist "%CATALINA_HOME%\webapps\ visa.war" del /f /q "%CATALINA_HOME%\webapps\ visa.war"
+if exist "%CATALINA_HOME%\webapps\ war" del /f /q "%CATALINA_HOME%\webapps\ war"
+if exist "%CATALINA_HOME%\webapps\ visa" rmdir /s /q "%CATALINA_HOME%\webapps\ visa"
+
+rem Supprimer l'ancienne version pour forcer un redéploiement propre
+if exist "%CATALINA_HOME%\webapps\%APP_WAR%" del /f /q "%CATALINA_HOME%\webapps\%APP_WAR%"
+
 rem Créer la structure de dossiers
 echo Création de la structure des dossiers...
 mkdir "%BUILD_PATH%"
