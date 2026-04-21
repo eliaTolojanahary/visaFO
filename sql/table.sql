@@ -1,6 +1,8 @@
-
-CREATE SCHEMA IF NOT EXISTS visa;
-
+-- PostgreSQL:
+-- 1) Creer la base (voir create_database.sql)
+-- 2) Executer ce script en etant connecte a la base visa
+CREATE DATABASE visa;
+\c visa 
 
 CREATE TABLE IF NOT EXISTS situation_famille (
     id SERIAL PRIMARY KEY,
@@ -30,8 +32,7 @@ CREATE TABLE IF NOT EXISTS statut_demande (
 CREATE TABLE IF NOT EXISTS piece_justificative_ref (
     id SERIAL PRIMARY KEY,
     libelle VARCHAR(255) NOT NULL,
-    id_type_titre BIGINT NOT NULL REFERENCES type_titre(id)
-    
+    id_type_titre BIGINT REFERENCES type_titre(id)
 );
 
 CREATE TABLE IF NOT EXISTS demandeur (
@@ -92,3 +93,5 @@ CREATE INDEX IF NOT EXISTS idx_demande_type ON demande(type_demande_id, type_tit
 CREATE INDEX IF NOT EXISTS idx_demande_piece_demande ON demande_piece(demande_id);
 CREATE INDEX IF NOT EXISTS idx_demande_piece_cochee ON demande_piece(demande_id, cochee);
 
+ALTER TABLE piece_justificative_ref
+ALTER COLUMN id_type_titre DROP NOT NULL;

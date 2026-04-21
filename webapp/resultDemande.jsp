@@ -1,11 +1,14 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="models.Demande" %>
+<% String ctx = request.getContextPath(); %>
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <title>Résultat - Demande de Visa</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
+    <link rel="stylesheet" href="<%= ctx %>/css/style.css">
     <style>
         .success-message {
             background: #e6f4ea;
@@ -15,24 +18,24 @@
             margin-bottom: 25px;
             border-left: 4px solid #1d6f37;
         }
-        .success-message h2 {
-            margin: 0;
-            color: #1d6f37;
-        }
-        .table-container {
-            overflow-x: auto;
+        .error-message {
+            background: #fce8e8;
+            color: #c0392b;
+            padding: 20px;
+            border-radius: 8px;
             margin-bottom: 25px;
+            border-left: 4px solid #c0392b;
         }
+        .success-message h2, .error-message h2 { margin: 0; }
+        .table-container { overflow-x: auto; margin-bottom: 25px; }
         table {
             width: 100%;
             border-collapse: collapse;
             background: white;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
-        thead {
-            background: #f0f4f8;
-        }
+        thead { background: #f0f4f8; }
         th {
             padding: 15px;
             text-align: left;
@@ -40,98 +43,180 @@
             color: #1a4a7a;
             border-bottom: 2px solid #e4e9f2;
         }
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e4e9f2;
-        }
-        tr:hover {
-            background: #f8fafd;
-        }
-        .action-links {
-            display: flex;
-            gap: 10px;
-        }
+        td { padding: 12px 15px; border-bottom: 1px solid #e4e9f2; }
+        tr:hover { background: #f8fafd; }
+        .action-links { display: flex; gap: 10px; }
         .btn-secondary {
-            display: inline-block;
-            padding: 10px 16px;
-            background: #e8eef7;
-            color: #1a4a7a;
-            text-decoration: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            transition: background 0.2s ease;
+            display: inline-block; padding: 10px 16px;
+            background: #e8eef7; color: #1a4a7a;
+            text-decoration: none; border-radius: 6px;
+            font-size: 0.9rem; transition: background 0.2s ease;
+            border: none; cursor: pointer;
         }
-        .btn-secondary:hover {
-            background: #d4dfe9;
-        }
+        .btn-secondary:hover { background: #d4dfe9; }
         .btn-primary {
-            display: inline-block;
-            padding: 10px 16px;
-            background: #1a4a7a;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            transition: background 0.2s ease;
+            display: inline-block; padding: 10px 16px;
+            background: #1a4a7a; color: white;
+            text-decoration: none; border-radius: 6px;
+            font-size: 0.9rem; transition: background 0.2s ease;
+            border: none; cursor: pointer;
         }
-        .btn-primary:hover {
-            background: #163f6d;
+        .btn-primary:hover { background: #163f6d; }
+        .btn-warning {
+            display: inline-block; padding: 10px 16px;
+            background: #e67e22; color: white;
+            text-decoration: none; border-radius: 6px;
+            font-size: 0.9rem; transition: background 0.2s ease;
+            border: none; cursor: pointer;
         }
+        .btn-warning:hover { background: #d35400; }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e4e9f2;
+        }
+        .card h2 { margin-top: 0; }
+        .card-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+        .meta-list { margin: 0; padding: 0; list-style: none; }
+        .meta-list li { margin-bottom: 8px; }
     </style>
 </head>
 <body>
 <div class="container">
     <header>
-        <h1>Résultat - Demande de Visa</h1>
+        <h1>Dashboard - Demande de Visa</h1>
     </header>
 
-    <div class="success-message">
-        <h2>✓ Demande créée avec succès</h2>
-        <p>Votre demande de visa a été enregistrée dans le système.</p>
+    <%
+        Boolean success = (Boolean) request.getAttribute("success");
+        String message  = (String)  request.getAttribute("message");
+        String error    = (String)  request.getAttribute("error");
+        String action   = (String)  request.getAttribute("action"); // "update" ou null
+        Demande demande = (Demande) request.getAttribute("demande");
+    %>
+
+    <%-- ===== BLOC SUCCÈS / ERREUR ===== --%>
+    <% if (success != null && success) { %>
+        <div class="success-message">
+            <h2>✓ <%= "update".equals(action) ? "Demande mise à jour avec succès" : "Demande créée avec succès" %></h2>
+            <p><%= message != null ? message : "Votre demande de visa a été enregistrée dans le système." %></p>
+        </div>
+    <% } else if (success != null && !success) { %>
+        <div class="error-message">
+            <h2>✗ <%= "update".equals(action) ? "Erreur lors de la mise à jour" : "Erreur lors de la création" %></h2>
+            <p><%= error != null ? error : "Une erreur est survenue lors de l'enregistrement de votre demande." %></p>
+        </div>
+    <% } %>
+
+    <%
+        @SuppressWarnings("unchecked")
+        Map<String, Object> latestDemande = (Map<String, Object>) request.getAttribute("latestDemande");
+        boolean dashboardMode = Boolean.TRUE.equals(request.getAttribute("dashboardMode"));
+    %>
+
+    <div class="dashboard-grid">
+        <div class="card">
+            <h2>Créer une demande</h2>
+            <p>Commencer une nouvelle demande de visa ou ouvrir le formulaire pour une modification.</p>
+            <div class="card-actions">
+                <a href="<%= ctx %>/form" class="btn-primary">Créer une demande</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Dernière demande</h2>
+            <% if (latestDemande != null) { %>
+                <ul class="meta-list">
+                    <li><strong>Nom:</strong> <%= latestDemande.get("nom") != null ? latestDemande.get("nom") : "-" %></li>
+                    <li><strong>Prénom:</strong> <%= latestDemande.get("prenom") != null ? latestDemande.get("prenom") : "-" %></li>
+                    <li><strong>Numéro passeport:</strong> <%= latestDemande.get("numeroPasseport") != null ? latestDemande.get("numeroPasseport") : "-" %></li>
+                    <li><strong>Type de demande:</strong> <%= latestDemande.get("typeDemandeLibelle") != null ? latestDemande.get("typeDemandeLibelle") : "-" %></li>
+                    <li><strong>Type de titre:</strong> <%= latestDemande.get("typeTitreLibelle") != null ? latestDemande.get("typeTitreLibelle") : "-" %></li>
+                    <li><strong>Statut:</strong> <%= latestDemande.get("statutLibelle") != null ? latestDemande.get("statutLibelle") : "-" %></li>
+                    <li><strong>Date de création:</strong> <%= latestDemande.get("createdAt") != null ? latestDemande.get("createdAt") : "-" %></li>
+                </ul>
+                <div class="card-actions">
+                    <form action="<%= ctx %>/form/edit" method="post" style="display:inline;">
+                        <input type="hidden" name="demande_id" value="<%= latestDemande.get("demande_id") != null ? latestDemande.get("demande_id") : "" %>">
+                        <button type="submit" class="btn-secondary">Modifier</button>
+                    </form>
+                </div>
+            <% } else { %>
+                <p>Aucune demande trouvée pour le moment.</p>
+            <% } %>
+        </div>
     </div>
 
-    <div class="form-section">
-        <h2>Détails de votre demande</h2>
-        <c:if test="${not empty demande}">
+    <%-- ===== DÉTAILS DE LA DEMANDE CRÉÉE/MODIFIÉE ===== --%>
+    <% if (!dashboardMode && demande != null) { %>
+        <%
+            String nomDemande = (demande.getPasseport() != null && demande.getPasseport().getDemandeur() != null
+                && demande.getPasseport().getDemandeur().getNom() != null)
+                ? demande.getPasseport().getDemandeur().getNom() : "-";
+            String prenomDemande = (demande.getPasseport() != null && demande.getPasseport().getDemandeur() != null
+                && demande.getPasseport().getDemandeur().getPrenom() != null)
+                ? demande.getPasseport().getDemandeur().getPrenom() : "-";
+            String typeDemandeLibelle = (demande.getType_demande() != null && demande.getType_demande().getLibelle() != null)
+                ? demande.getType_demande().getLibelle() : "-";
+            String typeTitreLibelle = (demande.getType_titre() != null && demande.getType_titre().getLibelle() != null)
+                ? demande.getType_titre().getLibelle() : "-";
+            String statutDemandeLibelle = (demande.getStatut() != null && demande.getStatut().getLibelle() != null)
+                ? demande.getStatut().getLibelle() : "-";
+        %>
+        <div class="form-section">
+            <h2>Détails de votre demande</h2>
             <div class="table-container">
                 <table>
+                    <thead>
                     <tr>
                         <th>Champ</th>
                         <th>Valeur</th>
                     </tr>
-                    <tr>
-                        <td><strong>ID Demande</strong></td>
-                        <td>${demande.id}</td>
-                    </tr>
+                    </thead>
+                    <tbody>
+
                     <tr>
                         <td><strong>Type de Demande</strong></td>
-                        <td>${demande.typeDemande}</td>
+                        <td><%= typeDemandeLibelle %></td>
                     </tr>
                     <tr>
-                        <td><strong>Profil</strong></td>
-                        <td>${demande.profil}</td>
+                        <td><strong>Type de titre</strong></td>
+                        <td><%= typeTitreLibelle %></td>
                     </tr>
                     <tr>
                         <td><strong>Statut</strong></td>
-                        <td><strong style="color: #27ae60;">${demande.statut}</strong></td>
+                        <td><strong style="color: #27ae60;"><%= statutDemandeLibelle %></strong></td>
                     </tr>
                     <tr>
                         <td><strong>Date de création</strong></td>
-                        <td>${demande.dateCreation}</td>
+                        <td><%= demande.getCreated_at() != null ? demande.getCreated_at() : "-" %></td>
                     </tr>
+                    </tbody>
                 </table>
             </div>
-        </c:if>
-    </div>
+        </div>
+    <% } %>
 
-    <div class="form-section">
-        <h2>Liste de vos demandes</h2>
-        <c:if test="${not empty demandes}">
+    <%-- ===== LISTE DES DEMANDES (si disponible) ===== --%>
+    <%
+        List<Demande> demandes = (List<Demande>) request.getAttribute("demandes");
+    %>
+    <% if (demandes != null && !demandes.isEmpty()) { %>
+        <div class="form-section">
+            <h2>Liste de vos demandes</h2>
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
-                            <th>ID Demande</th>
+                            <th>ID</th>
                             <th>Nom</th>
                             <th>Prénom</th>
                             <th>Type</th>
@@ -141,34 +226,49 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <c:forEach var="dem" items="${demandes}">
+                        <% for (Demande d : demandes) { %>
+                            <%
+                            String nom = (d.getPasseport() != null && d.getPasseport().getDemandeur() != null
+                                && d.getPasseport().getDemandeur().getNom() != null)
+                                ? d.getPasseport().getDemandeur().getNom() : "-";
+                            String prenom = (d.getPasseport() != null && d.getPasseport().getDemandeur() != null
+                                && d.getPasseport().getDemandeur().getPrenom() != null)
+                                ? d.getPasseport().getDemandeur().getPrenom() : "-";
+                            String typeDemande = (d.getType_demande() != null && d.getType_demande().getLibelle() != null)
+                                ? d.getType_demande().getLibelle() : "-";
+                            String typeTitre = (d.getType_titre() != null && d.getType_titre().getLibelle() != null)
+                                ? d.getType_titre().getLibelle() : "-";
+                            String statut = (d.getStatut() != null && d.getStatut().getLibelle() != null)
+                                ? d.getStatut().getLibelle() : "-";
+                            %>
                             <tr>
-                                <td>${dem.id}</td>
-                                <td>${dem.nom}</td>
-                                <td>${dem.prenom}</td>
-                                <td>${dem.typeDemande}</td>
-                                <td>${dem.profil}</td>
-                                <td><strong style="color: #27ae60;">${dem.statut}</strong></td>
+                                <td><%= d.getId() %></td>
+                            <td><%= nom %></td>
+                            <td><%= prenom %></td>
+                            <td><%= typeDemande %></td>
+                            <td><%= typeTitre %></td>
+                            <td><strong style="color: #27ae60;"><%= statut %></strong></td>
                                 <td>
                                     <div class="action-links">
-                                        <a href="${pageContext.request.contextPath}/visa/edit?id=${dem.id}" class="btn-secondary">Modifier</a>
-                                        <a href="${pageContext.request.contextPath}/visa/delete?id=${dem.id}" class="btn-secondary" onclick="return confirm('Êtes-vous sûr?')">Supprimer</a>
+                                        <form action="<%= ctx %>/form/edit" method="post" style="display:inline;">
+                                            <input type="hidden" name="demande_id" value="<%= d.getId() %>">
+                                            <button type="submit" class="btn-secondary">Modifier</button>
+                                        </form>
+                                        <%-- Supprimer : à adapter si vous ajoutez un mapping delete --%>
+                                                                                <span class="btn-warning">Supprimer indisponible</span>
                                     </div>
                                 </td>
                             </tr>
-                        </c:forEach>
+                        <% } %>
                     </tbody>
                 </table>
             </div>
-        </c:if>
-        <c:if test="${empty demandes}">
-            <p>Aucune demande trouvée.</p>
-        </c:if>
-    </div>
+        </div>
+    <% } %>
 
     <div style="margin-top: 25px;">
-        <a href="${pageContext.request.contextPath}/visa/form" class="btn-primary">Créer une nouvelle demande</a>
-        <a href="${pageContext.request.contextPath}/visa/list" class="btn-secondary" style="margin-left: 10px;">Voir toutes les demandes</a>
+        <a href="<%= ctx %>/form" class="btn-primary">Créer une nouvelle demande</a>
+        <span class="btn-secondary" style="margin-left: 10px;">Liste complète des demandes indisponible</span>
     </div>
 </div>
 </body>
