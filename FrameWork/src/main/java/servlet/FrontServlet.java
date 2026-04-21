@@ -56,12 +56,6 @@ public class FrontServlet extends HttpServlet {
             throws ServerException, IOException, ServletException {
         String path = req.getRequestURI().substring(req.getContextPath().length());
 
-        // Si la requête pointe vers la racine (ex: "" ou "/"), servir la ressource par défaut
-        if (path == null || path.isEmpty() || "/".equals(path)) {
-            defaultServe(req, resp);
-            return;
-        }
-
         boolean ressourceExists = getServletContext().getResourceAsStream(path) != null;
 
         if (ressourceExists) {
@@ -77,12 +71,6 @@ public class FrontServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServerException, IOException, ServletException {
         String path = req.getRequestURI().substring(req.getContextPath().length());
-
-        // Si la requête pointe vers la racine (ex: "" ou "/"), servir la ressource par défaut
-        if (path == null || path.isEmpty() || "/".equals(path)) {
-            defaultServe(req, resp);
-            return;
-        }
 
         boolean ressourceExists = getServletContext().getResourceAsStream(path) != null;
 
