@@ -1,6 +1,3 @@
-SET search_path TO visa;
-
-
 INSERT INTO situation_famille (libelle) VALUES
 ('Celibataire'),
 ('MARIE'),
