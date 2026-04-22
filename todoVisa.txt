@@ -16,13 +16,11 @@ Fonctionnalite du Sprint 1 :
 
 Jemima - Backend 
 1. Models a preparer
-- Demande
-- Demandeur
-- Passeport
-- Visa
-- PieceJustificative
-- InfosSpecifiquesInvestisseur
-- InfosSpecifiquesTravailleur
+- [X] Demande 
+- [X] Demandeur
+- [X] Passeport
+- [X] VisaDTO
+- [X] PieceJustificative
 
 2. Controller
 - DemandeController.java
@@ -49,6 +47,9 @@ Jemima - Backend
 - Creation demande : saveDemande() -> statut "demande creee"
 - Differenciation investisseur/travailleur : getInfoSpecifique(idType)
 - Modification demande existante : updateDemande()
+- Recuperation des pieces selon le type de titre :
+    - type_titre IS NULL -> pieces communes
+    - type_titre = investisseur/travailleur -> pieces specifiques
 
 5. Regles de validation metier
 - Si obligatoires valides : sauvegarder et mettre statut "demande creee".
