@@ -1,21 +1,29 @@
 # VISA FO
 
-Application servlet Java pour la gestion d'une demande de visa transformable.
+Application pour la gestion d'une demande de visa transformable.
 
 ## Ce qui a ete fait
 
-- Refonte du module Visa autour d'une architecture plus claire:
-  - `controller` -> `service` -> `dao` -> `repo`
-- Ajout des pages de test Visa:
+- Reorganisation du module Visa pour un flux plus clair.
+- Ajout des ecrans principaux Visa:
   - formulaire de demande
   - page d'erreur de validation
   - page de resultat
-- Reprise de l'accueil pour ne garder que le flux  
+- Reprise de l'accueil pour garder le parcours Visa.
 - Mise en place du schema PostgreSQL `visa` et des scripts SQL associes.
 - Ajout de donnees de test pour initialiser l'environnement local.
-- Rendu les pieces justificatives compatibles avec la logique:
+- Gestion des pieces justificatives selon la logique:
   - `type_titre IS NULL` = pieces communes
   - `type_titre = investisseur / travailleur` = pieces specifiques
+
+## Fonctionnalites actuellement couvertes
+
+- Parcours "Nouveau titre" disponible.
+- Profils geres: investisseur et travailleur.
+- Validation des informations obligatoires avant enregistrement.
+- Enregistrement d'une nouvelle demande avec le statut "demande creee".
+- Possibilite de modifier une demande existante.
+- Affichage des pieces communes et des pieces specifiques selon le profil.
 
 ## Structure utile
 
@@ -51,10 +59,10 @@ Principe de base:
 - si le script modifie une colonne ou un comportement, il va apres `table.sql`
 - si le script ajoute des donnees de reference, il va avant les donnees de test finales
 
-L'objectif est que `start.bat` reste la commande unique pour reconstruire et mettre a jour la base locale.
+Objectif: `start.bat` reste la commande unique pour reconstruire et mettre a jour la base locale.
 
 ## Execution locale
 
 - Configurer PostgreSQL et verifier l'utilisateur `postgres`.
 - Lancer `start.bat`.
-- Lancer ensuite l'application Java via `FrameWork/run_servlet.bat` si besoin.
+- Lancer ensuite l'application via `FrameWork/run_servlet.bat`.
