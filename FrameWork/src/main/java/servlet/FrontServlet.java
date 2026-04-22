@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import modelview.ModelView;
 import annotation.MethodeAnnotation;
+import annotation.ClasseAnnotation;
 import annotation.RequestParam;
 import annotation.Api;
 import annotation.Session;
@@ -55,12 +56,6 @@ public class FrontServlet extends HttpServlet {
             throws ServerException, IOException, ServletException {
         String path = req.getRequestURI().substring(req.getContextPath().length());
 
-        // Si la requête pointe vers la racine (ex: "" ou "/"), servir la ressource par défaut
-        if (path == null || path.isEmpty() || "/".equals(path)) {
-            defaultServe(req, resp);
-            return;
-        }
-
         boolean ressourceExists = getServletContext().getResourceAsStream(path) != null;
 
         if (ressourceExists) {
@@ -76,12 +71,6 @@ public class FrontServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServerException, IOException, ServletException {
         String path = req.getRequestURI().substring(req.getContextPath().length());
-
-        // Si la requête pointe vers la racine (ex: "" ou "/"), servir la ressource par défaut
-        if (path == null || path.isEmpty() || "/".equals(path)) {
-            defaultServe(req, resp);
-            return;
-        }
 
         boolean ressourceExists = getServletContext().getResourceAsStream(path) != null;
 
@@ -107,10 +96,15 @@ public class FrontServlet extends HttpServlet {
             Set<Class<?>> annotated = (Set<Class<?>>) o;
             for (Class<?> cls : annotated) {
                 try {
+                    String classPrefix = "";
+                    if (cls.isAnnotationPresent(ClasseAnnotation.class)) {
+                        String rawPrefix = cls.getAnnotation(ClasseAnnotation.class).value();
+                        classPrefix = normalizeClassPrefix(rawPrefix);
+                    }
                     for (Method m : cls.getDeclaredMethods()) {
                         if (m.isAnnotationPresent(annotation.MethodeAnnotation.class)) {
                             annotation.MethodeAnnotation ma = m.getAnnotation(annotation.MethodeAnnotation.class);
-                            String url = ma.value();
+                            String url = joinRoute(classPrefix, ma.value());
                             List<RouteInfo> routesForMethod = new ArrayList<>();
                             routesForMethod.add(new RouteInfo(cls, m, url, "ALL"));
                             if (m.isAnnotationPresent(annotation.GetMapping.class)) {
@@ -440,6 +434,17 @@ public class FrontServlet extends HttpServlet {
                         ModelView modelView = (ModelView) result;
                         String view = modelView.getView();
                         if (view != null && !view.isEmpty()) {
+                            if (view.startsWith("redirect:")) {
+                                String redirectTarget = view.substring("redirect:".length());
+                                if (redirectTarget == null || redirectTarget.isEmpty()) {
+                                    redirectTarget = "/";
+                                }
+                                if (!redirectTarget.startsWith("/")) {
+                                    redirectTarget = "/" + redirectTarget;
+                                }
+                                resp.sendRedirect(req.getContextPath() + redirectTarget);
+                                return;
+                            }
                             Map<String, Object> data = modelView.getData();
                             if (data != null) {
                                 for (Map.Entry<String, Object> entry : data.entrySet()) {
@@ -605,6 +610,39 @@ public class FrontServlet extends HttpServlet {
                 type == Short.class ||
                 type == Byte.class ||
                 type == Character.class;
+    }
+
+    private String normalizeClassPrefix(String rawPrefix) {
+        if (rawPrefix == null) {
+            return "";
+        }
+        String prefix = rawPrefix.trim();
+        if (prefix.isEmpty() || !prefix.startsWith("/")) {
+            return "";
+        }
+        if (prefix.length() > 1 && prefix.endsWith("/")) {
+            prefix = prefix.substring(0, prefix.length() - 1);
+        }
+        return prefix;
+    }
+
+    private String joinRoute(String classPrefix, String methodPath) {
+        String prefix = (classPrefix == null) ? "" : classPrefix.trim();
+        String method = (methodPath == null) ? "" : methodPath.trim();
+
+        if (method.isEmpty()) {
+            return prefix.isEmpty() ? "/" : prefix;
+        }
+        if (!method.startsWith("/")) {
+            method = "/" + method;
+        }
+        if (prefix.isEmpty()) {
+            return method;
+        }
+        if ("/".equals(method)) {
+            return prefix;
+        }
+        return prefix + method;
     }
     
     // Classe interne pour stocker les informations de route

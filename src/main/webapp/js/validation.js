@@ -5,6 +5,22 @@ function showError(id, message) {
     el.style.display = 'block';
 }
 
+function getCheckedCountInSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (!section) return 0;
+    return section.querySelectorAll('input[type="checkbox"][name="piece_ids"]:checked').length;
+}
+
+function getTotalCountInSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (!section) return 0;
+    return section.querySelectorAll('input[type="checkbox"][name="piece_ids"]').length;
+}
+
+function hasAtLeastOneChecked(sectionId) {
+    return getCheckedCountInSection(sectionId) > 0;
+}
+
 function clearErrors() {
     document.querySelectorAll('.error-text').forEach(el => {
         el.textContent = '';
@@ -23,6 +39,7 @@ function validateForm() {
     let valid = true;
 
     const requiredIds = [
+        'typeDemande',
         'nom',
         'nomJeuneFille',
         'dateNaissance',
@@ -55,23 +72,23 @@ function validateForm() {
         showError('profilError', 'Le profil est obligatoire');
     }
 
-    const piecesCommunes = document.querySelectorAll('input[name="pieceCommune"]:checked');
-    if (piecesCommunes.length === 0) {
+    const piecesCommunesTotal = getTotalCountInSection('piecesCommunes');
+    if (piecesCommunesTotal > 0 && !hasAtLeastOneChecked('piecesCommunes')) {
         valid = false;
         showError('pieceCommuneError', 'Veuillez cocher au moins une pièce commune');
     }
 
     if (profil) {
         if (profil.value === 'investisseur') {
-            const piecesInvestisseur = document.querySelectorAll('input[name="pieceInvestisseur"]:checked');
-            if (piecesInvestisseur.length === 0) {
+            const piecesInvestisseurTotal = getTotalCountInSection('piecesInvestisseur');
+            if (piecesInvestisseurTotal > 0 && !hasAtLeastOneChecked('piecesInvestisseur')) {
                 valid = false;
                 showError('pieceInvestisseurError', 'Veuillez cocher au moins une pièce investisseur');
             }
         }
         if (profil.value === 'travailleur') {
-            const piecesTravailleur = document.querySelectorAll('input[name="pieceTravailleur"]:checked');
-            if (piecesTravailleur.length === 0) {
+            const piecesTravailleurTotal = getTotalCountInSection('piecesTravailleur');
+            if (piecesTravailleurTotal > 0 && !hasAtLeastOneChecked('piecesTravailleur')) {
                 valid = false;
                 showError('pieceTravailleurError', 'Veuillez cocher au moins une pièce travailleur');
             }
