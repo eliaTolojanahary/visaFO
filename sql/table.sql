@@ -1,7 +1,8 @@
 -- PostgreSQL:
 -- 1) Creer la base (voir create_database.sql)
 -- 2) Executer ce script en etant connecte a la base visa
-CREATE DATABASE visa;
+DROP DATABASE IF EXISTS visa;
+CREATE DATABASE IF NOT EXISTS visa;
 \c visa 
 
 CREATE TABLE IF NOT EXISTS situation_famille (
