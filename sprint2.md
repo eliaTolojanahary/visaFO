@@ -122,7 +122,7 @@ si pas trouvé :
 
 ---
 
-#### Bloc A (normal)
+#### Bloc A (normal) cf sprint 1
 
 * nom, prenom, date naissance
 * nationalité, situation familiale
