@@ -12,7 +12,7 @@ Sauf que dans la base on retrouve rien (ancienne demande introuvable).
 * l'agent confirme a la main que le visa etait deja approuvé
 * et on lance le duplicata normal
 
-1. Database - Jemima (TL)
+1. Database - Jemima (TL) Branche: dev
 - Ajout des table document et type_document
 - Changement dans la table `demande` : 
     + type_document_id
@@ -25,7 +25,7 @@ Sauf que dans la base on retrouve rien (ancienne demande introuvable).
 - script de migration : `alter_sprint2.sql`
     + a ajouter dans `start.bat` apres `table.sql`
 
-2. Back-end - Mioty 
+2. Back-end - Mioty : Branche: sprint/2/feature/recherche-dossier
 **Module Recheche:** 
 Pour voir si la demande est presente ou pas dans la base de donnée 
 - Classe: DemandeDAO 
@@ -92,7 +92,7 @@ Pour creer et suivre un dossier
 * un passeport ne peut pas etre rattache a deux demandeurs differents
 
 
-3. Front-end - Elia 
+3. Front-end - Elia - Branche :  sprint/2/feature/refact-flow-demande
 
 ### Recherche
 
