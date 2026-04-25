@@ -319,6 +319,12 @@
 
         <div id="piecesCommunes" class="form-section">
             <h2>Pièces justificatives communes <span class="required">*</span></h2>
+            <div class="select-all-row">
+                <label>
+                    <input type="checkbox" class="js-select-all-pieces" data-target-section="piecesCommunes">
+                    Tout sélectionner
+                </label>
+            </div>
             <div class="checkbox-group">
                 <%
                 List<PieceJustificative> piecesCommunes = (List<PieceJustificative>) request.getAttribute("piecesCommunes");
@@ -341,6 +347,12 @@
 
         <div id="piecesInvestisseur" class="form-section hidden">
             <h2>Pièces Investisseur <span class="required">*</span></h2>
+            <div class="select-all-row">
+                <label>
+                    <input type="checkbox" class="js-select-all-pieces" data-target-section="piecesInvestisseur">
+                    Tout sélectionner
+                </label>
+            </div>
             <div class="checkbox-group">
                 <%
                 List<PieceJustificative> piecesInvestisseur = (List<PieceJustificative>) request.getAttribute("piecesInvestisseur");
@@ -363,6 +375,12 @@
 
         <div id="piecesTravailleur" class="form-section hidden">
             <h2>Pièces Travailleur <span class="required">*</span></h2>
+            <div class="select-all-row">
+                <label>
+                    <input type="checkbox" class="js-select-all-pieces" data-target-section="piecesTravailleur">
+                    Tout sélectionner
+                </label>
+            </div>
             <div class="checkbox-group">
                 <%
                 List<PieceJustificative> piecesTravailleur = (List<PieceJustificative>) request.getAttribute("piecesTravailleur");
