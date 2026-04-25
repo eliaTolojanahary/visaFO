@@ -35,12 +35,14 @@ public class DemandeService {
     private final DemandeDao demandeDao;
     private final PieceJustificativeDao pieceDao;
     private final ReferenceVisaDao referenceDao;
+    private final PasseportService passeportService;
 
     public DemandeService() {
         System.out.println("[DEBUG SERVICE] Initialisation DemandeService");
         this.demandeDao = new DemandeRepository();
         this.pieceDao = new PieceJustificativeRepository();
         this.referenceDao = new ReferenceVisaRepository();
+        this.passeportService = new PasseportService();
         System.out.println("[DEBUG SERVICE] DAOs initialisés");
     }
 
@@ -105,6 +107,57 @@ public class DemandeService {
         demandeDao.saveDemandePieces(demandeId, pieceIds);
 
         return demande;
+    }
+
+    public Demande saveDemandeWithPassportLookup(Map<String, Object> formData) throws SQLException {
+        String numeroPasseport = stringValueAny(formData, "numero_passeport", "numeroPasseport");
+        if (numeroPasseport != null && !numeroPasseport.isEmpty()) {
+            models.Passeport existingPassport = passeportService.getByNum(numeroPasseport);
+            if (existingPassport != null) {
+                formData.put("passeport_id", String.valueOf(existingPassport.getId()));
+            }
+        }
+
+        Map<String, String> errors = isObligatoire(formData);
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException("Validation des champs obligatoires échouée");
+        }
+
+        Demande demande = buildDemandeFromForm(formData);
+        StatutDemande statut = resolveStatusForForm(formData);
+        if (statut == null) {
+            statut = referenceDao.findStatutByLibelle("demande creee");
+        }
+        if (statut == null) {
+            throw new IllegalArgumentException("Aucun statut applicable trouvé en base.");
+        }
+        demande.setStatut(statut);
+
+        long demandeId = demandeDao.save(demande);
+        demande.setId(demandeId);
+
+        List<Long> pieceIds = parsePieceIds(formData);
+        demandeDao.saveDemandePieces(demandeId, pieceIds);
+
+        return demande;
+    }
+
+    private StatutDemande resolveStatusForForm(Map<String, Object> formData) throws SQLException {
+        Long typeDemandeId = parseLongRequiredAny(formData, "type_demande_id", "typeDemande");
+        TypeDemande typeDemande = referenceDao.findTypeDemandeById(typeDemandeId);
+        if (typeDemande == null || typeDemande.getLibelle() == null) {
+            return null;
+        }
+
+        String libelle = typeDemande.getLibelle().toLowerCase();
+        if (libelle.contains("visa")) {
+            return referenceDao.findStatutByLibelle("Valide");
+        }
+        if (libelle.contains("duplicata") || libelle.contains("titre") || libelle.contains("titre de residence")) {
+            return referenceDao.findStatutByLibelle("En cours de traitement");
+        }
+
+        return referenceDao.findStatutByLibelle("demande creee");
     }
 
     public boolean updateDemande(Map<String, Object> formData) throws SQLException {
@@ -378,6 +431,10 @@ public class DemandeService {
             dashboard.put("updatedAt", rs.getTimestamp("demande_updated_at"));
             return dashboard;
         }
+    }
+
+    public Demande searchBy(String column, Object value) throws SQLException {
+        return demandeDao.findBy(column, value);
     }
 
     private Demande buildDemandeFromForm(Map<String, Object> formData) throws SQLException {
