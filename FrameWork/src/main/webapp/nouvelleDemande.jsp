@@ -28,7 +28,7 @@
     String selectedProfil = formData.get("profil") != null ? String.valueOf(formData.get("profil")) : "";
 %>
 <!DOCTYPE html>
-<html>
+<html lang='fr'>
 <head>
     <meta charset="UTF-8">
     <title><%= pageTitle %></title>
@@ -110,7 +110,7 @@
             <input type="hidden" name="passeport_id" value="<%= formData.get("passeport_id") != null ? formData.get("passeport_id") : "" %>">
         <% } %>
 
-        <div class="form-section">
+        <div id="sectionTypeDemande" class="form-section">
             <h2>Type de demande</h2>
             <div class="form-row">
                 <div class="form-group">
@@ -142,7 +142,7 @@
             <p class="hint-text">Si le type est <strong>Duplicata</strong>, le bloc duplicata ci-dessous devient obligatoire.</p>
         </div>
 
-        <div class="form-section">
+        <div id="sectionEtatCivil" class="form-section hidden">
             <h2>État civil</h2>
             <div class="form-row">
                 <div class="form-group">
@@ -226,7 +226,7 @@
             </div>
         </div>
 
-        <div class="form-section">
+        <div id="sectionPasseport" class="form-section hidden">
             <h2>Passeport</h2>
             <div class="form-row">
                 <div class="form-group">
@@ -254,7 +254,7 @@
             </div>
         </div>
 
-        <div class="form-section">
+        <div id="sectionVisa" class="form-section hidden">
             <h2>Visa</h2>
             <div class="form-row">
                 <div class="form-group">
@@ -317,7 +317,7 @@
             <div id="duplicataPieceError" class="error-text"></div>
         </div>
 
-        <div id="piecesCommunes" class="form-section">
+        <div id="piecesCommunes" class="form-section hidden">
             <h2>Pièces justificatives communes <span class="required">*</span></h2>
             <div class="select-all-row">
                 <label>

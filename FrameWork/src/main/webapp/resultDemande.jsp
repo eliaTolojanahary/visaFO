@@ -4,7 +4,7 @@
 <%@ page import="models.Demande" %>
 <% String ctx = request.getContextPath(); %>
 <!DOCTYPE html>
-<html>
+<html lang='fr'>
 <head>
     <meta charset="UTF-8">
     <title>Résultat - Demande de Visa</title>

@@ -1,7 +1,63 @@
+function isFieldFilled(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return false;
+    return field.value.trim() !== '';
+}
+
+function setSectionVisibility(sectionId, shouldShow) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    section.classList.toggle('hidden', !shouldShow);
+}
+
+function isSectionVisible(sectionId) {
+    const section = document.getElementById(sectionId);
+    return !!section && !section.classList.contains('hidden');
+}
+
+function updateProgressiveFormSections() {
+    const hasTypeDemande = isFieldFilled('typeDemande');
+    const hasProfil = !!document.querySelector('input[name="profil"]:checked');
+    const canShowEtatCivil = hasTypeDemande && hasProfil;
+
+    const etatCivilRequiredFields = [
+        'nom',
+        'dateNaissance',
+        'situationFamille',
+        'nationalite',
+        'adresseMadagascar',
+        'numeroTelephone',
+        'profession'
+    ];
+    const isEtatCivilComplete = etatCivilRequiredFields.every(isFieldFilled);
+
+    const passeportRequiredFields = [
+        'numeroPasseport',
+        'dateDelivrance',
+        'dateExpiration',
+        'paysDelivrance'
+    ];
+    const isPasseportComplete = passeportRequiredFields.every(isFieldFilled);
+
+    const visaRequiredFields = [
+        'visaDateEntree',
+        'visaLieuEntree',
+        'visaDateExpiration',
+        'categorieDemande'
+    ];
+    const isVisaComplete = visaRequiredFields.every(isFieldFilled);
+
+    setSectionVisibility('sectionEtatCivil', canShowEtatCivil);
+    setSectionVisibility('sectionPasseport', canShowEtatCivil && isEtatCivilComplete);
+    setSectionVisibility('sectionVisa', canShowEtatCivil && isEtatCivilComplete && isPasseportComplete);
+    setSectionVisibility('piecesCommunes', canShowEtatCivil && isEtatCivilComplete && isPasseportComplete && isVisaComplete);
+}
+
 function updateDynamicFields() {
     const profil = document.querySelector('input[name="profil"]:checked')?.value;
     const investisseurSection = document.getElementById('piecesInvestisseur');
     const travailleurSection = document.getElementById('piecesTravailleur');
+    const canShowProfilePieces = isSectionVisible('piecesCommunes');
     const investisseurItems = investisseurSection
         ? investisseurSection.querySelectorAll('input[type="checkbox"][name="piece_ids"]')
         : [];
@@ -9,7 +65,10 @@ function updateDynamicFields() {
         ? travailleurSection.querySelectorAll('input[type="checkbox"][name="piece_ids"]')
         : [];
 
-    if (profil === 'investisseur') {
+    if (!canShowProfilePieces) {
+        if (investisseurSection) investisseurSection.classList.add('hidden');
+        if (travailleurSection) travailleurSection.classList.add('hidden');
+    } else if (profil === 'investisseur') {
         if (investisseurSection) investisseurSection.classList.remove('hidden');
         if (travailleurSection) travailleurSection.classList.add('hidden');
         travailleurItems.forEach(item => item.checked = false);
@@ -93,12 +152,13 @@ function getSelectedTypeDemandeLabel() {
 
 function updateDuplicataBlock() {
     const isDuplicata = getSelectedTypeDemandeLabel() === 'duplicata';
+    const canShowDuplicata = isSectionVisible('sectionVisa');
     const duplicataBlock = document.getElementById('duplicataBlock');
     const categorieDemande = document.getElementById('categorieDemande');
     const typeDocument = document.getElementById('typeDocument');
 
     if (duplicataBlock) {
-        duplicataBlock.classList.toggle('hidden', !isDuplicata);
+        duplicataBlock.classList.toggle('hidden', !(isDuplicata && canShowDuplicata));
     }
 
     if (categorieDemande && isDuplicata) {
@@ -109,7 +169,12 @@ function updateDuplicataBlock() {
         typeDocument.value = 'Titre de residence';
     }
 
-    validateForm();
+}
+
+function refreshDynamicLayout() {
+    updateProgressiveFormSections();
+    updateDuplicataBlock();
+    updateDynamicFields();
 }
 
 function syncCategorieWithTypeDemande() {
@@ -124,20 +189,25 @@ function syncCategorieWithTypeDemande() {
 }
 
 window.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('demandeForm');
     const profilRadios = document.querySelectorAll('input[name="profil"]');
     const typeDemandeInput = document.getElementById('typeDemande');
 
     initializeSelectAllPieces();
 
-    profilRadios.forEach(radio => radio.addEventListener('change', updateDynamicFields));
+    profilRadios.forEach(radio => radio.addEventListener('change', refreshDynamicLayout));
     if (typeDemandeInput) {
         typeDemandeInput.addEventListener('change', function () {
             syncCategorieWithTypeDemande();
-            updateDuplicataBlock();
+            refreshDynamicLayout();
         });
     }
 
+    if (form) {
+        form.addEventListener('input', refreshDynamicLayout);
+        form.addEventListener('change', refreshDynamicLayout);
+    }
+
     syncCategorieWithTypeDemande();
-    updateDuplicataBlock();
-    updateDynamicFields();
+    refreshDynamicLayout();
 });
