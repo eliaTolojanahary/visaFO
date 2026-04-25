@@ -1,9 +1,36 @@
 @echo off
-rem --- Configuration des chemins (ne pas inclure de guillemets dans la valeur) ---
+rem ============================================================
+rem  run_servlet.bat — Build et déploiement du projet visa
+rem ============================================================
+rem  CONFIGURATION REQUISE :
+rem  Définir la variable d'environnement CATALINA_HOME avant de
+rem  lancer ce script, ou l'exporter dans votre profil système.
+rem
+rem  Exemple (PowerShell) :
+rem    $env:CATALINA_HOME = "D:\PERS\MIOTY\s6\apache-tomcat-9.0.117"
+rem
+rem  Exemple (cmd, permanent via sysdm.cpl > Variables d'env.) :
+rem    setx CATALINA_HOME "D:\PERS\MIOTY\s6\apache-tomcat-9.0.117"
+rem
+rem  Les credentials DB sont lus par l'application via DB_URL,
+rem  DB_USER, DB_PASSWORD (voir .env.example à la racine).
+rem ============================================================
+
+rem --- Vérification de CATALINA_HOME ---
+if "%CATALINA_HOME%"=="" (
+    echo.
+    echo [ERREUR] La variable d'environnement CATALINA_HOME n'est pas definie.
+    echo          Definissez-la avant de lancer ce script :
+    echo          set CATALINA_HOME=C:\chemin\vers\apache-tomcat-X.X.XXX
+    echo.
+    pause
+    exit /b 1
+)
+
+rem --- Configuration des chemins ---
 set "PROJECT_PATH=%~dp0"
 set "BUILD_PATH=%PROJECT_PATH%build"
 set "WEBAPP_PATH=%PROJECT_PATH%src\main\webapp"
-set "CATALINA_HOME=C:\xampp\tomcat"
 set "LIB_PATH=%PROJECT_PATH%lib"
 set "COMMON_CLASSPATH=%BUILD_PATH%\WEB-INF\classes;%CATALINA_HOME%\lib\servlet-api.jar;%LIB_PATH%\*"
 set "APP_WAR=visa.war"
@@ -23,7 +50,7 @@ rem Supprimer l'ancienne version pour forcer un redéploiement propre
 if exist "%CATALINA_HOME%\webapps\%APP_WAR%" del /f /q "%CATALINA_HOME%\webapps\%APP_WAR%"
 
 rem Créer la structure de dossiers
-echo Création de la structure des dossiers...
+echo Creation de la structure des dossiers...
 mkdir "%BUILD_PATH%"
 mkdir "%BUILD_PATH%\WEB-INF"
 mkdir "%BUILD_PATH%\WEB-INF\classes"
@@ -70,7 +97,7 @@ javac -parameters -d "%BUILD_PATH%\WEB-INF\classes" -classpath "%COMMON_CLASSPAT
 if errorlevel 1 goto :compile_failed
 
 rem Copier les bibliothèques (JARs) dans WEB-INF\lib
-echo Copie des bibliothèques JAR...
+echo Copie des bibliotheques JAR...
 mkdir "%BUILD_PATH%\WEB-INF\lib"
 if exist "%LIB_PATH%\*.jar" (
     xcopy "%LIB_PATH%\*.jar" "%BUILD_PATH%\WEB-INF\lib\" /Y
@@ -80,25 +107,25 @@ if exist "%LIB_PATH%\*.jar" (
 )
 
 rem Copier le contenu de webapp dans build de manière récursive
-echo Copie récursive des fichiers webapp...
+echo Copie recursive des fichiers webapp...
 xcopy "%WEBAPP_PATH%\*" "%BUILD_PATH%\" /E /Y
 
-rem Créer le fichier .war de ce qui se trouve dans build
-echo Création du fichier WAR...
+rem Créer le fichier .war
+echo Creation du fichier WAR...
 pushd "%BUILD_PATH%"
 jar -cvf "%APP_WAR%" *
 popd
 
 rem Déplacer le fichier .war dans le répertoire webapps de Tomcat
-echo Déploiement du fichier WAR dans Tomcat...
+echo Deploiement du fichier WAR dans Tomcat...
 move /Y "%BUILD_PATH%\%APP_WAR%" "%CATALINA_HOME%\webapps\"
 
-echo Projet Servlet déployé et Tomcat prêt à démarrer.
+echo Projet Servlet deploye et Tomcat pret a demarrer.
 pause
 goto :eof
 
 :compile_failed
 echo.
-echo Compilation interrompue. Le WAR n'a pas été généré.
+echo Compilation interrompue. Le WAR n'a pas ete genere.
 pause
 exit /b 1

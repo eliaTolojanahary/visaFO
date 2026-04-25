@@ -8,6 +8,9 @@ FrameWork/build/
 # Keep backup workspace out of git
 FrameWork copy/
 
+# Environment variables
+.env
+
 # PR review 
 *.md
 !README.md
