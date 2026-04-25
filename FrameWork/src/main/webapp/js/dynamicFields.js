@@ -10,16 +10,16 @@ function updateDynamicFields() {
         : [];
 
     if (profil === 'investisseur') {
-        investisseurSection.classList.remove('hidden');
-        travailleurSection.classList.add('hidden');
+        if (investisseurSection) investisseurSection.classList.remove('hidden');
+        if (travailleurSection) travailleurSection.classList.add('hidden');
         travailleurItems.forEach(item => item.checked = false);
     } else if (profil === 'travailleur') {
-        investisseurSection.classList.add('hidden');
-        travailleurSection.classList.remove('hidden');
+        if (investisseurSection) investisseurSection.classList.add('hidden');
+        if (travailleurSection) travailleurSection.classList.remove('hidden');
         investisseurItems.forEach(item => item.checked = false);
     } else {
-        investisseurSection.classList.add('hidden');
-        travailleurSection.classList.add('hidden');
+        if (investisseurSection) investisseurSection.classList.add('hidden');
+        if (travailleurSection) travailleurSection.classList.add('hidden');
         investisseurItems.forEach(item => item.checked = false);
         travailleurItems.forEach(item => item.checked = false);
     }
@@ -27,17 +27,41 @@ function updateDynamicFields() {
     validateForm();
 }
 
-function forceNouveauTitreOnly() {
+function getSelectedTypeDemandeLabel() {
     const type = document.getElementById('typeDemande');
-    if (!type) return;
+    if (!type || !type.selectedOptions || !type.selectedOptions.length) return '';
+    return (type.selectedOptions[0].textContent || '').trim().toLowerCase();
+}
 
-    const options = Array.from(type.options || []);
-    const nouveauTitreOption = options.find(option =>
-        option.textContent && option.textContent.trim().toLowerCase() === 'nouveau titre'
-    );
+function updateDuplicataBlock() {
+    const isDuplicata = getSelectedTypeDemandeLabel() === 'duplicata';
+    const duplicataBlock = document.getElementById('duplicataBlock');
+    const categorieDemande = document.getElementById('categorieDemande');
+    const typeDocument = document.getElementById('typeDocument');
 
-    if (nouveauTitreOption) {
-        type.value = nouveauTitreOption.value;
+    if (duplicataBlock) {
+        duplicataBlock.classList.toggle('hidden', !isDuplicata);
+    }
+
+    if (categorieDemande && isDuplicata) {
+        categorieDemande.value = 'Duplicata';
+    }
+
+    if (typeDocument && isDuplicata && !typeDocument.value) {
+        typeDocument.value = 'Titre de residence';
+    }
+
+    validateForm();
+}
+
+function syncCategorieWithTypeDemande() {
+    const type = document.getElementById('typeDemande');
+    const categorieDemande = document.getElementById('categorieDemande');
+    if (!type || !categorieDemande || !type.selectedOptions || !type.selectedOptions.length) return;
+
+    const selectedLabel = (type.selectedOptions[0].textContent || '').trim();
+    if (selectedLabel) {
+        categorieDemande.value = selectedLabel;
     }
 }
 
@@ -47,9 +71,13 @@ window.addEventListener('DOMContentLoaded', function() {
 
     profilRadios.forEach(radio => radio.addEventListener('change', updateDynamicFields));
     if (typeDemandeInput) {
-        typeDemandeInput.addEventListener('change', forceNouveauTitreOnly);
+        typeDemandeInput.addEventListener('change', function () {
+            syncCategorieWithTypeDemande();
+            updateDuplicataBlock();
+        });
     }
 
-    forceNouveauTitreOnly();
+    syncCategorieWithTypeDemande();
+    updateDuplicataBlock();
     updateDynamicFields();
 });
