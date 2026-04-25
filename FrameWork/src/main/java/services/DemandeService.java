@@ -93,7 +93,10 @@ public class DemandeService {
 
         Demande demande = buildDemandeFromForm(formData);
 
-        StatutDemande statut = referenceDao.findStatutByLibelle("demande creee");
+        StatutDemande statut = resolveStatusForForm(formData);
+        if (statut == null) {
+            statut = referenceDao.findStatutByLibelle("demande creee");
+        }
         if (statut == null) {
             throw new IllegalArgumentException("Le statut 'demande creee' est introuvable en base.");
         }
@@ -148,7 +151,13 @@ public class DemandeService {
             return null;
         }
 
-        String libelle = typeDemande.getLibelle().toLowerCase();
+        String libelle = typeDemande.getLibelle().trim().toLowerCase();
+        boolean visaApprouveConfirme = isTrueValue(stringValueAny(formData, "visaApprouveConfirme", "visa_approuve_confirme"));
+
+        if (!libelle.contains("nouveau") && visaApprouveConfirme) {
+            return referenceDao.findStatutByLibelle("Valide");
+        }
+
         if (libelle.contains("visa")) {
             return referenceDao.findStatutByLibelle("Valide");
         }
@@ -185,7 +194,10 @@ public class DemandeService {
         Demande demande = buildDemandeFromForm(formData);
         demande.setId(demandeId);
 
-        StatutDemande statut = referenceDao.findStatutByLibelle("demande creee");
+        StatutDemande statut = resolveStatusForForm(formData);
+        if (statut == null) {
+            statut = referenceDao.findStatutByLibelle("demande creee");
+        }
         if (statut != null) {
             demande.setStatut(statut);
         } else {
@@ -511,6 +523,18 @@ public class DemandeService {
         if (value == null || value.isEmpty()) {
             errors.put(canonicalKey, "Champ obligatoire manquant");
         }
+    }
+
+    private boolean isTrueValue(String rawValue) {
+        if (rawValue == null) {
+            return false;
+        }
+        String normalized = rawValue.trim().toLowerCase();
+        return "true".equals(normalized)
+            || "on".equals(normalized)
+            || "1".equals(normalized)
+            || "oui".equals(normalized)
+            || "yes".equals(normalized);
     }
 
     private long ensurePasseportId(Map<String, Object> formData) throws SQLException {

@@ -124,9 +124,8 @@ function initializeSelectAllPieces() {
         const targetSection = targetSectionId ? document.getElementById(targetSectionId) : null;
         if (!targetSection) return;
 
-        const pieceCheckboxes = getPieceCheckboxes(targetSection);
-
         selectAllInput.addEventListener('change', function () {
+            const pieceCheckboxes = getPieceCheckboxes(targetSection);
             pieceCheckboxes.forEach(checkbox => {
                 checkbox.checked = selectAllInput.checked;
             });
@@ -134,7 +133,7 @@ function initializeSelectAllPieces() {
             validateForm();
         });
 
-        pieceCheckboxes.forEach(checkbox => {
+        getPieceCheckboxes(targetSection).forEach(checkbox => {
             checkbox.addEventListener('change', function () {
                 updateSelectAllState(targetSectionId);
             });
