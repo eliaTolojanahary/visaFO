@@ -9,4 +9,7 @@ FrameWork/build/
 FrameWork copy/
 
 # PR review 
-PR_TEMPLATE.md
+*.md
+!README.md
+
+
