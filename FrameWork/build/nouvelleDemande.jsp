@@ -38,7 +38,7 @@
 <div class="container">
     <header>
         <h1><%= pageTitle %></h1>
-        <p>Formulaire pour la demande de Nouveau titre, avec affichage conditionnel des champs selon le profil.</p>
+        <p>Recherche demandeur puis creation d'une demande (visa, titre de residence, duplicata) avec validation metier cote front.</p>
     </header>
 
     <% if (request.getAttribute("message") != null) { %>
@@ -50,6 +50,59 @@
     <% } %>
 
     <div id="globalMessage" class="hidden"></div>
+
+    <div class="form-section search-section">
+        <h2>Recherche demandeur</h2>
+        <p class="hint-text">Renseignez au moins le numero de passeport ou le triplet nom / prenom / date de naissance.</p>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="searchNom">Nom</label>
+                <input type="text" id="searchNom" placeholder="Ex: RAKOTO" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="searchPrenom">Prenom</label>
+                <input type="text" id="searchPrenom" placeholder="Ex: Aina" autocomplete="off">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="searchDateNaissance">Date de naissance</label>
+                <input type="date" id="searchDateNaissance">
+            </div>
+            <div class="form-group">
+                <label for="searchNumeroPasseport">Numero passeport</label>
+                <input type="text" id="searchNumeroPasseport" placeholder="Ex: M123456" autocomplete="off">
+            </div>
+        </div>
+        <div class="search-actions-row">
+            <button type="button" id="runRechercheBtn" class="btn-alt">Rechercher</button>
+            <span id="searchStatusText" class="hint-text"></span>
+        </div>
+
+        <div id="searchFound" class="search-result success-banner hidden">
+            <h3>Demandeur trouve</h3>
+            <div class="result-grid">
+                <div>
+                    <h4>Infos demandeur</h4>
+                    <ul class="meta-list compact" id="foundDemandeurInfo"></ul>
+                </div>
+                <div>
+                    <h4>Infos passeport</h4>
+                    <ul class="meta-list compact" id="foundPasseportInfo"></ul>
+                </div>
+            </div>
+            <div class="search-actions-row">
+                <button type="button" id="useFoundDataBtn">Reutiliser ces informations</button>
+                <label for="nextTypeDemande" class="inline-label">Nouvelle demande</label>
+                <select id="nextTypeDemande"></select>
+                <button type="button" id="applyNextTypeBtn" class="btn-alt">Appliquer</button>
+            </div>
+        </div>
+
+        <div id="searchNotFound" class="search-result warning-banner hidden">
+            Aucun demandeur trouve, veuillez remplir le formulaire pour creer une nouvelle demande.
+        </div>
+    </div>
 
     <form id="demandeForm" action="<%= formAction %>" method="post" novalidate>
         <% if (editMode) { %>
@@ -86,6 +139,7 @@
                     <div id="profilError" class="error-text"></div>
                 </div>
             </div>
+            <p class="hint-text">Si le type est <strong>Duplicata</strong>, le bloc duplicata ci-dessous devient obligatoire.</p>
         </div>
 
         <div class="form-section">
@@ -224,11 +278,43 @@
                     <label for="categorieDemande">Catégorie de demande <span class="required">*</span></label>
                     <select id="categorieDemande" name="categorieDemande" required>
                         <option value="">Sélectionner</option>
-                        <option value="Nouveau titre" selected>Nouveau titre</option>
+                        <option value="Nouveau titre" <%= "Nouveau titre".equals(String.valueOf(formData.get("categorieDemande"))) ? "selected" : "" %>>Nouveau titre</option>
+                        <option value="Duplicata" <%= "Duplicata".equals(String.valueOf(formData.get("categorieDemande"))) ? "selected" : "" %>>Duplicata</option>
+                        <option value="Transfert visa" <%= "Transfert visa".equals(String.valueOf(formData.get("categorieDemande"))) ? "selected" : "" %>>Transfert visa</option>
                     </select>
                     <div id="categorieDemandeError" class="error-text"></div>
                 </div>
             </div>
+        </div>
+
+        <div id="duplicataBlock" class="form-section hidden">
+            <h2>Bloc duplicata</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="visaApprouveConfirme" name="visaApprouveConfirme" value="true" <%= "true".equalsIgnoreCase(String.valueOf(formData.get("visaApprouveConfirme"))) ? "checked" : "" %>>
+                        Le demandeur confirme qu'il avait deja un visa approuve <span class="required">*</span>
+                    </label>
+                    <div id="visaApprouveConfirmeError" class="error-text"></div>
+                </div>
+                <div class="form-group">
+                    <label for="typeDocument">Type de document <span class="required">*</span></label>
+                    <select id="typeDocument" name="typeDocument">
+                        <option value="">Selectionner</option>
+                        <option value="Titre de residence" selected>Titre de residence</option>
+                    </select>
+                    <div id="typeDocumentError" class="error-text"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="previousDemandeRef">Ancienne reference (optionnel)</label>
+                <input type="text" id="previousDemandeRef" name="previousDemandeRef" value="<%= formData.get("previousDemandeRef") != null ? formData.get("previousDemandeRef") : "" %>" placeholder="Ex: 20240112-102233-VISA">
+            </div>
+            <div class="form-group">
+                <label for="mentionDossier">Mention dossier</label>
+                <input type="text" id="mentionDossier" readonly value="Duplicata - antecedent non retrouve">
+            </div>
+            <div id="duplicataPieceError" class="error-text"></div>
         </div>
 
         <div id="piecesCommunes" class="form-section">
@@ -303,5 +389,6 @@
 
 <script src="<%= ctx %>/js/dynamicFields.js"></script>
 <script src="<%= ctx %>/js/validation.js"></script>
+<script src="<%= ctx %>/js/searchFlow.js"></script>
 </body>
 </html>
