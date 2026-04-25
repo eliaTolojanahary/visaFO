@@ -1,9 +1,24 @@
 @echo off
+rem --- Chargement des variables d'environnement depuis .env ---
+setlocal enabledelayedexpansion
+set "ENV_FILE=%~dp0..\\.env"
+if exist "!ENV_FILE!" (
+    echo Chargement des variables d'environnement depuis .env...
+    for /f "tokens=1,2 delims==" %%A in ('findstr /v "^#" "!ENV_FILE!" ^| findstr /v "^$") do (
+        if not "%%B"=="" (
+            set "%%A=%%B"
+            echo   - %%A défini
+        )
+    )
+) else (
+    echo Avertissement: Fichier .env non trouvé. Utilisation des valeurs par défaut.
+)
+
 rem --- Configuration des chemins (ne pas inclure de guillemets dans la valeur) ---
 set "PROJECT_PATH=%~dp0"
 set "BUILD_PATH=%PROJECT_PATH%build"
 set "WEBAPP_PATH=%PROJECT_PATH%src\main\webapp"
-set "CATALINA_HOME=C:\xampp\tomcat"
+if "!CATALINA_HOME!"=="" set "CATALINA_HOME=C:\xampp\tomcat"
 set "LIB_PATH=%PROJECT_PATH%lib"
 set "COMMON_CLASSPATH=%BUILD_PATH%\WEB-INF\classes;%CATALINA_HOME%\lib\servlet-api.jar;%LIB_PATH%\*"
 set "APP_WAR=visa.war"
