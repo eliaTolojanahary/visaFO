@@ -3,7 +3,7 @@ rem --- Configuration des chemins (ne pas inclure de guillemets dans la valeur) 
 set "PROJECT_PATH=%~dp0"
 set "BUILD_PATH=%PROJECT_PATH%build"
 set "WEBAPP_PATH=%PROJECT_PATH%src\main\webapp"
-set "CATALINA_HOME=C:\xampp\tomcat"
+set "CATALINA_HOME=D:\PERS\MIOTY\s6\apache-tomcat-9.0.117"
 set "LIB_PATH=%PROJECT_PATH%lib"
 set "COMMON_CLASSPATH=%BUILD_PATH%\WEB-INF\classes;%CATALINA_HOME%\lib\servlet-api.jar;%LIB_PATH%\*"
 set "APP_WAR=visa.war"

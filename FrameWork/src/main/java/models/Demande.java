@@ -12,6 +12,8 @@ public class Demande {
     private LocalDate visa_date_entree;
     private String visa_lieu_entree;
     private LocalDate visa_date_expiration;
+    private String ref_demande;
+    private TypeDocument type_document;
     private Timestamp created_at;
     private Timestamp updated_at;
 
@@ -38,6 +40,12 @@ public class Demande {
 
     public LocalDate getVisa_date_expiration() { return visa_date_expiration; }
     public void setVisa_date_expiration(LocalDate visa_date_expiration) { this.visa_date_expiration = visa_date_expiration; }
+
+    public String getRef_demande() { return ref_demande; }
+    public void setRef_demande(String ref_demande) { this.ref_demande = ref_demande; }
+
+    public TypeDocument getType_document() { return type_document; }
+    public void setType_document(TypeDocument type_document) { this.type_document = type_document; }
 
     public Timestamp getCreated_at() { return created_at; }
     public void setCreated_at(Timestamp created_at) { this.created_at = created_at; }
