@@ -1,5 +1,8 @@
 package services;
 
+import dao.DemandeDao;
+import dao.PieceJustificativeDao;
+import dao.ReferenceVisaDao;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -13,10 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import dao.DemandeDao;
-import dao.PieceJustificativeDao;
-import dao.ReferenceVisaDao;
 import models.Demande;
 import models.Nationalite;
 import models.Passeport;
@@ -431,6 +430,39 @@ public class DemandeService {
             dashboard.put("updatedAt", rs.getTimestamp("demande_updated_at"));
             return dashboard;
         }
+    }
+
+    public List<Map<String, Object>> getDashboardDemandesData() throws SQLException {
+        String sql = "SELECT d.id AS demande_id, dm.nom, dm.prenom, td.libelle AS type_demande_libelle, "
+            + "COALESCE(tt.libelle, '-') AS type_titre_libelle, sd.libelle AS statut_libelle, d.updated_at "
+            + "FROM demande d "
+            + "JOIN passeport p ON p.id = d.passeport_id "
+            + "JOIN demandeur dm ON dm.id = p.demandeur_id "
+            + "JOIN type_demande td ON td.id = d.type_demande_id "
+            + "LEFT JOIN type_titre tt ON tt.id = d.type_titre_id "
+            + "JOIN statut_demande sd ON sd.id = d.statut_id "
+            + "ORDER BY d.updated_at DESC, d.id DESC "
+            + "LIMIT 30";
+
+        List<Map<String, Object>> demandes = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("demande_id", String.valueOf(rs.getLong("demande_id")));
+                row.put("nom", rs.getString("nom"));
+                row.put("prenom", rs.getString("prenom"));
+                row.put("typeDemandeLibelle", rs.getString("type_demande_libelle"));
+                row.put("typeTitreLibelle", rs.getString("type_titre_libelle"));
+                row.put("statutLibelle", rs.getString("statut_libelle"));
+                row.put("updatedAt", rs.getTimestamp("updated_at"));
+                demandes.add(row);
+            }
+        }
+
+        return demandes;
     }
 
     public Demande searchBy(String column, Object value) throws SQLException {

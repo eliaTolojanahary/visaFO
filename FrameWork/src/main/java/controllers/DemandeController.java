@@ -4,6 +4,8 @@ import annotation.ClasseAnnotation;
 import annotation.GetMapping;
 import annotation.MethodeAnnotation;
 import annotation.PostMapping;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -100,16 +102,45 @@ public class DemandeController {
 
     @MethodeAnnotation("/dashboard")
     @GetMapping
-    public ModelView dashboard() {
+    public ModelView dashboard(Map<String, Object> queryParams) {
         ModelView mv = new ModelView("/resultDemande.jsp");
         try {
             rechargeFormData(mv);
             mv.addData("dashboardMode", true);
             mv.addData("latestDemande", demandeService.getLatestDemandeDashboardData());
+            mv.addData("dashboardDemandes", demandeService.getDashboardDemandesData());
+
+            String success = queryParams != null && queryParams.get("success") != null
+                ? String.valueOf(queryParams.get("success"))
+                : null;
+            String action = queryParams != null && queryParams.get("action") != null
+                ? String.valueOf(queryParams.get("action"))
+                : null;
+            String message = queryParams != null && queryParams.get("message") != null
+                ? String.valueOf(queryParams.get("message"))
+                : null;
+            String highlightId = queryParams != null && queryParams.get("highlightId") != null
+                ? String.valueOf(queryParams.get("highlightId"))
+                : null;
+
+            if ("1".equals(success)) {
+                mv.addData("success", true);
+                mv.addData("action", action);
+                mv.addData("message", message);
+            }
+
+            if (highlightId != null && !highlightId.isEmpty()) {
+                mv.addData("highlightDemandeId", highlightId);
+            }
         } catch (SQLException e) {
             mv.addData("error", "Erreur de chargement du tableau de bord: " + e.getMessage());
         }
         return mv;
+    }
+
+    private String dashboardRedirectUrl(String action, long highlightId, String message) {
+        String encodedMessage = URLEncoder.encode(message, StandardCharsets.UTF_8);
+        return "redirect:/dashboard?success=1&action=" + action + "&highlightId=" + highlightId + "&message=" + encodedMessage;
     }
 
     // CORRIGÉ: Enregistrement demande
@@ -123,22 +154,26 @@ public class DemandeController {
             if (existingDemandeId != null) {
                 formData.put("demande_id", String.valueOf(existingDemandeId));
                 boolean updated = demandeService.updateDemande(formData);
-                mv.addData("success", updated);
-                mv.addData("action", "update");
-                mv.addData("message", updated
-                    ? "Une demande existe deja pour ce numero de passeport. Elle a ete mise a jour."
-                    : "Aucune demande existante n'a pu etre mise a jour.");
-                mv.addData("dashboardMode", true);
-                mv.addData("latestDemande", demandeService.getLatestDemandeDashboardData());
-                return mv;
+                if (updated) {
+                    return new ModelView(dashboardRedirectUrl(
+                        "update",
+                        existingDemandeId,
+                        "Une demande existe deja pour ce numero de passeport. Elle a ete mise a jour."
+                    ));
+                }
+                return new ModelView(dashboardRedirectUrl(
+                    "update",
+                    existingDemandeId,
+                    "Aucune demande existante n a pu etre mise a jour."
+                ));
             }
 
             Demande demande = demandeService.saveDemande(formData);
-            mv.addData("success", true);
-            mv.addData("demande", demande);
-            mv.addData("message", "Demande enregistrée avec le statut 'demande creee'.");
-            mv.addData("dashboardMode", true);
-            mv.addData("latestDemande", demandeService.getLatestDemandeDashboardData());
+            return new ModelView(dashboardRedirectUrl(
+                "create",
+                demande.getId(),
+                "Demande enregistree avec succes."
+            ));
         } catch (SQLException e) {
             mv.setView("/nouvelleDemande.jsp");
             mv.addData("success", false);
@@ -221,11 +256,17 @@ public class DemandeController {
 
         try {
             boolean updated = demandeService.updateDemande(formData);
-            mv.addData("success", updated);
-            mv.addData("message", updated ? "Demande mise à jour avec succès." : "Aucune demande mise à jour.");
-            mv.addData("action", "update");
+            if (updated) {
+                String idRaw = formData.get("demande_id") != null ? String.valueOf(formData.get("demande_id")) : "0";
+                long demandeId = Long.parseLong(idRaw);
+                return new ModelView(dashboardRedirectUrl("update", demandeId, "Demande mise a jour avec succes."));
+            }
+
+            mv.addData("success", false);
+            mv.addData("error", "Aucune demande mise a jour.");
             mv.addData("dashboardMode", true);
             mv.addData("latestDemande", demandeService.getLatestDemandeDashboardData());
+            mv.addData("dashboardDemandes", demandeService.getDashboardDemandesData());
         } catch (SQLException e) {
             mv.setView("/nouvelleDemande.jsp");
             mv.addData("success", false);
