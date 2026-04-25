@@ -181,6 +181,13 @@ button:disabled {
     cursor: not-allowed;
 }
 
+.form-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
 .btn-alt {
     background: #e8eef7;
     color: #1a4a7a;
@@ -270,6 +277,11 @@ button:disabled {
 .badge-gray {
     background: #edf1f6;
     color: #506075;
+}
+
+.demand-row-highlight {
+    background: #fffbe8;
+    border-left: 4px solid #f39c12;
 }
 
 .hidden {
