@@ -119,6 +119,15 @@ textarea:focus {
     margin-bottom: 20px;
 }
 
+.warning-banner {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    background: #fff7e6;
+    color: #9a6500;
+    border-left: 4px solid #f39c12;
+}
+
 .error-banner {
     background: #fdecea;
     color: #9d1a1a;
@@ -154,6 +163,97 @@ button:hover:not(:disabled) {
 button:disabled {
     opacity: 0.55;
     cursor: not-allowed;
+}
+
+.btn-alt {
+    background: #e8eef7;
+    color: #1a4a7a;
+}
+
+.btn-alt:hover:not(:disabled) {
+    background: #d4dfe9;
+}
+
+.hint-text {
+    margin-top: 0;
+    color: #4c5d73;
+    font-size: 0.92rem;
+}
+
+.search-section {
+    border: 1px solid #e2eaf5;
+}
+
+.search-actions-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.search-result {
+    margin-top: 16px;
+}
+
+.result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.meta-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.meta-list li {
+    margin-bottom: 7px;
+}
+
+.meta-list.compact li {
+    margin-bottom: 5px;
+    font-size: 0.92rem;
+}
+
+.inline-label {
+    margin: 0;
+    font-weight: 600;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.badge-orange {
+    background: #fff1da;
+    color: #915c00;
+}
+
+.badge-blue {
+    background: #e4efff;
+    color: #1f4f9a;
+}
+
+.badge-green {
+    background: #e2f6ea;
+    color: #1f7a42;
+}
+
+.badge-red {
+    background: #fce8e8;
+    color: #b2271a;
+}
+
+.badge-gray {
+    background: #edf1f6;
+    color: #506075;
 }
 
 .hidden {

@@ -87,6 +87,19 @@
         .card-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
         .meta-list { margin: 0; padding: 0; list-style: none; }
         .meta-list li { margin-bottom: 8px; }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+        .badge-orange { background: #fff1da; color: #915c00; }
+        .badge-blue { background: #e4efff; color: #1f4f9a; }
+        .badge-green { background: #e2f6ea; color: #1f7a42; }
+        .badge-red { background: #fce8e8; color: #b2271a; }
+        .badge-gray { background: #edf1f6; color: #506075; }
     </style>
 </head>
 <body>
@@ -120,6 +133,21 @@
         @SuppressWarnings("unchecked")
         Map<String, Object> latestDemande = (Map<String, Object>) request.getAttribute("latestDemande");
         boolean dashboardMode = Boolean.TRUE.equals(request.getAttribute("dashboardMode"));
+
+        String latestTypeDemande = latestDemande != null && latestDemande.get("typeDemandeLibelle") != null
+            ? String.valueOf(latestDemande.get("typeDemandeLibelle"))
+            : "";
+        String latestStatut = latestDemande != null && latestDemande.get("statutLibelle") != null
+            ? String.valueOf(latestDemande.get("statutLibelle"))
+            : "";
+
+        String statusClass = "badge-gray";
+        if (latestStatut.equalsIgnoreCase("En cours de traitement")) statusClass = "badge-blue";
+        else if (latestStatut.equalsIgnoreCase("En attente")) statusClass = "badge-orange";
+        else if (latestStatut.equalsIgnoreCase("Valide")) statusClass = "badge-green";
+        else if (latestStatut.equalsIgnoreCase("Refuse")) statusClass = "badge-red";
+
+        boolean duplicata = latestTypeDemande.equalsIgnoreCase("Duplicata");
     %>
 
     <div class="dashboard-grid">
@@ -138,9 +166,18 @@
                     <li><strong>Nom:</strong> <%= latestDemande.get("nom") != null ? latestDemande.get("nom") : "-" %></li>
                     <li><strong>Prénom:</strong> <%= latestDemande.get("prenom") != null ? latestDemande.get("prenom") : "-" %></li>
                     <li><strong>Numéro passeport:</strong> <%= latestDemande.get("numeroPasseport") != null ? latestDemande.get("numeroPasseport") : "-" %></li>
-                    <li><strong>Type de demande:</strong> <%= latestDemande.get("typeDemandeLibelle") != null ? latestDemande.get("typeDemandeLibelle") : "-" %></li>
+                    <li><strong>Type de demande:</strong> <%= latestDemande.get("typeDemandeLibelle") != null ? latestDemande.get("typeDemandeLibelle") : "-" %>
+                        <% if (duplicata) { %>
+                            <span class="badge badge-orange" style="margin-left:8px;">Duplicata - antecedent non retrouve</span>
+                        <% } %>
+                    </li>
                     <li><strong>Type de titre:</strong> <%= latestDemande.get("typeTitreLibelle") != null ? latestDemande.get("typeTitreLibelle") : "-" %></li>
-                    <li><strong>Statut:</strong> <%= latestDemande.get("statutLibelle") != null ? latestDemande.get("statutLibelle") : "-" %></li>
+                    <li><strong>Statut:</strong>
+                        <span class="badge <%= statusClass %>"><%= latestDemande.get("statutLibelle") != null ? latestDemande.get("statutLibelle") : "-" %></span>
+                    </li>
+                    <% if (duplicata) { %>
+                        <li><strong>Visa approuve:</strong> <span class="badge badge-green">Confirme par agent</span></li>
+                    <% } %>
                     <li><strong>Date de création:</strong> <%= latestDemande.get("createdAt") != null ? latestDemande.get("createdAt") : "-" %></li>
                 </ul>
                 <div class="card-actions">
