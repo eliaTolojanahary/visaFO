@@ -164,6 +164,14 @@
             </div>
         </div>
 
+        <div class='card' >
+            <h2>Faire un scan sur un document</h2>
+            <p>Commencer une nouvelle demande de visa ou ouvrir le formulaire pour une modification.</p>
+            <div class="card-actions">
+                <a href='<%= ctx %>/form/scan' class="btn-primary">Faire un scan</a>
+            </div>
+        </div>
+
         <div class="card">
             <h2>Dernière demande</h2>
             <% if (latestDemande != null) { %>
