@@ -457,14 +457,14 @@ public class FrontServlet extends HttpServlet {
                         }
                     } else if (result instanceof String) {
                         resp.setContentType("text/html;charset=UTF-8");
-                        out.println("<html lang='fr'><head><title>Test</title></head><body><h1>Check d'url </h1>");
+                        out.println("<html><head><title>Test</title></head><body><h1>Check d'url </h1>");
                         out.println("<h2>Résultat</h2>");
                         out.println("<p>" + (String) result + "</p>");
                         out.println("</body></html>");
                         return;
                     } else {
                         resp.setContentType("text/html;charset=UTF-8");
-                        out.println("<html lang='fr'><head><title>Test</title></head><body><h1>Check d'url </h1>");
+                        out.println("<html><head><title>Test</title></head><body><h1>Check d'url </h1>");
                         out.println("<h2>Route trouvée</h2>");
                         out.println("<p>Classe: " + foundClassRef.getName() + "</p>");
                         out.println("<p>Méthode: " + foundMethodRef.getName() + "</p>");
@@ -486,7 +486,7 @@ public class FrontServlet extends HttpServlet {
                     } else {
                         resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                         resp.setContentType("text/html;charset=UTF-8");
-                        out.println("<html lang='fr'><head><title>Test</title></head><body><h1>Check d'url </h1>");
+                        out.println("<html><head><title>Test</title></head><body><h1>Check d'url </h1>");
                         out.println("<h2>400 - Paramètre invalide</h2>");
                         out.println("<p>" + argError.getMessage() + "</p>");
                         out.println("</body></html>");
@@ -507,7 +507,7 @@ public class FrontServlet extends HttpServlet {
                     } else {
                         resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                         resp.setContentType("text/html;charset=UTF-8");
-                        out.println("<html lang='fr'><head><title>Test</title></head><body><h1>Check d'url </h1>");
+                        out.println("<html><head><title>Test</title></head><body><h1>Check d'url </h1>");
                         out.println("<h2>500 - Erreur invocation</h2>");
                         out.println("<pre>" + invokeError + "</pre>");
                         out.println("</body></html>");
@@ -517,7 +517,7 @@ public class FrontServlet extends HttpServlet {
             } else {
                 resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 resp.setContentType("text/html;charset=UTF-8");
-                out.println("<html lang='fr'><head><title>Test</title></head><body><h1>Check d'url </h1>");
+                out.println("<html><head><title>Test</title></head><body><h1>Check d'url </h1>");
                 out.println("<h2>404 - Not found</h2>");
                 out.println("</body></html>");
                 return;
@@ -724,7 +724,7 @@ public class FrontServlet extends HttpServlet {
     private void showUnauthorizedMessage(HttpServletResponse resp, PrintWriter out, String message) throws IOException {
         resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
         resp.setContentType("text/html;charset=UTF-8");
-        out.println("<html lang='fr'><head><title>Accès refusé</title></head><body>");
+        out.println("<html><head><title>Accès refusé</title></head><body>");
         out.println("<h2>Accès refusé</h2>");
         out.println("<p>" + message + "</p>");
         out.println("</body></html>");
