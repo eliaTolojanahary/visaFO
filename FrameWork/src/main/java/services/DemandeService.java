@@ -1,5 +1,8 @@
 package services;
 
+import dao.DemandeDao;
+import dao.PieceJustificativeDao;
+import dao.ReferenceVisaDao;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -13,10 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import dao.DemandeDao;
-import dao.PieceJustificativeDao;
-import dao.ReferenceVisaDao;
 import models.Demande;
 import models.Nationalite;
 import models.Passeport;
@@ -94,7 +93,10 @@ public class DemandeService {
 
         Demande demande = buildDemandeFromForm(formData);
 
-        StatutDemande statut = referenceDao.findStatutByLibelle("demande creee");
+        StatutDemande statut = resolveStatusForForm(formData);
+        if (statut == null) {
+            statut = referenceDao.findStatutByLibelle("demande creee");
+        }
         if (statut == null) {
             throw new IllegalArgumentException("Le statut 'demande creee' est introuvable en base.");
         }
@@ -149,7 +151,13 @@ public class DemandeService {
             return null;
         }
 
-        String libelle = typeDemande.getLibelle().toLowerCase();
+        String libelle = typeDemande.getLibelle().trim().toLowerCase();
+        boolean visaApprouveConfirme = isTrueValue(stringValueAny(formData, "visaApprouveConfirme", "visa_approuve_confirme"));
+
+        if (!libelle.contains("nouveau") && visaApprouveConfirme) {
+            return referenceDao.findStatutByLibelle("Valide");
+        }
+
         if (libelle.contains("visa")) {
             return referenceDao.findStatutByLibelle("Valide");
         }
@@ -186,7 +194,10 @@ public class DemandeService {
         Demande demande = buildDemandeFromForm(formData);
         demande.setId(demandeId);
 
-        StatutDemande statut = referenceDao.findStatutByLibelle("demande creee");
+        StatutDemande statut = resolveStatusForForm(formData);
+        if (statut == null) {
+            statut = referenceDao.findStatutByLibelle("demande creee");
+        }
         if (statut != null) {
             demande.setStatut(statut);
         } else {
@@ -433,6 +444,39 @@ public class DemandeService {
         }
     }
 
+    public List<Map<String, Object>> getDashboardDemandesData() throws SQLException {
+        String sql = "SELECT d.id AS demande_id, dm.nom, dm.prenom, td.libelle AS type_demande_libelle, "
+            + "COALESCE(tt.libelle, '-') AS type_titre_libelle, sd.libelle AS statut_libelle, d.updated_at "
+            + "FROM demande d "
+            + "JOIN passeport p ON p.id = d.passeport_id "
+            + "JOIN demandeur dm ON dm.id = p.demandeur_id "
+            + "JOIN type_demande td ON td.id = d.type_demande_id "
+            + "LEFT JOIN type_titre tt ON tt.id = d.type_titre_id "
+            + "JOIN statut_demande sd ON sd.id = d.statut_id "
+            + "ORDER BY d.updated_at DESC, d.id DESC "
+            + "LIMIT 30";
+
+        List<Map<String, Object>> demandes = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("demande_id", String.valueOf(rs.getLong("demande_id")));
+                row.put("nom", rs.getString("nom"));
+                row.put("prenom", rs.getString("prenom"));
+                row.put("typeDemandeLibelle", rs.getString("type_demande_libelle"));
+                row.put("typeTitreLibelle", rs.getString("type_titre_libelle"));
+                row.put("statutLibelle", rs.getString("statut_libelle"));
+                row.put("updatedAt", rs.getTimestamp("updated_at"));
+                demandes.add(row);
+            }
+        }
+
+        return demandes;
+    }
+
     public Demande searchBy(String column, Object value) throws SQLException {
         return demandeDao.findBy(column, value);
     }
@@ -479,6 +523,18 @@ public class DemandeService {
         if (value == null || value.isEmpty()) {
             errors.put(canonicalKey, "Champ obligatoire manquant");
         }
+    }
+
+    private boolean isTrueValue(String rawValue) {
+        if (rawValue == null) {
+            return false;
+        }
+        String normalized = rawValue.trim().toLowerCase();
+        return "true".equals(normalized)
+            || "on".equals(normalized)
+            || "1".equals(normalized)
+            || "oui".equals(normalized)
+            || "yes".equals(normalized);
     }
 
     private long ensurePasseportId(Map<String, Object> formData) throws SQLException {
