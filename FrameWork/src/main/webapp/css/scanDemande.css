@@ -1,0 +1,260 @@
+/* ═══════════════════════════════════════════════════════════════
+   scanDemande.css  –  Sprint 3 / feature/scan-front
+   Étend style.css sans le modifier.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Badge violet (statut SCAN TERMINÉ) ─────────────────────── */
+.badge-violet {
+    background: #ede9fe;
+    color: #5b21b6;
+}
+
+/* ── Bandeau dossier verrouillé ─────────────────────────────── */
+.lock-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fce8e8;
+    color: #9d1a1a;
+    border-left: 5px solid #c0392b;
+    padding: 14px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: 600;
+    font-size: 0.97rem;
+}
+
+.lock-icon {
+    font-size: 1.1rem;
+}
+
+/* ── En-tête scan ────────────────────────────────────────────── */
+.scan-header {
+    background: linear-gradient(135deg, #1a4a7a, #3e78b2);
+    color: #fff;
+    border-radius: 10px;
+    padding: 28px 28px 22px;
+    margin-bottom: 25px;
+}
+
+.scan-header__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.scan-header__ref {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+.scan-header__ref-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+}
+
+.scan-header__ref-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.04em;
+}
+
+.scan-header__name {
+    margin: 0 0 6px 0;
+    font-size: 1.85rem;
+    font-weight: 700;
+}
+
+.scan-header__hint {
+    margin: 0;
+    opacity: 0.85;
+    font-size: 0.92rem;
+}
+
+/* Badge dans l'en-tête — fond semi-transparent pour lisibilité */
+.scan-header .badge {
+    border: 1px solid rgba(255,255,255,0.25);
+    backdrop-filter: blur(4px);
+}
+
+/* ── Section progression ─────────────────────────────────────── */
+.progress-section {
+    padding: 18px 25px !important;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.progress-label {
+    font-weight: 600;
+    color: #1a4a7a;
+    font-size: 0.95rem;
+}
+
+.progress-count {
+    font-size: 0.88rem;
+    color: #4c5d73;
+}
+
+.progress-bar-track {
+    height: 8px;
+    background: #e4e9f2;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3e78b2, #27ae60);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+/* ── Liste des pièces ─────────────────────────────────────────── */
+.piece-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.piece-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    background: #f8fafd;
+    border: 1px solid #dce6f2;
+    border-radius: 10px;
+    padding: 14px 18px;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.piece-card--done {
+    background: #f0fbf4;
+    border-color: #a8dab5;
+}
+
+.piece-card__info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 200px;
+}
+
+.piece-card__status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.dot--green { background: #27ae60; box-shadow: 0 0 0 3px rgba(39,174,96,0.18); }
+.dot--gray  { background: #b0bec9; }
+
+.piece-card__label {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.95rem;
+}
+
+.piece-card__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.piece-card__filename {
+    font-size: 0.82rem;
+    color: #4c5d73;
+    font-style: italic;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Bouton petit ─────────────────────────────────────────────── */
+.btn-sm {
+    padding: 8px 16px !important;
+    font-size: 0.88rem !important;
+}
+
+/* ── Badge petit ─────────────────────────────────────────────── */
+.badge-sm {
+    padding: 3px 8px;
+    font-size: 0.78rem;
+}
+
+/* ── Upload progress individuelle ────────────────────────────── */
+.piece-card__upload-progress {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.mini-progress-track {
+    flex: 1;
+    height: 5px;
+    background: #e4e9f2;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.mini-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #3e78b2;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.mini-progress-label {
+    font-size: 0.8rem;
+    color: #4c5d73;
+    white-space: nowrap;
+}
+
+/* ── Erreur individuelle ──────────────────────────────────────── */
+.piece-card__error {
+    width: 100%;
+    color: #d93025;
+    font-size: 0.85rem;
+    margin-top: 4px;
+}
+
+/* ── Actions bas de page ─────────────────────────────────────── */
+.scan-actions {
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+/* ── Input file invisible ────────────────────────────────────── */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 680px) {
+    .scan-header__name { font-size: 1.4rem; }
+    .piece-card { padding: 12px 14px; }
+    .piece-card__filename { max-width: 120px; }
+}
