@@ -63,6 +63,9 @@ Objectif: `start.bat` reste la commande unique pour reconstruire et mettre a jou
 
 ## Execution locale
 
+- Copier .env.example → .env
+- Remplir ses propres valeurs (DB_USER, DB_PASSWORD, CATALINA_HOME)
 - Configurer PostgreSQL et verifier l'utilisateur `postgres`.
 - Lancer `start.bat`.
 - Lancer ensuite l'application via `FrameWork/run_servlet.bat`.
+
