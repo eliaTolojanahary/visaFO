@@ -6,9 +6,17 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DatabaseConnection {
-    private static final String URL = "jdbc:postgresql://localhost:5432/visa";
-    private static final String USER = "postgres";
-    private static final String PASSWORD = "NouveauMotDePasse";
+    private static final String URL = getEnvOrDefault("DB_URL", "jdbc:postgresql://localhost:5432/visa");
+    private static final String USER = getEnvOrDefault("DB_USER", "postgres");
+    private static final String PASSWORD = getEnvOrDefault("DB_PASSWORD", "1234");
+    
+    /**
+     * Récupère une variable d'environnement ou retourne une valeur par défaut
+     */
+    private static String getEnvOrDefault(String key, String defaultValue) {
+        String value = System.getenv(key);
+        return value != null ? value : defaultValue;
+    }
     
     static {
         try {

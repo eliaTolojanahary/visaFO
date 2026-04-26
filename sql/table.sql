@@ -1,9 +1,22 @@
 -- PostgreSQL:
 -- 1) Creer la base (voir create_database.sql)
 -- 2) Executer ce script en etant connecte a la base visa
-DROP DATABASE IF EXISTS visa;
-CREATE DATABASE IF NOT EXISTS visa;
+DROP DATABASE  visa;
+CREATE DATABASE  visa;
 \c visa 
+
+
+DROP TABLE IF EXISTS demande_piece;
+DROP TABLE IF EXISTS demande;
+DROP TABLE IF EXISTS passeport;
+DROP TABLE IF EXISTS piece_justificative_ref;
+DROP TABLE IF EXISTS demandeur;
+DROP TABLE IF EXISTS statut_demande;
+DROP TABLE IF EXISTS type_titre;
+DROP TABLE IF EXISTS type_demande;
+DROP TABLE IF EXISTS nationalite;
+DROP TABLE IF EXISTS situation_famille;
+
 
 CREATE TABLE IF NOT EXISTS situation_famille (
     id SERIAL PRIMARY KEY,

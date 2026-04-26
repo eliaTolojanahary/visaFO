@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -193,13 +194,17 @@ public class DemandeRepository implements DemandeDao {
             demande.setVisa_date_expiration(expiration.toLocalDate());
         }
 
-        demande.setRef_demande(rs.getString("ref_demande"));
+        if (hasColumn(rs, "ref_demande")) {
+            demande.setRef_demande(rs.getString("ref_demande"));
+        }
 
-        long typeDocumentId = rs.getLong("type_document_id");
-        if (!rs.wasNull()) {
-            TypeDocument typeDocument = new TypeDocument();
-            typeDocument.setId(typeDocumentId);
-            demande.setType_document(typeDocument);
+        if (hasColumn(rs, "type_document_id")) {
+            long typeDocumentId = rs.getLong("type_document_id");
+            if (!rs.wasNull()) {
+                TypeDocument typeDocument = new TypeDocument();
+                typeDocument.setId(typeDocumentId);
+                demande.setType_document(typeDocument);
+            }
         }
 
         Timestamp created = rs.getTimestamp("created_at");
@@ -208,6 +213,17 @@ public class DemandeRepository implements DemandeDao {
         demande.setUpdated_at(updated);
 
         return demande;
+    }
+
+    private boolean hasColumn(ResultSet rs, String columnName) throws SQLException {
+        ResultSetMetaData metadata = rs.getMetaData();
+        int count = metadata.getColumnCount();
+        for (int i = 1; i <= count; i++) {
+            if (columnName.equalsIgnoreCase(metadata.getColumnLabel(i))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

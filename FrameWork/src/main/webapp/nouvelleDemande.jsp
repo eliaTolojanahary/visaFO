@@ -42,14 +42,14 @@
     </header>
 
     <% if (request.getAttribute("message") != null) { %>
-        <div class="success-message"><%= request.getAttribute("message") %></div>
+        <div class="success-banner"><%= request.getAttribute("message") %></div>
     <% } %>
 
     <% if (request.getAttribute("error") != null) { %>
-        <div id="globalMessage" class="error-banner"><%= request.getAttribute("error") %></div>
+        <div class="error-banner"><%= request.getAttribute("error") %></div>
     <% } %>
 
-    <div id="globalMessage" class="hidden"></div>
+    <div id="globalMessage" class="hidden" role="alert" aria-live="assertive"></div>
 
     <div class="form-section search-section">
         <h2>Recherche demandeur</h2>
@@ -319,6 +319,12 @@
 
         <div id="piecesCommunes" class="form-section">
             <h2>Pièces justificatives communes <span class="required">*</span></h2>
+            <div class="select-all-row">
+                <label>
+                    <input type="checkbox" class="js-select-all-pieces" data-target-section="piecesCommunes">
+                    Tout sélectionner
+                </label>
+            </div>
             <div class="checkbox-group">
                 <%
                 List<PieceJustificative> piecesCommunes = (List<PieceJustificative>) request.getAttribute("piecesCommunes");
@@ -341,6 +347,12 @@
 
         <div id="piecesInvestisseur" class="form-section hidden">
             <h2>Pièces Investisseur <span class="required">*</span></h2>
+            <div class="select-all-row">
+                <label>
+                    <input type="checkbox" class="js-select-all-pieces" data-target-section="piecesInvestisseur">
+                    Tout sélectionner
+                </label>
+            </div>
             <div class="checkbox-group">
                 <%
                 List<PieceJustificative> piecesInvestisseur = (List<PieceJustificative>) request.getAttribute("piecesInvestisseur");
@@ -363,6 +375,12 @@
 
         <div id="piecesTravailleur" class="form-section hidden">
             <h2>Pièces Travailleur <span class="required">*</span></h2>
+            <div class="select-all-row">
+                <label>
+                    <input type="checkbox" class="js-select-all-pieces" data-target-section="piecesTravailleur">
+                    Tout sélectionner
+                </label>
+            </div>
             <div class="checkbox-group">
                 <%
                 List<PieceJustificative> piecesTravailleur = (List<PieceJustificative>) request.getAttribute("piecesTravailleur");
@@ -383,12 +401,42 @@
             <div id="pieceTravailleurError" class="error-text"></div>
         </div>
 
-        <button type="submit" id="submitBtn" disabled><%= submitLabel %></button>
+        <div class="form-actions">
+            <button type="button" id="reviewBtn" disabled>Voir le recapitulatif</button>
+            <button type="submit" id="submitBtn" class="hidden"><%= submitLabel %></button>
+        </div>
+
+        <div id="recapSection" class="form-section hidden" aria-live="polite">
+            <h2>Recapitulatif avant soumission</h2>
+            <p class="hint-text">Verifiez les informations ci-dessous. Vous pouvez revenir en modification avant la confirmation finale.</p>
+
+            <div class="result-grid">
+                <div>
+                    <h3>Demandeur</h3>
+                    <ul id="recapDemandeur" class="meta-list compact"></ul>
+                </div>
+                <div>
+                    <h3>Demande</h3>
+                    <ul id="recapDemande" class="meta-list compact"></ul>
+                </div>
+            </div>
+
+            <div style="margin-top: 16px;">
+                <h3>Pieces justificatives cochees</h3>
+                <ul id="recapPieces" class="meta-list compact"></ul>
+            </div>
+
+            <div class="form-actions" style="margin-top: 20px;">
+                <button type="button" id="backToEditBtn" class="btn-alt">Modifier mes donnees</button>
+                <button type="button" id="confirmSubmitBtn">Soumettre la demande</button>
+            </div>
+        </div>
     </form>
 </div>
 
 <script src="<%= ctx %>/js/dynamicFields.js"></script>
 <script src="<%= ctx %>/js/validation.js"></script>
 <script src="<%= ctx %>/js/searchFlow.js"></script>
+<script src="<%= ctx %>/js/recap.js"></script>
 </body>
 </html>
