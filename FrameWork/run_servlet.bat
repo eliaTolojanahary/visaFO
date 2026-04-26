@@ -1,20 +1,20 @@
 @echo off
 rem --- Chargement des variables d'environnement depuis .env ---
 setlocal enabledelayedexpansion
-set "ENV_FILE=%~dp0..\\.env"
+set "ENV_FILE=%~dp0.env"
 if exist "!ENV_FILE!" (
     echo Chargement des variables d'environnement depuis .env...
     for /f "tokens=1,2 delims==" %%A in ('findstr /v "^#" "!ENV_FILE!" ^| findstr /v "^$") do (
         if not "%%B"=="" (
             set "%%A=%%B"
-            echo   - %%A défini
+            echo   - %%A defini
         )
     )
 ) else (
-    echo Avertissement: Fichier .env non trouvé. Utilisation des valeurs par défaut.
+    echo Avertissement: Fichier .env non trouve. Utilisation des valeurs par defaut.
 )
 
-rem --- Configuration des chemins (ne pas inclure de guillemets dans la valeur) ---
+rem --- Configuration des chemins ---
 set "PROJECT_PATH=%~dp0"
 set "BUILD_PATH=%PROJECT_PATH%build"
 set "WEBAPP_PATH=%PROJECT_PATH%src\main\webapp"
@@ -23,13 +23,23 @@ set "LIB_PATH=%PROJECT_PATH%lib"
 set "COMMON_CLASSPATH=%BUILD_PATH%\WEB-INF\classes;%CATALINA_HOME%\lib\servlet-api.jar;%LIB_PATH%\*"
 set "APP_WAR=visa.war"
 
+rem --- Copier le .env dans CATALINA_HOME\bin pour que Tomcat le trouve via user.dir ---
+rem    (XAMPP ignore CATALINA_OPTS, donc on depose le .env la ou user.dir pointe)
+if exist "!ENV_FILE!" (
+    echo Copie du .env dans Tomcat bin...
+    copy /Y "!ENV_FILE!" "!CATALINA_HOME!\bin\.env" >nul
+    echo   - .env copie dans !CATALINA_HOME!\bin\
+) else (
+    echo Avertissement: pas de .env a copier dans Tomcat.
+)
+
 rem Vérifier si le dossier "build" existe et le supprimer
 if exist "%BUILD_PATH%" (
     echo Suppression du dossier build...
     rmdir /s /q "%BUILD_PATH%"
 )
 
-rem Nettoyer les artefacts de déploiement mal nommés (espaces accidentels)
+rem Nettoyer les artefacts de déploiement mal nommés
 if exist "%CATALINA_HOME%\webapps\ visa.war" del /f /q "%CATALINA_HOME%\webapps\ visa.war"
 if exist "%CATALINA_HOME%\webapps\ war" del /f /q "%CATALINA_HOME%\webapps\ war"
 if exist "%CATALINA_HOME%\webapps\ visa" rmdir /s /q "%CATALINA_HOME%\webapps\ visa"
@@ -95,16 +105,16 @@ if exist "%LIB_PATH%\*.jar" (
 )
 
 rem Copier le contenu de webapp dans build de manière récursive
-echo Copie récursive des fichiers webapp...
+echo Copie recursive des fichiers webapp...
 xcopy "%WEBAPP_PATH%\*" "%BUILD_PATH%\" /E /Y
 
-rem Créer le fichier .war de ce qui se trouve dans build
+rem Créer le fichier .war
 echo Création du fichier WAR...
 pushd "%BUILD_PATH%"
 jar -cvf "%APP_WAR%" *
 popd
 
-rem Déplacer le fichier .war dans le répertoire webapps de Tomcat
+rem Déplacer le fichier .war dans Tomcat
 echo Déploiement du fichier WAR dans Tomcat...
 move /Y "%BUILD_PATH%\%APP_WAR%" "%CATALINA_HOME%\webapps\"
 
