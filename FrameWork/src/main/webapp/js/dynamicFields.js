@@ -24,7 +24,64 @@ function updateDynamicFields() {
         travailleurItems.forEach(item => item.checked = false);
     }
 
+    syncAllSelectAllStates();
     validateForm();
+}
+
+function getPieceCheckboxes(sectionElement) {
+    if (!sectionElement) return [];
+    return Array.from(sectionElement.querySelectorAll('input[type="checkbox"][name="piece_ids"]'));
+}
+
+function updateSelectAllState(targetSectionId) {
+    const section = document.getElementById(targetSectionId);
+    const selectAll = document.querySelector('.js-select-all-pieces[data-target-section="' + targetSectionId + '"]');
+    if (!section || !selectAll) return;
+
+    const checkboxes = getPieceCheckboxes(section);
+    if (!checkboxes.length) {
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
+        return;
+    }
+
+    const checkedCount = checkboxes.filter(input => input.checked).length;
+    selectAll.checked = checkedCount > 0 && checkedCount === checkboxes.length;
+    selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+}
+
+function syncAllSelectAllStates() {
+    const selectAllInputs = document.querySelectorAll('.js-select-all-pieces[data-target-section]');
+    selectAllInputs.forEach(input => {
+        const targetSectionId = input.dataset.targetSection;
+        if (targetSectionId) updateSelectAllState(targetSectionId);
+    });
+}
+
+function initializeSelectAllPieces() {
+    const selectAllInputs = document.querySelectorAll('.js-select-all-pieces[data-target-section]');
+    selectAllInputs.forEach(selectAllInput => {
+        const targetSectionId = selectAllInput.dataset.targetSection;
+        const targetSection = targetSectionId ? document.getElementById(targetSectionId) : null;
+        if (!targetSection) return;
+
+        selectAllInput.addEventListener('change', function () {
+            const pieceCheckboxes = getPieceCheckboxes(targetSection);
+            pieceCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllInput.checked;
+            });
+            updateSelectAllState(targetSectionId);
+            validateForm();
+        });
+
+        getPieceCheckboxes(targetSection).forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                updateSelectAllState(targetSectionId);
+            });
+        });
+
+        updateSelectAllState(targetSectionId);
+    });
 }
 
 function getSelectedTypeDemandeLabel() {
@@ -68,6 +125,8 @@ function syncCategorieWithTypeDemande() {
 window.addEventListener('DOMContentLoaded', function() {
     const profilRadios = document.querySelectorAll('input[name="profil"]');
     const typeDemandeInput = document.getElementById('typeDemande');
+
+    initializeSelectAllPieces();
 
     profilRadios.forEach(radio => radio.addEventListener('change', updateDynamicFields));
     if (typeDemandeInput) {
