@@ -1,0 +1,57 @@
+Contexte
+L’opérateur possède maintenant les documents physiques du demandeur.
+Il doit les numériser et les rattacher à chaque pièce justificative attendue pour cette demande.
+
+Une fois toutes les pièces scannées, l’opérateur verrouille le dossier : plus aucune modification n’est possible sur la demande, le demandeur ou le passeport.
+Le statut de la demande passe alors de CRÉÉ (ou En cours de traitement) à SCAN TERMINÉ.
+
+Objectif
+Ajouter la gestion des fichiers scannés (upload) par pièce justificative.
+
+Contrôler la complétude : bouton « Scan Terminé » actif uniquement quand toutes les pièces attendues (cochées dans demande_piece) ont un fichier associé.
+
+Verrouillage définitif des données après clic sur « Scan Terminé ».
+
+Nouveau statut SCAN TERMINÉ dans la table statut_demande.
+
+
+
+2-Backend (Elia):
+Branche : sprint/3/feature/scan-backend
+model: PieceFournie
+classe PieceFournieDAO
+    create(pieceFournie) → insérer un fichier scanné.
+    findByDemandeAndPieceRef(demandeId, pieceRefId) → récupérer un fichier existant.
+    findAllByDemande(demandeId) → liste des fichiers pour une demande.
+    deleteByDemandeAndPieceRef(demandeId, pieceRefId) → remplacer un scan.
+classe PieceFournieRepository (wrapper)
+    save(pieceFournie)
+    getByDemandeAndPiece(demandeId, pieceRefId)
+    getAllForDemande(demandeId)
+    remove(demandeId, pieceRefId)
+classe ScanService:
+    -uploadPiece(demandeId, pieceRefId, MultipartFile fichier)
+        → enregistre le fichier sur disque (répertoire configuré), crée une entrée piece_fournie.
+    -isDemandeComplete(demandeId)
+        → retourne true si pour cette demande, toutes les pièces attendues (demande_piece.cochee = true) ont une ligne correspondante dans piece_fournie.
+    -verrouillerDemande(demandeId)
+        → vérifie isDemandeComplete(), puis passe demande.verrouille = true et change le statut à SCAN TERMINÉ.
+        → Lance une exception si incomplet ou déjà verrouillé.
+classe DemandeService (modifié):
+    Toutes les méthodes de mise à jour (updateDemande, updateDemandeur, updatePasseport) doivent vérifier demande.verrouille == false.
+    Si verrouillé → lever DemandeVerrouilleeException.
+classe DossierService (Sprint 2) : idem, ne plus autoriser de modifications annexes si la demande principale est verrouillée.
+
+controller:
+
+regle metier:
+-Un fichier ne peut pas dépasser 10 Mo (configurable).
+-Types MIME autorisés : image/jpeg, image/png, application/pdf.
+-Une pièce déjà scannée peut être remplacée (nouvel upload écrase l’ancien fichier physiquement et en base).
+-Le verrouillage est irréversible (aucune méthode de déverrouillage dans le périmètre de ce sprint).
+-Si la demande n’a aucune pièce attendue (cas théorique, mais possible), alors isDemandeComplete() retourne true immédiatement.
+
+3-Frontend(Jemima):
+Branche : sprint/3/feature/scan-front
++ scanDemande.jsp:
+route:/demande/{id}/scan
