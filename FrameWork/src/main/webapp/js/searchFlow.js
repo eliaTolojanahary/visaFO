@@ -85,9 +85,13 @@
             statusText.style.color = 'blue';
         }
 
+        // Force une relecture des donnees cote serveur a chaque recherche.
+        lastFetchedSnapshot = null;
+
         fetch('form/search', {
             method: 'POST',
-            body: formData
+            body: formData,
+            cache: 'no-store'
         })
         .then(response => {
             if (!response.ok) {
