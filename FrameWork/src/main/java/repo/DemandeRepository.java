@@ -116,22 +116,19 @@ public class DemandeRepository implements DemandeDao {
         boolean useDate = false;
 
         switch (column.toLowerCase()) {
-            case "nom":
-            case "prenom":
-                sql = "SELECT d.id, d.passeport_id, d.type_demande_id, d.type_titre_id, d.statut_id, d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, d.ref_demande, d.type_document_id, d.verrouille, d.created_at, d.updated_at " +
-                      "FROM demande d " +
-                      "JOIN passeport p ON d.passeport_id = p.id " +
-                      "JOIN demandeur dem ON p.demandeur_id = dem.id " +
-                      "WHERE dem." + column.toLowerCase() + " = ? " +
-                      "ORDER BY d.created_at DESC LIMIT 1";
-                break;
-            case "date_naissance":
-                sql = "SELECT d.id, d.passeport_id, d.type_demande_id, d.type_titre_id, d.statut_id, d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, d.ref_demande, d.type_document_id, d.verrouille, d.created_at, d.updated_at " +
-                      "FROM demande d " +
-                      "JOIN passeport p ON d.passeport_id = p.id " +
-                      "JOIN demandeur dem ON p.demandeur_id = dem.id " +
-                      "WHERE dem.date_naissance = ? " +
-                      "ORDER BY d.created_at DESC LIMIT 1";
+            case "nom", "prenom" -> sql = "SELECT d.id, d.passeport_id, d.type_demande_id, d.type_titre_id, d.statut_id, d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, d.ref_demande, d.type_document_id, d.created_at, d.updated_at " +
+                "FROM demande d " +
+                "JOIN passeport p ON d.passeport_id = p.id " +
+                "JOIN demandeur dem ON p.demandeur_id = dem.id " +
+                "WHERE dem." + column.toLowerCase() + " = ? " +
+                "ORDER BY d.created_at DESC LIMIT 1";
+            case "date_naissance" -> {
+                sql = "SELECT d.id, d.passeport_id, d.type_demande_id, d.type_titre_id, d.statut_id, d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, d.ref_demande, d.type_document_id, d.created_at, d.updated_at " +
+                    "FROM demande d " +
+                    "JOIN passeport p ON d.passeport_id = p.id " +
+                    "JOIN demandeur dem ON p.demandeur_id = dem.id " +
+                    "WHERE dem.date_naissance = ? " +
+                    "ORDER BY d.created_at DESC LIMIT 1";
                 useDate = true;
             }
             default -> throw new IllegalArgumentException("Recherche non supportée pour la colonne : " + column);
