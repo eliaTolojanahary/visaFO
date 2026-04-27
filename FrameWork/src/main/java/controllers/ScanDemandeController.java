@@ -31,7 +31,7 @@ public class ScanDemandeController {
     // Route réelle (Sprint 3) — chargement des données depuis la BD
     // ══════════════════════════════════════════════════════════════════
 
-    @MethodeAnnotation("/demande/@id/scan")
+    @MethodeAnnotation("/demande/{id}/scan")
     @GetMapping
     public ModelView getScanPage(Map<String, Object> pathParams, 
                                  Map<String, Object> queryParams) {
@@ -131,7 +131,7 @@ public class ScanDemandeController {
     //   3. Rediriger avec flashMessage succès
     // ══════════════════════════════════════════════════════════════════
 
-    @MethodeAnnotation("/demande/*/verrouiller")
+    @MethodeAnnotation("/demande/{id}/verrouiller")
     @PostMapping
     public ModelView verrouiller(Map<String, Object> formData) {
         String demandeId = formData.get("demandeId") != null
@@ -157,7 +157,7 @@ public class ScanDemandeController {
     //   3. Envoyer le fichier au client avec bon Content-Type et Content-Disposition
     // ══════════════════════════════════════════════════════════════════
 
-    @MethodeAnnotation("/demande/@id/piece/@id/download")
+    @MethodeAnnotation("/demande/{id}/piece/{id}/download")
     @GetMapping
     public ModelView downloadPiece(Map<String, Object> pathParams) {
         /*
