@@ -69,3 +69,5 @@ Objectif: `start.bat` reste la commande unique pour reconstruire et mettre a jou
 - Lancer `start.bat`.
 - Lancer ensuite l'application via `FrameWork/run_servlet.bat`.
 
+
+

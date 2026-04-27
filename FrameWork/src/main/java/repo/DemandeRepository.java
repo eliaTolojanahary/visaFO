@@ -393,39 +393,47 @@ public class DemandeRepository implements DemandeDao {
             "LEFT JOIN nationalite n ON d.nationalite_id = n.id " +
             "WHERE 1=1 "
         );
-
+    
         List<Object> params = new ArrayList<>();
+    
+        // Recherche flexible + case insensitive
         if (numeroPasseport != null && !numeroPasseport.trim().isEmpty()) {
-            sql.append("AND p.numero_passeport = ? ");
-            params.add(numeroPasseport.trim());
+            sql.append("AND LOWER(p.numero_passeport) LIKE LOWER(?) ");
+            params.add("%" + numeroPasseport.trim() + "%");
         }
+    
         if (nom != null && !nom.trim().isEmpty()) {
-            sql.append("AND COALESCE(d.nom, '') = ? ");
-            params.add(nom.trim());
+            sql.append("AND LOWER(COALESCE(d.nom, '')) LIKE LOWER(?) ");
+            params.add("%" + nom.trim() + "%");
         }
+    
         if (prenom != null && !prenom.trim().isEmpty()) {
-            sql.append("AND COALESCE(d.prenom, '') = ? ");
-            params.add(prenom.trim());
+            sql.append("AND LOWER(COALESCE(d.prenom, '')) LIKE LOWER(?) ");
+            params.add("%" + prenom.trim() + "%");
         }
+    
         if (dateNaissance != null && !dateNaissance.trim().isEmpty()) {
             sql.append("AND d.date_naissance = ? ");
             params.add(Date.valueOf(dateNaissance.trim()));
         }
-
+    
+        // IMPORTANT : 1 seul résultat
         sql.append("ORDER BY p.updated_at DESC LIMIT 1");
-
+    
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+    
             for (int i = 0; i < params.size(); i++) {
                 stmt.setObject(i + 1, params.get(i));
             }
-
+    
             try (ResultSet rs = stmt.executeQuery()) {
                 if (!rs.next()) {
                     return null;
                 }
-
+    
                 Map<String, Object> result = new HashMap<>();
+    
                 result.put("nom", rs.getString("nom"));
                 result.put("prenom", rs.getString("prenom"));
                 result.put("dateNaissance", rs.getDate("date_naissance") != null ? rs.getDate("date_naissance").toString() : "");
@@ -438,6 +446,7 @@ public class DemandeRepository implements DemandeDao {
                 result.put("dateDelivrance", rs.getDate("date_delivrance") != null ? rs.getDate("date_delivrance").toString() : "");
                 result.put("dateExpiration", rs.getDate("date_expiration") != null ? rs.getDate("date_expiration").toString() : "");
                 result.put("paysDelivrance", rs.getString("pays_delivrance"));
+    
                 return result;
             }
         }
