@@ -16,6 +16,7 @@ public class Demande {
     private TypeDocument type_document;
     private Timestamp created_at;
     private Timestamp updated_at;
+    private boolean verrouille;
 
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
@@ -52,4 +53,7 @@ public class Demande {
 
     public Timestamp getUpdated_at() { return updated_at; }
     public void setUpdated_at(Timestamp updated_at) { this.updated_at = updated_at; }
+
+    public boolean isVerrouille() { return verrouille; }
+    public void setVerrouille(boolean verrouille) { this.verrouille = verrouille; }
 }
