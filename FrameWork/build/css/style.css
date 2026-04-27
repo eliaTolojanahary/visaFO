@@ -93,6 +93,22 @@ textarea:focus {
     gap: 12px;
 }
 
+.select-all-row {
+    margin-bottom: 10px;
+}
+
+.select-all-row label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+    font-weight: 600;
+}
+
+.select-all-row input[type="checkbox"] {
+    width: auto;
+}
+
 .checkbox-item {
     background: #f8fafd;
     border: 1px solid #dce6f2;
@@ -163,6 +179,13 @@ button:hover:not(:disabled) {
 button:disabled {
     opacity: 0.55;
     cursor: not-allowed;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 .btn-alt {
@@ -254,6 +277,16 @@ button:disabled {
 .badge-gray {
     background: #edf1f6;
     color: #506075;
+}
+
+.badge-purple {
+    background: #f3e5f5;
+    color: #6a1b9a;
+}
+
+.demand-row-highlight {
+    background: #fffbe8;
+    border-left: 4px solid #f39c12;
 }
 
 .hidden {

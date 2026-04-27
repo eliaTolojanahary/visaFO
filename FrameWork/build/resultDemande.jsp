@@ -132,7 +132,12 @@
     <%
         @SuppressWarnings("unchecked")
         Map<String, Object> latestDemande = (Map<String, Object>) request.getAttribute("latestDemande");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> dashboardDemandes = (List<Map<String, Object>>) request.getAttribute("dashboardDemandes");
         boolean dashboardMode = Boolean.TRUE.equals(request.getAttribute("dashboardMode"));
+        String highlightDemandeId = request.getAttribute("highlightDemandeId") != null
+            ? String.valueOf(request.getAttribute("highlightDemandeId"))
+            : "";
 
         String latestTypeDemande = latestDemande != null && latestDemande.get("typeDemandeLibelle") != null
             ? String.valueOf(latestDemande.get("typeDemandeLibelle"))
@@ -156,6 +161,14 @@
             <p>Commencer une nouvelle demande de visa ou ouvrir le formulaire pour une modification.</p>
             <div class="card-actions">
                 <a href="<%= ctx %>/form" class="btn-primary">Créer une demande</a>
+            </div>
+        </div>
+
+        <div class='card' >
+            <h2>Faire un scan sur un document</h2>
+            <p>Commencer une nouvelle demande de visa ou ouvrir le formulaire pour une modification.</p>
+            <div class="card-actions">
+                <a href='<%= ctx %>/form/scan' class="btn-primary">Faire un scan</a>
             </div>
         </div>
 
@@ -243,10 +256,7 @@
     <% } %>
 
     <%-- ===== LISTE DES DEMANDES (si disponible) ===== --%>
-    <%
-        List<Demande> demandes = (List<Demande>) request.getAttribute("demandes");
-    %>
-    <% if (demandes != null && !demandes.isEmpty()) { %>
+    <% if (dashboardDemandes != null && !dashboardDemandes.isEmpty()) { %>
         <div class="form-section">
             <h2>Liste de vos demandes</h2>
             <div class="table-container">
@@ -263,23 +273,23 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <% for (Demande d : demandes) { %>
+                        <% for (Map<String, Object> d : dashboardDemandes) { %>
                             <%
-                            String nom = (d.getPasseport() != null && d.getPasseport().getDemandeur() != null
-                                && d.getPasseport().getDemandeur().getNom() != null)
-                                ? d.getPasseport().getDemandeur().getNom() : "-";
-                            String prenom = (d.getPasseport() != null && d.getPasseport().getDemandeur() != null
-                                && d.getPasseport().getDemandeur().getPrenom() != null)
-                                ? d.getPasseport().getDemandeur().getPrenom() : "-";
-                            String typeDemande = (d.getType_demande() != null && d.getType_demande().getLibelle() != null)
-                                ? d.getType_demande().getLibelle() : "-";
-                            String typeTitre = (d.getType_titre() != null && d.getType_titre().getLibelle() != null)
-                                ? d.getType_titre().getLibelle() : "-";
-                            String statut = (d.getStatut() != null && d.getStatut().getLibelle() != null)
-                                ? d.getStatut().getLibelle() : "-";
+                            String demandeId = d.get("demande_id") != null ? String.valueOf(d.get("demande_id")) : "";
+                            boolean isHighlighted = !highlightDemandeId.isEmpty() && highlightDemandeId.equals(demandeId);
+                            String nom = d.get("nom") != null ? String.valueOf(d.get("nom")) : "-";
+                            String prenom = d.get("prenom") != null ? String.valueOf(d.get("prenom")) : "-";
+                            String typeDemande = d.get("typeDemandeLibelle") != null ? String.valueOf(d.get("typeDemandeLibelle")) : "-";
+                            String typeTitre = d.get("typeTitreLibelle") != null ? String.valueOf(d.get("typeTitreLibelle")) : "-";
+                            String statut = d.get("statutLibelle") != null ? String.valueOf(d.get("statutLibelle")) : "-";
                             %>
-                            <tr>
-                                <td><%= d.getId() %></td>
+                            <tr class="<%= isHighlighted ? "demand-row-highlight" : "" %>">
+                                <td>
+                                    <%= demandeId %>
+                                    <% if (isHighlighted) { %>
+                                        <span class="badge badge-orange" style="margin-left:8px;">Derniere soumission</span>
+                                    <% } %>
+                                </td>
                             <td><%= nom %></td>
                             <td><%= prenom %></td>
                             <td><%= typeDemande %></td>
@@ -288,7 +298,7 @@
                                 <td>
                                     <div class="action-links">
                                         <form action="<%= ctx %>/form/edit" method="post" style="display:inline;">
-                                            <input type="hidden" name="demande_id" value="<%= d.getId() %>">
+                                            <input type="hidden" name="demande_id" value="<%= demandeId %>">
                                             <button type="submit" class="btn-secondary">Modifier</button>
                                         </form>
                                         <%-- Supprimer : à adapter si vous ajoutez un mapping delete --%>
