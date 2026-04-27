@@ -37,10 +37,15 @@ public class ScanDemandeController {
     public ModelView getScanPage(Map<String, Object> pathParams, 
                                  Map<String, Object> queryParams) {
         ModelView mv = new ModelView("/scanDemande.jsp");
+        mv.addData("mode", "SCAN");
 
-        Long demandeId = pathParams != null && pathParams.get("id") != null
-            ? Long.parseLong(String.valueOf(pathParams.get("id")))
-            : 0L;
+        Object demandeIdRaw = pathParams != null ? pathParams.get("id") : null;
+        Long demandeId = 0L;
+        if (demandeIdRaw instanceof Number) {
+            demandeId = ((Number) demandeIdRaw).longValue();
+        } else if (demandeIdRaw != null) {
+            demandeId = Long.parseLong(String.valueOf(demandeIdRaw));
+        }
 
         if (demandeId <= 0) {
             mv.setView("redirect:/");
@@ -95,16 +100,17 @@ public class ScanDemandeController {
     @GetMapping
     public ModelView getScanForm(Map<String, Object> queryParams) {
         ModelView mv = new ModelView("/scanDemande.jsp");
+        mv.addData("mode", "SCAN");
 
         String etat = queryParams != null && queryParams.get("etat") != null
             ? String.valueOf(queryParams.get("etat"))
             : "normal";
 
         switch (etat) {
-            case "termine": injectEtatTermine(mv); break;
-            case "vide":    injectEtatVide(mv);    break;
-            case "complet": injectEtatComplet(mv); break;
-            default:        injectEtatNormal(mv);
+            case "termine" -> injectEtatTermine(mv);
+            case "vide" -> injectEtatVide(mv);
+            case "complet" -> injectEtatComplet(mv);
+            default -> injectEtatNormal(mv);
         }
 
         return mv;

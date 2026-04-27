@@ -33,6 +33,7 @@
     <meta charset="UTF-8">
     <title><%= pageTitle %></title>
     <link rel="stylesheet" href="<%= ctx %>/css/style.css">
+    <link rel="stylesheet" href="<%= ctx %>/css/scanDemande.css">
 </head>
 <body>
 <div class="container">
@@ -104,7 +105,7 @@
         </div>
     </div>
 
-    <form id="demandeForm" action="<%= formAction %>" method="post" novalidate>
+    <form id="demandeForm" action="<%= formAction %>" method="post" enctype="multipart/form-data" novalidate>
         <% if (editMode) { %>
             <input type="hidden" name="demande_id" value="<%= formData.get("demande_id") != null ? formData.get("demande_id") : "" %>">
             <input type="hidden" name="passeport_id" value="<%= formData.get("passeport_id") != null ? formData.get("passeport_id") : "" %>">
@@ -317,89 +318,11 @@
             <div id="duplicataPieceError" class="error-text"></div>
         </div>
 
-        <div id="piecesCommunes" class="form-section">
-            <h2>Pièces justificatives communes <span class="required">*</span></h2>
-            <div class="select-all-row">
-                <label>
-                    <input type="checkbox" class="js-select-all-pieces" data-target-section="piecesCommunes">
-                    Tout sélectionner
-                </label>
-            </div>
-            <div class="checkbox-group">
-                <%
-                List<PieceJustificative> piecesCommunes = (List<PieceJustificative>) request.getAttribute("piecesCommunes");
-                if (piecesCommunes != null) {
-                    for (PieceJustificative piece : piecesCommunes) {
-                %>
-                    <div class="checkbox-item">
-                        <label>
-                            <input type="checkbox" name="piece_ids" class="required-piece" data-required="true" value="<%= piece.getId() %>" <%= selectedPieceIds.contains(piece.getId()) ? "checked" : "" %>>
-                            <%= piece.getLibelle() %> <span class="required">*</span>
-                        </label>
-                    </div>
-                <%
-                    }
-                }
-                %>
-            </div>
-            <div id="pieceCommuneError" class="error-text"></div>
-        </div>
-
-        <div id="piecesInvestisseur" class="form-section hidden">
-            <h2>Pièces Investisseur <span class="required">*</span></h2>
-            <div class="select-all-row">
-                <label>
-                    <input type="checkbox" class="js-select-all-pieces" data-target-section="piecesInvestisseur">
-                    Tout sélectionner
-                </label>
-            </div>
-            <div class="checkbox-group">
-                <%
-                List<PieceJustificative> piecesInvestisseur = (List<PieceJustificative>) request.getAttribute("piecesInvestisseur");
-                if (piecesInvestisseur != null) {
-                    for (PieceJustificative piece : piecesInvestisseur) {
-                %>
-                    <div class="checkbox-item">
-                        <label>
-                            <input type="checkbox" name="piece_ids" class="required-piece" data-required="true" value="<%= piece.getId() %>" <%= selectedPieceIds.contains(piece.getId()) ? "checked" : "" %>>
-                            <%= piece.getLibelle() %> <span class="required">*</span>
-                        </label>
-                    </div>
-                <%
-                    }
-                }
-                %>
-            </div>
-            <div id="pieceInvestisseurError" class="error-text"></div>
-        </div>
-
-        <div id="piecesTravailleur" class="form-section hidden">
-            <h2>Pièces Travailleur <span class="required">*</span></h2>
-            <div class="select-all-row">
-                <label>
-                    <input type="checkbox" class="js-select-all-pieces" data-target-section="piecesTravailleur">
-                    Tout sélectionner
-                </label>
-            </div>
-            <div class="checkbox-group">
-                <%
-                List<PieceJustificative> piecesTravailleur = (List<PieceJustificative>) request.getAttribute("piecesTravailleur");
-                if (piecesTravailleur != null) {
-                    for (PieceJustificative piece : piecesTravailleur) {
-                %>
-                    <div class="checkbox-item">
-                        <label>
-                            <input type="checkbox" name="piece_ids" class="required-piece" data-required="true" value="<%= piece.getId() %>" <%= selectedPieceIds.contains(piece.getId()) ? "checked" : "" %>>
-                            <%= piece.getLibelle() %> <span class="required">*</span>
-                        </label>
-                    </div>
-                <%
-                    }
-                }
-                %>
-            </div>
-            <div id="pieceTravailleurError" class="error-text"></div>
-        </div>
+        <%
+            request.setAttribute("mode", editMode ? "UPDATE" : "CREATION");
+            request.setAttribute("renderLayout", Boolean.FALSE);
+        %>
+        <jsp:include page="scanDemande.jsp" />
 
         <div class="form-actions">
             <button type="button" id="reviewBtn" disabled>Voir le recapitulatif</button>
@@ -437,6 +360,7 @@
 <script src="<%= ctx %>/js/dynamicFields.js"></script>
 <script src="<%= ctx %>/js/validation.js"></script>
 <script src="<%= ctx %>/js/searchFlow.js"></script>
+<script src="<%= ctx %>/js/piecesUpload.js"></script>
 <script src="<%= ctx %>/js/recap.js"></script>
 </body>
 </html>

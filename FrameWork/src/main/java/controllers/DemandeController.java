@@ -29,6 +29,7 @@ public class DemandeController {
     public ModelView getForm(){
         System.out.println("[DEBUG CONTROLLER] getForm() appelé");
         ModelView mv = new ModelView("/nouvelleDemande.jsp");
+        mv.addData("mode", "CREATION");
         try {
             System.out.println("[DEBUG CONTROLLER] Chargement des données de référence...");
             Map<String, List<PieceJustificative>> investisseur = demandeService.getInfoSpecifiqueByLibelle("Investisseur");
@@ -96,6 +97,7 @@ public class DemandeController {
     @GetMapping
     public ModelView error(){
         ModelView mv = new ModelView("/nouvelleDemande.jsp");
+        mv.addData("mode", "CREATION");
         mv.addData("error", "Des champs obligatoires sont manquants ou invalides.");
         return mv;
     }
@@ -176,6 +178,7 @@ public class DemandeController {
             ));
         } catch (SQLException e) {
             mv.setView("/nouvelleDemande.jsp");
+            mv.addData("mode", "CREATION");
             mv.addData("success", false);
             mv.addData("error", "Erreur base de donnees: " + e.getMessage());
             mv.addData("formData", formData);
@@ -186,6 +189,7 @@ public class DemandeController {
             }
         } catch (IllegalArgumentException e) {
             mv.setView("/nouvelleDemande.jsp");
+            mv.addData("mode", "CREATION");
             mv.addData("success", false);
             mv.addData("error", e.getMessage());
             mv.addData("validationErrors", demandeService.isObligatoire(formData));
@@ -227,10 +231,12 @@ public class DemandeController {
             rechargeFormData(mv);
             mv.addData("formData", existingFormData);
             mv.addData("selectedPieceIds", demandeService.getSelectedPieceIdsByDemandeId(demandeId));
+            mv.addData("mode", "UPDATE");
             mv.addData("editMode", true);
             mv.addData("message", "Mode modification active.");
         } catch (SQLException e) {
             mv.addData("error", "Erreur base de donnees: " + e.getMessage());
+            mv.addData("mode", "UPDATE");
             try {
                 rechargeFormData(mv);
             } catch (SQLException ex) {
@@ -238,6 +244,7 @@ public class DemandeController {
             }
         } catch (IllegalArgumentException e) {
             mv.addData("error", e.getMessage());
+            mv.addData("mode", "UPDATE");
             try {
                 rechargeFormData(mv);
             } catch (SQLException ex) {
@@ -269,6 +276,7 @@ public class DemandeController {
             mv.addData("dashboardDemandes", demandeService.getDashboardDemandesData());
         } catch (SQLException e) {
             mv.setView("/nouvelleDemande.jsp");
+            mv.addData("mode", "UPDATE");
             mv.addData("success", false);
             mv.addData("error", "Erreur base de donnees: " + e.getMessage());
             mv.addData("formData", formData);
@@ -279,6 +287,7 @@ public class DemandeController {
             }
         } catch (IllegalArgumentException e) {
             mv.setView("/nouvelleDemande.jsp");
+            mv.addData("mode", "UPDATE");
             mv.addData("success", false);
             mv.addData("error", e.getMessage());
             mv.addData("validationErrors", demandeService.isObligatoire(formData));
