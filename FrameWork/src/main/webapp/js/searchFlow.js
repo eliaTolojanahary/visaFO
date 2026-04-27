@@ -1,5 +1,5 @@
 (function () {
-    const STORAGE_KEY = 'visa_last_demandeur';
+    let lastFetchedSnapshot = null;
 
     function byId(id) {
         return document.getElementById(id);
@@ -7,47 +7,6 @@
 
     function normalize(value) {
         return (value || '').toString().trim().toLowerCase();
-    }
-
-    function getFormSnapshot() {
-        return {
-            nom: byId('nom') ? byId('nom').value.trim() : '',
-            prenom: byId('prenom') ? byId('prenom').value.trim() : '',
-            dateNaissance: byId('dateNaissance') ? byId('dateNaissance').value : '',
-            nationalite: byId('nationalite') && byId('nationalite').selectedOptions.length
-                ? byId('nationalite').selectedOptions[0].textContent.trim()
-                : '',
-            adresse: byId('adresseMadagascar') ? byId('adresseMadagascar').value.trim() : '',
-            telephone: byId('numeroTelephone') ? byId('numeroTelephone').value.trim() : '',
-            email: byId('email') ? byId('email').value.trim() : '',
-            profession: byId('profession') ? byId('profession').value.trim() : '',
-            numeroPasseport: byId('numeroPasseport') ? byId('numeroPasseport').value.trim() : '',
-            dateDelivrance: byId('dateDelivrance') ? byId('dateDelivrance').value : '',
-            dateExpiration: byId('dateExpiration') ? byId('dateExpiration').value : '',
-            paysDelivrance: byId('paysDelivrance') ? byId('paysDelivrance').value.trim() : ''
-        };
-    }
-
-    function saveSnapshotIfRelevant() {
-        const snapshot = getFormSnapshot();
-        if (!snapshot.nom || !snapshot.dateNaissance || !snapshot.numeroPasseport) {
-            return;
-        }
-
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-        } catch (e) {
-            // Ignore localStorage errors (private mode, quota)
-        }
-    }
-
-    function loadSnapshot() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            return raw ? JSON.parse(raw) : null;
-        } catch (e) {
-            return null;
-        }
     }
 
     function fillList(target, rows) {
@@ -67,18 +26,20 @@
 
         if (statusText) {
             statusText.textContent = found
-                ? 'Resultat trouve dans les dernieres donnees locales du navigateur.'
-                : 'Aucun resultat local. Continuez avec la creation d un nouveau dossier.';
+                ? 'Resultat trouve dans la base de donnees.'
+                : 'Aucun resultat trouve. Continuez avec la creation d un nouveau dossier.';
+            statusText.style.color = found ? 'green' : 'red';
         }
 
         if (found && snapshot) {
+            lastFetchedSnapshot = snapshot;
             fillList(byId('foundDemandeurInfo'), [
                 { label: 'Nom', value: snapshot.nom },
                 { label: 'Prenom', value: snapshot.prenom },
                 { label: 'Date de naissance', value: snapshot.dateNaissance },
                 { label: 'Nationalite', value: snapshot.nationalite },
-                { label: 'Adresse', value: snapshot.adresse },
-                { label: 'Telephone', value: snapshot.telephone },
+                { label: 'Adresse', value: snapshot.adresseMadagascar },
+                { label: 'Telephone', value: snapshot.numeroTelephone },
                 { label: 'Email', value: snapshot.email },
                 { label: 'Profession', value: snapshot.profession }
             ]);
@@ -89,53 +50,88 @@
                 { label: 'Date expiration', value: snapshot.dateExpiration },
                 { label: 'Pays', value: snapshot.paysDelivrance }
             ]);
+        } else {
+            lastFetchedSnapshot = null;
         }
     }
 
-    function runLocalSearch() {
-        const query = {
-            nom: normalize(byId('searchNom') ? byId('searchNom').value : ''),
-            prenom: normalize(byId('searchPrenom') ? byId('searchPrenom').value : ''),
-            dateNaissance: normalize(byId('searchDateNaissance') ? byId('searchDateNaissance').value : ''),
-            numeroPasseport: normalize(byId('searchNumeroPasseport') ? byId('searchNumeroPasseport').value : '')
-        };
+    function runSearch() {
+        const nom = byId('searchNom') ? byId('searchNom').value.trim() : '';
+        const prenom = byId('searchPrenom') ? byId('searchPrenom').value.trim() : '';
+        const dateNaissance = byId('searchDateNaissance') ? byId('searchDateNaissance').value.trim() : '';
+        const numeroPasseport = byId('searchNumeroPasseport') ? byId('searchNumeroPasseport').value.trim() : '';
 
-        const snapshot = loadSnapshot();
-        if (!snapshot) {
-            showSearchResult(false, null);
-            return;
-        }
+        const hasIdentity = nom || prenom || dateNaissance;
+        const hasPassport = numeroPasseport;
 
-        const hasIdentity = query.nom || query.prenom || query.dateNaissance;
-        const hasPassport = query.numeroPasseport;
         if (!hasIdentity && !hasPassport) {
             const statusText = byId('searchStatusText');
             if (statusText) {
                 statusText.textContent = 'Veuillez renseigner au moins un critere de recherche.';
+                statusText.style.color = 'red';
             }
             return;
         }
 
-        const matchPassport = hasPassport && query.numeroPasseport === normalize(snapshot.numeroPasseport);
-        const matchIdentity = hasIdentity
-            && (!query.nom || query.nom === normalize(snapshot.nom))
-            && (!query.prenom || query.prenom === normalize(snapshot.prenom))
-            && (!query.dateNaissance || query.dateNaissance === normalize(snapshot.dateNaissance));
+        const formData = new FormData();
+        if (nom) formData.append('nom', nom);
+        if (prenom) formData.append('prenom', prenom);
+        if (dateNaissance) formData.append('dateNaissance', dateNaissance);
+        if (numeroPasseport) formData.append('numeroPasseport', numeroPasseport);
 
-        const found = matchPassport || matchIdentity;
-        showSearchResult(found, found ? snapshot : null);
+        const statusText = byId('searchStatusText');
+        if (statusText) {
+            statusText.textContent = 'Recherche en cours...';
+            statusText.style.color = 'blue';
+        }
+
+        fetch('form/search', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur reseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const payload = data && data.data ? data.data : data;
+            const found = !!(payload && payload.found);
+            const snapshot = found
+                ? (payload.data || payload.demandeur || payload.result || payload)
+                : null;
+
+            if (payload && payload.message) {
+                const statusText = byId('searchStatusText');
+                if (statusText) {
+                    statusText.textContent = payload.message;
+                    statusText.style.color = found ? 'green' : 'red';
+                }
+            }
+
+            showSearchResult(found, snapshot);
+        })
+        .catch(error => {
+            console.error('Erreur lors de la recherche:', error);
+            if (statusText) {
+                statusText.textContent = 'Recherche indisponible pour le moment.';
+                statusText.style.color = 'red';
+            }
+            showSearchResult(false, null);
+        });
     }
 
     function applySnapshotToForm() {
-        const snapshot = loadSnapshot();
+        const snapshot = lastFetchedSnapshot;
         if (!snapshot) return;
 
         const mapping = {
             nom: 'nom',
             prenom: 'prenom',
             dateNaissance: 'dateNaissance',
-            adresse: 'adresseMadagascar',
-            telephone: 'numeroTelephone',
+            adresseMadagascar: 'adresseMadagascar',
+            numeroTelephone: 'numeroTelephone',
             email: 'email',
             profession: 'profession',
             numeroPasseport: 'numeroPasseport',
@@ -152,6 +148,18 @@
                 target.dispatchEvent(new Event('change', { bubbles: true }));
             }
         });
+
+        // Set select matching options 
+        if (snapshot.nationalite) {
+            const natSelect = byId('nationalite');
+            if (natSelect) {
+                Array.from(natSelect.options).forEach(opt => {
+                    if (opt.text.toLowerCase() === snapshot.nationalite.toLowerCase()) {
+                        natSelect.value = opt.value;
+                    }
+                });
+            }
+        }
     }
 
     function loadTypeDemandeOptions() {
@@ -180,12 +188,11 @@
         const searchButton = byId('runRechercheBtn');
         const useFoundDataBtn = byId('useFoundDataBtn');
         const applyNextTypeBtn = byId('applyNextTypeBtn');
-        const form = byId('demandeForm');
 
         loadTypeDemandeOptions();
 
         if (searchButton) {
-            searchButton.addEventListener('click', runLocalSearch);
+            searchButton.addEventListener('click', runSearch);
         }
 
         if (useFoundDataBtn) {
@@ -194,10 +201,6 @@
 
         if (applyNextTypeBtn) {
             applyNextTypeBtn.addEventListener('click', applySelectedType);
-        }
-
-        if (form) {
-            form.addEventListener('submit', saveSnapshotIfRelevant);
         }
     });
 })();
