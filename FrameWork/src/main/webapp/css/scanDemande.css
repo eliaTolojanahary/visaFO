@@ -24,8 +24,18 @@
     font-size: 0.97rem;
 }
 
-.lock-icon {
-    font-size: 1.1rem;
+.lock-icon { font-size: 1.1rem; }
+
+/* ── Flash message (après redirect PRG) ─────────────────────── */
+.flash-banner {
+    margin-bottom: 20px;
+    border-radius: 8px;
+    animation: fadeInDown 0.3s ease;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── En-tête scan ────────────────────────────────────────────── */
@@ -78,16 +88,13 @@
     font-size: 0.92rem;
 }
 
-/* Badge dans l'en-tête — fond semi-transparent pour lisibilité */
 .scan-header .badge {
     border: 1px solid rgba(255,255,255,0.25);
     backdrop-filter: blur(4px);
 }
 
 /* ── Section progression ─────────────────────────────────────── */
-.progress-section {
-    padding: 18px 25px !important;
-}
+.progress-section { padding: 18px 25px !important; }
 
 .progress-header {
     display: flex;
@@ -125,18 +132,18 @@
 .piece-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
 }
 
+/* Carte pièce : layout en deux lignes */
 .piece-card {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 10px;
     background: #f8fafd;
     border: 1px solid #dce6f2;
     border-radius: 10px;
-    padding: 14px 18px;
+    padding: 16px 20px;
     transition: border-color 0.2s, background 0.2s;
 }
 
@@ -145,11 +152,11 @@
     border-color: #a8dab5;
 }
 
+/* Ligne 1 : dot + libellé */
 .piece-card__info {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex: 1 1 200px;
 }
 
 .piece-card__status-dot {
@@ -168,79 +175,111 @@
     font-size: 0.95rem;
 }
 
-.piece-card__actions {
+/* Bloc droite : métadonnées + formulaire */
+.piece-card__right {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 10px;
-    flex-wrap: wrap;
+    padding-left: 20px; /* alignement avec le libellé */
+    border-left: 2px solid #e4e9f2;
 }
 
-.piece-card__filename {
+.piece-card--done .piece-card__right {
+    border-left-color: #a8dab5;
+}
+
+/* ── Métadonnées fichier ─────────────────────────────────────── */
+.piece-card__file-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.piece-card__file-meta--empty {
+    opacity: 0.75;
+}
+
+.piece-card__download-link {
+    color: #1a4a7a;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.piece-card__download-link:hover { color: #3e78b2; text-decoration: underline; }
+
+.piece-card__file-info {
     font-size: 0.82rem;
     color: #4c5d73;
+}
+
+.piece-card__no-file {
+    font-size: 0.88rem;
+    color: #8a9ab0;
     font-style: italic;
-    max-width: 180px;
+}
+
+/* ── Formulaire d'upload ─────────────────────────────────────── */
+.piece-card__upload-form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Label sélecteur de fichier stylisé */
+.piece-card__file-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 0;             /* annule le margin-bottom: 8px du label global */
+    font-weight: normal;
+}
+
+.piece-card__file-trigger {
+    /* reprend .btn-alt .btn-sm */
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.piece-card__file-trigger.file-selected {
+    border: 1px solid #3e78b2;
+    color: #1a4a7a;
+}
+
+.piece-card__file-chosen {
+    font-size: 0.83rem;
+    color: #4c5d73;
+    font-style: italic;
+    max-width: 260px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-/* ── Bouton petit ─────────────────────────────────────────────── */
+/* Bouton upload désactivé */
+.piece-card__upload-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* ── Tailles de boutons/badges ───────────────────────────────── */
 .btn-sm {
     padding: 8px 16px !important;
     font-size: 0.88rem !important;
 }
 
-/* ── Badge petit ─────────────────────────────────────────────── */
 .badge-sm {
     padding: 3px 8px;
     font-size: 0.78rem;
 }
 
-/* ── Upload progress individuelle ────────────────────────────── */
-.piece-card__upload-progress {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 4px;
-}
-
-.mini-progress-track {
-    flex: 1;
-    height: 5px;
-    background: #e4e9f2;
-    border-radius: 999px;
-    overflow: hidden;
-}
-
-.mini-progress-fill {
-    height: 100%;
-    width: 0%;
-    background: #3e78b2;
-    border-radius: 999px;
-    transition: width 0.3s ease;
-}
-
-.mini-progress-label {
-    font-size: 0.8rem;
-    color: #4c5d73;
-    white-space: nowrap;
-}
-
-/* ── Erreur individuelle ──────────────────────────────────────── */
-.piece-card__error {
-    width: 100%;
-    color: #d93025;
-    font-size: 0.85rem;
-    margin-top: 4px;
-}
-
 /* ── Actions bas de page ─────────────────────────────────────── */
-.scan-actions {
-    margin-top: 10px;
-    padding-top: 10px;
-}
+.scan-actions { margin-top: 10px; }
 
 /* ── Input file invisible ────────────────────────────────────── */
 .visually-hidden {
@@ -248,13 +287,15 @@
     width: 1px;
     height: 1px;
     overflow: hidden;
-    clip: rect(0,0,0,0);
+    clip: rect(0 0 0 0);
     white-space: nowrap;
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 680px) {
-    .scan-header__name { font-size: 1.4rem; }
-    .piece-card { padding: 12px 14px; }
-    .piece-card__filename { max-width: 120px; }
+    .scan-header__name       { font-size: 1.4rem; }
+    .piece-card              { padding: 12px 14px; }
+    .piece-card__right       { padding-left: 12px; }
+    .piece-card__file-chosen { max-width: 160px; }
+    .piece-card__upload-form { flex-direction: column; align-items: flex-start; }
 }
