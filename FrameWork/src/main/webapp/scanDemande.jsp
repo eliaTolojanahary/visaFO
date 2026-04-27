@@ -96,13 +96,13 @@
         <div class="progress-header">
             <span class="progress-label">Progression du scan</span>
             <span class="progress-count" id="progressCount">
-                <%= scannedCount %> / <%= totalPieces %> pièces
+                <span id="scannedCount">0</span> / <span id="totalCount">0</span> pièces
             </span>
         </div>
         <div class="progress-bar-track">
             <div class="progress-bar-fill"
                  id="progressBarFill"
-                 style="width:<%= progressPct %>%"></div>
+                 style="width:0%"></div>
         </div>
     </div>
 
@@ -134,10 +134,17 @@
             <div class="piece-card <%= scanned ? "piece-card--done" : "" %>"
                  id="piece-<%= pieceId %>">
 
-                <%-- ── Libellé + point de statut ── --%>
+                <%-- ── Checkbox + Libellé + point de statut ── --%>
                 <div class="piece-card__info">
-                    <span class="piece-card__status-dot <%= scanned ? "dot--green" : "dot--gray" %>"></span>
-                    <span class="piece-card__label"><%= pieceLibelle %></span>
+                    <input type="checkbox" 
+                           class="piece-card__checkbox js-piece-checkbox"
+                           id="check-<%= pieceId %>"
+                           data-piece-id="<%= pieceId %>"
+                           <%= scanned ? "checked" : "" %>>
+                    <label for="check-<%= pieceId %>" class="piece-card__checkbox-label">
+                        <span class="piece-card__status-dot <%= scanned ? "dot--green" : "dot--gray" %>"></span>
+                        <span class="piece-card__label"><%= pieceLibelle %></span>
+                    </label>
                 </div>
 
                 <%-- ── Bloc droite : métadonnées fichier + formulaire upload ── --%>
@@ -164,13 +171,15 @@
                     </div>
                     <% } %>
 
-                    <%-- ── Formulaire upload — masqué si dossier verrouillé ── --%>
+                    <%-- ── Formulaire upload — masqué si dossier verrouillé ou pièce non sélectionnée ── --%>
                     <% if (!verrouille) { %>
                     <form class="piece-card__upload-form"
                           action="<%= uploadUrl %>"
                           method="post"
                           enctype="multipart/form-data"
-                          novalidate>
+                          novalidate
+                          id="form-<%= pieceId %>"
+                          <%= !scanned ? "style='display:none;'" : "" %>>
 
                         <%-- Champs cachés pour identification serveur --%>
                         <input type="hidden" name="pieceRefId" value="<%= pieceId %>">
@@ -227,8 +236,9 @@
               method="post"
               style="display: inline;">
             <button type="submit"
+                    id="finalizeBtn"
                     class="btn-primary"
-                    <%= (scannedCount < totalPieces) ? "disabled" : "" %>>
+                    disabled>
                 Scan Terminé
             </button>
         </form>
@@ -240,6 +250,21 @@
     </div>
 
 </div><%-- /container --%>
+
+<script>
+    // Initialiser le nombre total de pièces et calculer la progression
+    window.addEventListener('DOMContentLoaded', function () {
+        var totalCount = document.querySelectorAll('.js-piece-checkbox').length;
+        document.getElementById('totalCount').textContent = totalCount;
+        if (totalCount === 0) {
+            document.getElementById('progressBarFill').style.width = '100%';
+            document.getElementById('finalizeBtn').disabled = false;
+        } else {
+            // Appeler updateProgress une première fois
+            updateProgress();
+        }
+    });
+</script>
 
 <script src="<%= ctx %>/js/scanDemande.js"></script>
 </body>
