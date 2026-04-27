@@ -26,6 +26,7 @@ import annotation.Api;
 import annotation.Session;
 import annotation.Authorized;
 import annotation.Role;
+import util.DownloadFileResponse;
 import util.JsonUtil;
 import java.util.Set;
 import scan.ClassPathScanner;
@@ -171,7 +172,7 @@ public class FrontServlet extends HttpServlet {
         try (PrintWriter out = resp.getWriter()) {
             if (selectedRoute != null) {
                 // If request is multipart, read uploaded parts into map for binding
-                Map<String, java.util.List<main.FileUpload>> uploadedFiles = new HashMap<>();
+                Map<String, java.util.List<util.FileUpload>> uploadedFiles = new HashMap<>();
                 boolean isMultipart = req.getContentType() != null && req.getContentType().toLowerCase().startsWith("multipart/");
                 if (isMultipart) {
                     try {
@@ -219,7 +220,7 @@ public class FrontServlet extends HttpServlet {
                                 buffer.flush();
                                 content = buffer.toByteArray();
                             }
-                            main.FileUpload fu = new main.FileUpload(content, submitted, p.getContentType(), size);
+                            util.FileUpload fu = new util.FileUpload(content, submitted, p.getContentType(), size);
                             // save to uploads/ if possible (overwrite existing)
                             try {
                                 if (uploadsPath != null) {
@@ -336,16 +337,16 @@ public class FrontServlet extends HttpServlet {
                                 // Try to bind file lists/arrays if multipart
                                 if (isMultipart) {
                                     // Array of FileUpload
-                                    if (paramType.isArray() && paramType.getComponentType() == main.FileUpload.class) {
-                                        java.util.List<main.FileUpload> lst = uploadedFiles.get(paramNameForFile);
+                                    if (paramType.isArray() && paramType.getComponentType() == util.FileUpload.class) {
+                                        java.util.List<util.FileUpload> lst = uploadedFiles.get(paramNameForFile);
                                         if (lst == null) lst = new ArrayList<>();
-                                        main.FileUpload[] arr = lst.toArray(new main.FileUpload[0]);
+                                        util.FileUpload[] arr = lst.toArray(new util.FileUpload[0]);
                                         args[i] = arr;
                                         continue;
                                     }
                                     // List<FileUpload>
                                     if (List.class.isAssignableFrom(paramType)) {
-                                        java.util.List<main.FileUpload> lst = uploadedFiles.get(paramNameForFile);
+                                        java.util.List<util.FileUpload> lst = uploadedFiles.get(paramNameForFile);
                                         if (lst == null) lst = new ArrayList<>();
                                         args[i] = lst;
                                         continue;
@@ -381,12 +382,12 @@ public class FrontServlet extends HttpServlet {
                                 continue;
                             }
                                 // File binding: byte[] or FileUpload
-                                if (isMultipart && (paramType == byte[].class || paramType == main.FileUpload.class)) {
-                                    java.util.List<main.FileUpload> lst = uploadedFiles.get(paramNameForFile);
+                                if (isMultipart && (paramType == byte[].class || paramType == util.FileUpload.class)) {
+                                    java.util.List<util.FileUpload> lst = uploadedFiles.get(paramNameForFile);
                                     if (lst == null || lst.isEmpty()) {
                                         throw new IllegalArgumentException("Fichier manquant: " + paramNameForFile);
                                     }
-                                    main.FileUpload first = lst.get(0);
+                                    util.FileUpload first = lst.get(0);
                                     if (paramType == byte[].class) {
                                         args[i] = first.getContent();
                                     } else {
@@ -430,6 +431,25 @@ public class FrontServlet extends HttpServlet {
                     }
 
                     // Non-API behavior: keep HTML rendering as before
+                    if (result instanceof DownloadFileResponse) {
+                        DownloadFileResponse file = (DownloadFileResponse) result;
+                        String contentType = file.getContentType() != null && !file.getContentType().trim().isEmpty()
+                            ? file.getContentType()
+                            : "application/octet-stream";
+                        String filename = file.getFilename() != null && !file.getFilename().trim().isEmpty()
+                            ? file.getFilename().replace("\"", "")
+                            : "document";
+
+                        resp.reset();
+                        resp.setContentType(contentType);
+                        resp.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+                        byte[] content = file.getContent() != null ? file.getContent() : new byte[0];
+                        resp.setContentLength(content.length);
+                        resp.getOutputStream().write(content);
+                        resp.getOutputStream().flush();
+                        return;
+                    }
+
                     if (result instanceof ModelView) {
                         ModelView modelView = (ModelView) result;
                         String view = modelView.getView();

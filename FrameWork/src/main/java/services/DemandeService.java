@@ -190,6 +190,9 @@ public class DemandeService {
         if (existing == null) {
             throw new IllegalArgumentException("Aucune demande trouvée avec l'id " + demandeId);
         }
+        if (existing.isVerrouille()) {
+            throw new DemandeVerrouilleeException("Cette demande est verrouillee et ne peut plus etre modifiee.");
+        }
 
         Demande demande = buildDemandeFromForm(formData);
         demande.setId(demandeId);
@@ -210,6 +213,11 @@ public class DemandeService {
         }
 
         return updated;
+    }
+
+    public boolean isDemandeVerrouillee(long demandeId) throws SQLException {
+        Demande demande = demandeDao.findById(demandeId);
+        return demande != null && demande.isVerrouille();
     }
 
     public Map<String, List<PieceJustificative>> getInfoSpecifique(Long idType) throws SQLException {
@@ -304,7 +312,7 @@ public class DemandeService {
     }
 
     public Map<String, Object> getFormDataByDemandeId(long demandeId) throws SQLException {
-        String sql = "SELECT d.id AS demande_id, d.passeport_id, d.type_demande_id, d.type_titre_id, "
+        String sql = "SELECT d.id AS demande_id, d.passeport_id, d.type_demande_id, d.type_titre_id, d.verrouille, "
             + "d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, "
             + "dm.nom, dm.prenom, dm.nom_jeune_fille, dm.date_naissance, dm.situation_famille_id, "
             + "dm.nationalite_id, dm.adresse_madagascar, dm.numero_telephone, dm.email, dm.profession, "
@@ -329,6 +337,7 @@ public class DemandeService {
                 formData.put("demande_id", String.valueOf(rs.getLong("demande_id")));
                 formData.put("passeport_id", String.valueOf(rs.getLong("passeport_id")));
                 formData.put("typeDemande", String.valueOf(rs.getLong("type_demande_id")));
+                formData.put("verrouille", rs.getBoolean("verrouille"));
 
                 long typeTitreId = rs.getLong("type_titre_id");
                 if (!rs.wasNull()) {

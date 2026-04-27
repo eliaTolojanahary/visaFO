@@ -91,7 +91,7 @@ public class DemandeRepository implements DemandeDao {
 
     @Override
     public Demande findById(long id) throws SQLException {
-        String sql = "SELECT id, passeport_id, type_demande_id, type_titre_id, statut_id, visa_date_entree, visa_lieu_entree, visa_date_expiration, created_at, updated_at FROM  demande WHERE id = ?";
+        String sql = "SELECT id, passeport_id, type_demande_id, type_titre_id, statut_id, visa_date_entree, visa_lieu_entree, visa_date_expiration, ref_demande, type_document_id, verrouille, created_at, updated_at FROM  demande WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -115,7 +115,7 @@ public class DemandeRepository implements DemandeDao {
         switch (column.toLowerCase()) {
             case "nom":
             case "prenom":
-                sql = "SELECT d.id, d.passeport_id, d.type_demande_id, d.type_titre_id, d.statut_id, d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, d.ref_demande, d.type_document_id, d.created_at, d.updated_at " +
+                sql = "SELECT d.id, d.passeport_id, d.type_demande_id, d.type_titre_id, d.statut_id, d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, d.ref_demande, d.type_document_id, d.verrouille, d.created_at, d.updated_at " +
                       "FROM demande d " +
                       "JOIN passeport p ON d.passeport_id = p.id " +
                       "JOIN demandeur dem ON p.demandeur_id = dem.id " +
@@ -123,7 +123,7 @@ public class DemandeRepository implements DemandeDao {
                       "ORDER BY d.created_at DESC LIMIT 1";
                 break;
             case "date_naissance":
-                sql = "SELECT d.id, d.passeport_id, d.type_demande_id, d.type_titre_id, d.statut_id, d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, d.ref_demande, d.type_document_id, d.created_at, d.updated_at " +
+                sql = "SELECT d.id, d.passeport_id, d.type_demande_id, d.type_titre_id, d.statut_id, d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, d.ref_demande, d.type_document_id, d.verrouille, d.created_at, d.updated_at " +
                       "FROM demande d " +
                       "JOIN passeport p ON d.passeport_id = p.id " +
                       "JOIN demandeur dem ON p.demandeur_id = dem.id " +
@@ -205,6 +205,10 @@ public class DemandeRepository implements DemandeDao {
                 typeDocument.setId(typeDocumentId);
                 demande.setType_document(typeDocument);
             }
+        }
+
+        if (hasColumn(rs, "verrouille")) {
+            demande.setVerrouille(rs.getBoolean("verrouille"));
         }
 
         Timestamp created = rs.getTimestamp("created_at");
