@@ -383,13 +383,7 @@ public class DemandeRepository implements DemandeDao {
     }
 
     @Override
-    public Map<String, Object> searchDemandeurEtPasseport(
-            String nom,
-            String prenom,
-            String dateNaissance,
-            String numeroPasseport
-    ) throws SQLException {
-    
+    public Map<String, Object> searchDemandeurEtPasseport(String nom, String prenom, String dateNaissance, String numeroPasseport) throws SQLException {
         StringBuilder sql = new StringBuilder(
             "SELECT d.nom, d.prenom, d.date_naissance, d.adresse_madagascar, d.numero_telephone, d.email, d.profession, " +
             "n.libelle as nationalite, " +
