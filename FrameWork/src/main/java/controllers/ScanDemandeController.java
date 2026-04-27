@@ -27,7 +27,54 @@ import modelview.ModelView;
 public class ScanDemandeController {
 
     // ══════════════════════════════════════════════════════════════════
+    // GET /demande/{id}/scan
+    // Route réelle (Sprint 3) — chargement des données depuis la BD
+    // ══════════════════════════════════════════════════════════════════
+
+    @MethodeAnnotation("/demande/@id/scan")
+    @GetMapping
+    public ModelView getScanPage(Map<String, Object> pathParams, 
+                                 Map<String, Object> queryParams) {
+        ModelView mv = new ModelView("/scanDemande.jsp");
+
+        Long demandeId = pathParams != null && pathParams.get("id") != null
+            ? Long.parseLong(String.valueOf(pathParams.get("id")))
+            : 0L;
+
+        if (demandeId <= 0) {
+            mv.setView("redirect:/");
+            return mv;
+        }
+
+        /*
+         * TODO (Sprint 3 Back-End) : En production
+         *
+         * 1. Charger la demande via DemandeService.findDemande(demandeId)
+         * 2. Charger la liste des pièces attendues (demande_piece cochée = TRUE)
+         * 3. Charger les pièces fournies (piece_fournie) pour cette demande
+         * 4. Calculer isDemandeComplete() via ScanService
+         * 5. Injecter dans mv :
+         *    - demandeId, reference, nomComplet, statutLibelle, verrouille
+         *    - pieces (List<Map>) avec les champs requis
+         *    - flashMessage/flashError si présents en param query
+         */
+
+        // Mock : pour test du front-end
+        mv.addData("demandeId",       demandeId);
+        mv.addData("reference",       "REF-" + demandeId);
+        mv.addData("nomComplet",      "Demandeur Test");
+        mv.addData("statutLibelle",   "EN COURS");
+        mv.addData("verrouille",      false);
+        mv.addData("pieces",          new ArrayList<>());
+        mv.addData("flashMessage",    null);
+        mv.addData("flashError",      null);
+
+        return mv;
+    }
+
+    // ══════════════════════════════════════════════════════════════════
     // GET /form/scan
+    // Route de test uniquement — avec mock data prédéfinies
     // ══════════════════════════════════════════════════════════════════
 
     @MethodeAnnotation("/form/scan")
@@ -97,6 +144,40 @@ public class ScanDemandeController {
         return new ModelView(
             "redirect:/demande/" + demandeId + "/scan?flash=verrouille_ok"
         );
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // GET /demande/{demandeId}/piece/{pieceRefId}/download
+    //
+    // Télécharge le fichier scanné pour une pièce justificative.
+    //
+    // En production :
+    //   1. Charger piece_fournie via PieceFournieRepository
+    //   2. Lire le fichier depuis le disque / object storage
+    //   3. Envoyer le fichier au client avec bon Content-Type et Content-Disposition
+    // ══════════════════════════════════════════════════════════════════
+
+    @MethodeAnnotation("/demande/@id/piece/@id/download")
+    @GetMapping
+    public ModelView downloadPiece(Map<String, Object> pathParams) {
+        /*
+         * En production :
+         * - Long demandeId    = (Long) pathParams.get("demandeId");
+         * - Long pieceRefId   = (Long) pathParams.get("pieceRefId");
+         * - PieceFournie pf   = pieceFournieRepo.recuperer(demandeId, pieceRefId);
+         * - si pf != null : envoyer le fichier
+         * - sinon : 404
+         *
+         * Important : utiliser un mécanisme de streaming pour les gros fichiers.
+         * Exemple avec Servlet/JSP :
+         *   response.setHeader("Content-Type", pf.mime_type);
+         *   response.setHeader("Content-Disposition", 
+         *     "attachment; filename=\"" + URLEncoder.encode(pf.nom_fichier, "UTF-8") + "\"");
+         *   Files.copy(Paths.get(pf.chemin_fichier), response.getOutputStream());
+         */
+
+        // Mock pour l'instant
+        return new ModelView("redirect:/demande/1/scan?flash=download_mock");
     }
 
     // ══════════════════════════════════════════════════════════════════
