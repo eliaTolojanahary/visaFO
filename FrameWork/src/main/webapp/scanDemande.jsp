@@ -78,6 +78,8 @@
     </div>
     <% } %>
 
+    <div id="uploadJsonResult" class="hidden" role="status" aria-live="polite"></div>
+
     <%-- ══ EN-TÊTE ═══════════════════════════════════════════════ --%>
     <header class="scan-header">
         <div class="scan-header__meta">
@@ -96,13 +98,13 @@
         <div class="progress-header">
             <span class="progress-label">Progression du scan</span>
             <span class="progress-count" id="progressCount">
-                <span id="scannedCount">0</span> / <span id="totalCount">0</span> pièces
+                <span id="scannedCount"><%= scannedCount %></span> / <span id="totalCount"><%= totalPieces %></span> pièces
             </span>
         </div>
         <div class="progress-bar-track">
             <div class="progress-bar-fill"
                  id="progressBarFill"
-                 style="width:0%"></div>
+                 style="width:<%= progressPct %>%"></div>
         </div>
     </div>
 
@@ -140,7 +142,8 @@
                            class="piece-card__checkbox js-piece-checkbox"
                            id="check-<%= pieceId %>"
                            data-piece-id="<%= pieceId %>"
-                           <%= scanned ? "checked" : "" %>>
+                              <%= scanned ? "checked" : "" %>
+                              <%= verrouille ? "disabled" : "" %>>
                     <label for="check-<%= pieceId %>" class="piece-card__checkbox-label">
                         <span class="piece-card__status-dot <%= scanned ? "dot--green" : "dot--gray" %>"></span>
                         <span class="piece-card__label"><%= pieceLibelle %></span>
@@ -238,7 +241,7 @@
             <button type="submit"
                     id="finalizeBtn"
                     class="btn-primary"
-                    disabled>
+                    <%= ((totalPieces > 0 && scannedCount < totalPieces) ? "disabled" : "") %>>
                 Scan Terminé
             </button>
         </form>
@@ -251,21 +254,36 @@
 
 </div><%-- /container --%>
 
+<script src="<%= ctx %>/js/scanDemande.js"></script>
+
 <script>
-    // Initialiser le nombre total de pièces et calculer la progression
+    // Initialiser APRÈS que le JS soit chargé
     window.addEventListener('DOMContentLoaded', function () {
+        console.log('[JSP Init] Initialisation de la barre de progression');
         var totalCount = document.querySelectorAll('.js-piece-checkbox').length;
-        document.getElementById('totalCount').textContent = totalCount;
+        console.log('[JSP Init] Total checkboxes trouvées : ' + totalCount);
+        
+        var totalEl = document.getElementById('totalCount');
+        if (totalEl) {
+            totalEl.textContent = totalCount;
+            console.log('[JSP Init] Affichage total mis à jour');
+        }
+        
         if (totalCount === 0) {
-            document.getElementById('progressBarFill').style.width = '100%';
-            document.getElementById('finalizeBtn').disabled = false;
+            console.log('[JSP Init] Aucune pièce, progression 100%');
+            var barEl = document.getElementById('progressBarFill');
+            if (barEl) barEl.style.width = '100%';
+            var finalizeBtn = document.getElementById('finalizeBtn');
+            if (finalizeBtn) finalizeBtn.disabled = false;
         } else {
-            // Appeler updateProgress une première fois
-            updateProgress();
+            console.log('[JSP Init] Appel updateProgress');
+            if (typeof window.updateProgress === 'function') {
+                window.updateProgress();
+            } else {
+                console.error('[JSP Init] updateProgress n\'est pas définie !');
+            }
         }
     });
 </script>
-
-<script src="<%= ctx %>/js/scanDemande.js"></script>
 </body>
 </html>
