@@ -8,6 +8,7 @@ import annotation.PostMapping;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,58 @@ public class DemandeController {
         return response;
     }
 
+    /**
+     * Convertit une liste de PieceJustificative en List<Map<String, Object>>
+     * pour utilisation en JSP
+     */
+    private List<Map<String, Object>> convertPiecesJustificativesToMaps(List<PieceJustificative> pieces) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        if (pieces != null) {
+            for (PieceJustificative piece : pieces) {
+                Map<String, Object> pieceMap = new HashMap<>();
+                pieceMap.put("id", piece.getId());
+                pieceMap.put("libelle", piece.getLibelle());
+                pieceMap.put("scanStatut", "EN_ATTENTE");
+                pieceMap.put("fileName", "");
+                result.add(pieceMap);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Prépare les pièces justificatives selon le profil et le type de demande
+     * Retourne une liste combinée (communes + spécifiques) pour affichage
+     */
+    private List<Map<String, Object>> preparePiecesForDisplay(String profil, String typeDemande) throws SQLException {
+        List<Map<String, Object>> allPieces = new ArrayList<>();
+        
+        // Toujours afficher les pièces communes
+        Map<String, List<PieceJustificative>> investisseur = demandeService.getInfoSpecifiqueByLibelle("Investisseur");
+        List<PieceJustificative> piecesCommunes = investisseur.get("piecesCommunes");
+        
+        if (piecesCommunes != null) {
+            allPieces.addAll(convertPiecesJustificativesToMaps(piecesCommunes));
+        }
+        
+        // Ajouter les pièces spécifiques selon le profil
+        if ("investisseur".equalsIgnoreCase(profil)) {
+            Map<String, List<PieceJustificative>> investisseurData = demandeService.getInfoSpecifiqueByLibelle("Investisseur");
+            List<PieceJustificative> piecesInvestisseur = investisseurData.get("piecesSpecifiques");
+            if (piecesInvestisseur != null) {
+                allPieces.addAll(convertPiecesJustificativesToMaps(piecesInvestisseur));
+            }
+        } else if ("travailleur".equalsIgnoreCase(profil)) {
+            Map<String, List<PieceJustificative>> travailleurData = demandeService.getInfoSpecifiqueByLibelle("Travailleur");
+            List<PieceJustificative> piecesTravailleur = travailleurData.get("piecesSpecifiques");
+            if (piecesTravailleur != null) {
+                allPieces.addAll(convertPiecesJustificativesToMaps(piecesTravailleur));
+            }
+        }
+        
+        return allPieces;
+    }
+
     // CORRIGÉ: Mapping complet incluant le préfixe de la classe
     @MethodeAnnotation("/form")  
     @GetMapping
@@ -80,9 +133,16 @@ public class DemandeController {
             System.out.println("[DEBUG CONTROLLER] Nationalités trouvées: " + nats.size());
             mv.addData("nationalites", nats);
             
+            // Envoyer les pièces par catégorie AUSSI (pour les scripts JS qui en auraient besoin)
             mv.addData("piecesCommunes", investisseur.get("piecesCommunes"));
             mv.addData("piecesInvestisseur", investisseur.get("piecesSpecifiques"));
             mv.addData("piecesTravailleur", travailleur.get("piecesSpecifiques"));
+            
+            // [NEW] Préparer les pièces pour la vue initiale (mode création)
+            // Au chargement initial, afficher les pièces communes
+            List<Map<String, Object>> piecesInitiales = convertPiecesJustificativesToMaps(investisseur.get("piecesCommunes"));
+            mv.addData("listePiecesAttendues", piecesInitiales);
+            
             System.out.println("[DEBUG CONTROLLER] Données chargées avec succès");
         } catch (SQLException e) {
             System.err.println("[DEBUG CONTROLLER] ERREUR: " + e.getMessage());
@@ -118,6 +178,10 @@ public class DemandeController {
         mv.addData("piecesCommunes", investisseur.get("piecesCommunes"));
         mv.addData("piecesInvestisseur", investisseur.get("piecesSpecifiques"));
         mv.addData("piecesTravailleur", travailleur.get("piecesSpecifiques"));
+        
+        // [NEW] Préparer les pièces initiales aussi ici
+        List<Map<String, Object>> piecesInitiales = convertPiecesJustificativesToMaps(investisseur.get("piecesCommunes"));
+        mv.addData("listePiecesAttendues", piecesInitiales);
     }
 
     // CORRIGÉ: Mapping pour l'erreur
