@@ -267,6 +267,15 @@
     cursor: not-allowed;
 }
 
+/* ── Message d'erreur inline (upload) ──────────────────────── */
+.upload-form-error {
+    color: #c0392b;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 6px 8px;
+    margin-top: 4px;
+}
+
 /* ── Tailles de boutons/badges ───────────────────────────────── */
 .btn-sm {
     padding: 8px 16px !important;
@@ -276,6 +285,29 @@
 .badge-sm {
     padding: 3px 8px;
     font-size: 0.78rem;
+}
+
+/* ── Bouton primaire (style du bouton "Scan Terminé") ────────── */
+.btn-primary {
+    background: linear-gradient(135deg, #1a4a7a, #0f3a5f);
+    color: #fff;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(26, 74, 122, 0.18);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #163f6d, #0a2f4d);
+    box-shadow: 0 6px 16px rgba(26, 74, 122, 0.28);
+    transform: translateY(-2px);
+}
+
+.btn-primary:disabled {
+    background: linear-gradient(135deg, #b0bec9, #90a4ae);
+    color: rgba(255, 255, 255, 0.6);
+    box-shadow: none;
+    opacity: 1;
+    cursor: not-allowed;
 }
 
 /* ── Actions bas de page ─────────────────────────────────────── */
