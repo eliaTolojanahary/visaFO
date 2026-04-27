@@ -221,13 +221,17 @@
     <%-- ══ ACTIONS GLOBALES ══════════════════════════════════════ --%>
     <div class="form-actions scan-actions">
         <% if (!verrouille) { %>
-        <button type="button"
-                id="finalizeScanBtn"
-                data-demande-id="<%= demandeId %>"
-                class="btn-primary"
-                <%= (scannedCount < totalPieces) ? "disabled" : "" %>>
-            Finaliser le scan
-        </button>
+        <%-- Formulaire de verrouillage (POST) avec confirmation ── --%>
+        <form id="verrouillerForm"
+              action="<%= ctx %>/demande/<%= demandeId %>/verrouiller"
+              method="post"
+              style="display: inline;">
+            <button type="submit"
+                    class="btn-primary"
+                    <%= (scannedCount < totalPieces) ? "disabled" : "" %>>
+                Scan Terminé
+            </button>
+        </form>
         <% } %>
         <a href="<%= ctx %>/demande/<%= demandeId != null ? demandeId : "" %>"
            class="btn-alt">
