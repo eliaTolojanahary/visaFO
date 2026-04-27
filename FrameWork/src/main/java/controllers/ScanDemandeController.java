@@ -4,6 +4,7 @@ import annotation.ClasseAnnotation;
 import annotation.GetMapping;
 import annotation.MethodeAnnotation;
 import annotation.PostMapping;
+import annotation.Api;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -59,15 +60,28 @@ public class ScanDemandeController {
          *    - flashMessage/flashError si présents en param query
          */
 
-        // Mock : pour test du front-end
+        String flash = queryParams != null && queryParams.get("flash") != null
+            ? String.valueOf(queryParams.get("flash")) : "";
+        String flashMessage = null;
+        String flashError = null;
+        if ("upload_ok".equalsIgnoreCase(flash)) {
+            flashMessage = "Upload dummy OK";
+        } else if ("verrouille_ok".equalsIgnoreCase(flash)) {
+            flashMessage = "Verrouillage dummy OK";
+        } else if ("upload_error".equalsIgnoreCase(flash)) {
+            flashError = "Upload dummy en erreur";
+        }
+
+        // Mock : pour test du front-end — utiliser les données mock de test
+        List<Map<String, Object>> pieces = buildPiecesNormal();
         mv.addData("demandeId",       demandeId);
         mv.addData("reference",       "REF-" + demandeId);
         mv.addData("nomComplet",      "Demandeur Test");
         mv.addData("statutLibelle",   "EN COURS");
         mv.addData("verrouille",      false);
-        mv.addData("pieces",          new ArrayList<>());
-        mv.addData("flashMessage",    null);
-        mv.addData("flashError",      null);
+        mv.addData("pieces",          pieces);
+        mv.addData("flashMessage",    flashMessage);
+        mv.addData("flashError",      flashError);
 
         return mv;
     }
@@ -100,9 +114,10 @@ public class ScanDemandeController {
     // POST /demande/{demandeId}/piece/{pieceRefId}/upload
     // ══════════════════════════════════════════════════════════════════
 
-    @MethodeAnnotation("/demande/*/piece/*/upload")
+    @MethodeAnnotation("/demande/{demandeId}/piece/{pieceRefId}/upload")
     @PostMapping
-    public ModelView uploadPiece(Map<String, Object> formData) {
+    @Api
+    public Map<String, Object> uploadPiece(Map<String, Object> formData) {
         /*
          * En production :
          *   1. Récupérer le Part multipart "fichier"
@@ -113,10 +128,17 @@ public class ScanDemandeController {
          */
         String demandeId = formData.get("demandeId") != null
             ? String.valueOf(formData.get("demandeId")) : "0";
+        String pieceRefId = formData.get("pieceRefId") != null
+            ? String.valueOf(formData.get("pieceRefId")) : "0";
+        System.out.println("[STUB][UPLOAD] demandeId=" + demandeId + ", pieceRefId=" + pieceRefId);
 
-        return new ModelView(
-            "redirect:/demande/" + demandeId + "/scan?flash=upload_ok"
-        );
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", "success");
+        result.put("message", "Upload dummy avec succes");
+        result.put("demandeId", demandeId);
+        result.put("pieceRefId", pieceRefId);
+        result.put("next", "/demande/" + demandeId + "/piece/" + pieceRefId + "/download");
+        return result;
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -131,19 +153,20 @@ public class ScanDemandeController {
     //   3. Rediriger avec flashMessage succès
     // ══════════════════════════════════════════════════════════════════
 
-    @MethodeAnnotation("/demande/{id}/verrouiller")
+    @MethodeAnnotation("/demande/{demandeId}/verrouiller")
     @PostMapping
-    public ModelView verrouiller(Map<String, Object> formData) {
+    @Api
+    public Map<String, Object> verrouiller(Map<String, Object> formData) {
         String demandeId = formData.get("demandeId") != null
             ? String.valueOf(formData.get("demandeId")) : "0";
+        System.out.println("[STUB][VERROUILLER] demandeId=" + demandeId);
 
-        /*
-         * Mock : simule succès systématique.
-         * En production : vérifier demandeComplete avant d'accepter.
-         */
-        return new ModelView(
-            "redirect:/demande/" + demandeId + "/scan?flash=verrouille_ok"
-        );
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", "success");
+        result.put("message", "Dossier verrouille (dummy)");
+        result.put("demandeId", demandeId);
+        result.put("redirect", "/suivi?ref=REF-" + demandeId);
+        return result;
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -157,9 +180,9 @@ public class ScanDemandeController {
     //   3. Envoyer le fichier au client avec bon Content-Type et Content-Disposition
     // ══════════════════════════════════════════════════════════════════
 
-    @MethodeAnnotation("/demande/{id}/piece/{id}/download")
+    @MethodeAnnotation("/demande/{demandeId}/piece/{pieceRefId}/download")
     @GetMapping
-    public ModelView downloadPiece(Map<String, Object> pathParams) {
+    public ModelView downloadPiece(Long demandeId, Long pieceRefId) {
         /*
          * En production :
          * - Long demandeId    = (Long) pathParams.get("demandeId");
@@ -176,8 +199,12 @@ public class ScanDemandeController {
          *   Files.copy(Paths.get(pf.chemin_fichier), response.getOutputStream());
          */
 
+        String demandeIdStr = demandeId != null ? String.valueOf(demandeId) : "1";
+        String pieceRefIdStr = pieceRefId != null ? String.valueOf(pieceRefId) : "0";
+        System.out.println("[STUB][DOWNLOAD] demandeId=" + demandeIdStr + ", pieceRefId=" + pieceRefIdStr);
+
         // Mock pour l'instant
-        return new ModelView("redirect:/demande/1/scan?flash=download_mock");
+        return new ModelView("redirect:/demande/" + demandeIdStr + "/scan?flash=download_mock");
     }
 
     // ══════════════════════════════════════════════════════════════════
