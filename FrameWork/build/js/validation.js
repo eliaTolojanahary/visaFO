@@ -44,6 +44,14 @@ function clearErrors() {
     }
 }
 
+function showGlobalValidationMessage(message) {
+    const banner = document.getElementById('globalMessage');
+    if (!banner) return;
+    banner.textContent = message;
+    banner.className = 'error-banner';
+    banner.style.display = 'block';
+}
+
 function validateForm() {
     clearErrors();
     let valid = true;
@@ -134,9 +142,18 @@ function validateForm() {
         }
     }
 
+    const reviewBtn = document.getElementById('reviewBtn');
+    if (reviewBtn) {
+        reviewBtn.disabled = !valid;
+    }
+
     const submitBtn = document.getElementById('submitBtn');
     if (submitBtn) {
         submitBtn.disabled = !valid;
+    }
+
+    if (!valid && window.__reviewAttempted) {
+        showGlobalValidationMessage('Le formulaire contient des erreurs. Corrigez les champs en rouge avant de continuer.');
     }
 
     return valid;
