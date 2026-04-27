@@ -1,5 +1,6 @@
 package controllers;
 
+import annotation.Api;
 import annotation.ClasseAnnotation;
 import annotation.GetMapping;
 import annotation.MethodeAnnotation;
@@ -7,6 +8,7 @@ import annotation.PostMapping;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import models.Demande;
@@ -23,6 +25,32 @@ import services.DemandeVerrouilleeException;
 public class DemandeController {
 
     private final DemandeService demandeService = new DemandeService();
+
+    @MethodeAnnotation("/form/search")
+    @PostMapping
+    @Api
+    public Map<String, Object> search(Map<String, Object> formData) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String nom = formData.get("nom") != null ? formData.get("nom").toString() : null;
+            String prenom = formData.get("prenom") != null ? formData.get("prenom").toString() : null;
+            String dateNaissance = formData.get("dateNaissance") != null ? formData.get("dateNaissance").toString() : null;
+            String numeroPasseport = formData.get("numeroPasseport") != null ? formData.get("numeroPasseport").toString() : null;
+
+            Map<String, Object> result = demandeService.searchDemandeurEtPasseport(nom, prenom, dateNaissance, numeroPasseport);
+            response.put("found", result != null);
+            response.put("message", result != null
+                ? "Resultat trouve dans la base de donnees."
+                : "Aucun demandeur trouve avec ces criteres.");
+            if (result != null) {
+                response.put("data", result);
+            }
+        } catch (SQLException e) {
+            response.put("found", false);
+            response.put("message", "Recherche indisponible pour le moment.");
+        }
+        return response;
+    }
 
     // CORRIGÉ: Mapping complet incluant le préfixe de la classe
     @MethodeAnnotation("/form")  
