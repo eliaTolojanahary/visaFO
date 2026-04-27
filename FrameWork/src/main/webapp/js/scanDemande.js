@@ -240,3 +240,194 @@
         refreshGlobalProgress();
     });
 })();
+
+/**
+ * scanDemande.js  –  Sprint 3 / feature/scan-front
+ *
+ * Responsabilités (upload géré par <form> POST natif) :
+ *  1. Afficher le nom du fichier choisi dans le label stylisé
+ *  2. Activer le bouton "Uploader" seulement quand un fichier est sélectionné
+ *  3. Valider localement (type, taille) avant soumission — annule si invalide
+ *  4. Mettre le formulaire en état "envoi en cours" pendant la soumission
+ *  5. Bouton "Finaliser le scan" → POST fetch + redirect
+ */
+(function () {
+    'use strict';
+
+    /* ── Constantes ────────────────────────────────────────────── */
+    const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+    const MAX_BYTES      = 10 * 1024 * 1024; // 10 Mo
+
+    /* ──────────────────────────────────────────────────────────── */
+    /* 1. Sélecteur fichier : nom affiché + activation du bouton   */
+    /* ──────────────────────────────────────────────────────────── */
+
+    function bindFileInputs() {
+        document.querySelectorAll('.js-upload-input').forEach(function (input) {
+            input.addEventListener('change', function () {
+                const pieceId  = input.dataset.pieceId;
+                const chosen   = document.getElementById('chosen-' + pieceId);
+                const submitBtn = document.getElementById('upload-btn-' + pieceId);
+
+                if (!input.files || !input.files.length) {
+                    if (chosen)    chosen.textContent = 'Aucun fichier choisi';
+                    if (submitBtn) submitBtn.disabled = true;
+                    return;
+                }
+
+                const file = input.files[0];
+
+                /* Validation locale immédiate */
+                const err = validateFile(file);
+                if (err) {
+                    showInlineError(input.closest('.piece-card__upload-form'), err);
+                    input.value = '';
+                    if (chosen)    chosen.textContent = 'Aucun fichier choisi';
+                    if (submitBtn) submitBtn.disabled = true;
+                    return;
+                }
+
+                clearInlineError(input.closest('.piece-card__upload-form'));
+                if (chosen)    chosen.textContent = file.name;
+                if (submitBtn) submitBtn.disabled = false;
+            });
+        });
+    }
+
+    /* ──────────────────────────────────────────────────────────── */
+    /* 2. Soumission du formulaire : état "en cours"               */
+    /* ──────────────────────────────────────────────────────────── */
+
+    function bindUploadForms() {
+        document.querySelectorAll('.piece-card__upload-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                const input = form.querySelector('.js-upload-input');
+
+                /* Double-vérification côté JS avant envoi */
+                if (!input || !input.files || !input.files.length) {
+                    e.preventDefault();
+                    return;
+                }
+
+                const err = validateFile(input.files[0]);
+                if (err) {
+                    e.preventDefault();
+                    showInlineError(form, err);
+                    return;
+                }
+
+                /* Verrouille le bouton pendant l'envoi (évite double-submit) */
+                const btn = form.querySelector('.js-upload-btn');
+                if (btn) {
+                    btn.disabled    = true;
+                    btn.textContent = 'Envoi en cours…';
+                }
+            });
+        });
+    }
+
+    /* ──────────────────────────────────────────────────────────── */
+    /* 3. Validation fichier                                        */
+    /* ──────────────────────────────────────────────────────────── */
+
+    function validateFile(file) {
+        if (!ACCEPTED_TYPES.includes(file.type)) {
+            return 'Format non accepté. Utilisez PDF, JPG ou PNG.';
+        }
+        if (file.size > MAX_BYTES) {
+            return 'Fichier trop volumineux (max 10 Mo).';
+        }
+        return null;
+    }
+
+    /* ──────────────────────────────────────────────────────────── */
+    /* 4. Messages d'erreur inline (sous le formulaire)            */
+    /* ──────────────────────────────────────────────────────────── */
+
+    function showInlineError(form, message) {
+        if (!form) return;
+        let err = form.querySelector('.upload-form-error');
+        if (!err) {
+            err = document.createElement('div');
+            err.className = 'upload-form-error error-text';
+            err.style.display = 'block';
+            form.appendChild(err);
+        }
+        err.textContent = message;
+    }
+
+    function clearInlineError(form) {
+        if (!form) return;
+        const err = form.querySelector('.upload-form-error');
+        if (err) err.textContent = '';
+    }
+
+    /* ──────────────────────────────────────────────────────────── */
+    /* 5. Bouton "Finaliser le scan"                               */
+    /* ──────────────────────────────────────────────────────────── */
+
+    function bindFinalizeButton() {
+        const btn = document.getElementById('finalizeScanBtn');
+        if (!btn) return;
+
+        btn.addEventListener('click', function () {
+            const demandeId = btn.dataset.demandeId;
+            if (!demandeId) return;
+
+            if (!confirm(
+                'Confirmer la finalisation du scan ?\n' +
+                'Le dossier sera verrouillé et aucune modification ne sera possible.'
+            )) return;
+
+            btn.disabled    = true;
+            btn.textContent = 'Finalisation…';
+
+            fetch('/demande/' + demandeId + '/scan/finaliser', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(function (res) {
+                if (res.ok) {
+                    /* Reload → le controller injecte flashMessage + statut mis à jour */
+                    window.location.reload();
+                } else {
+                    btn.disabled    = false;
+                    btn.textContent = 'Finaliser le scan';
+                    showGlobalMessage('Erreur lors de la finalisation (' + res.status + ').', 'error');
+                }
+            })
+            .catch(function () {
+                btn.disabled    = false;
+                btn.textContent = 'Finaliser le scan';
+                showGlobalMessage('Erreur réseau lors de la finalisation.', 'error');
+            });
+        });
+    }
+
+    /* ──────────────────────────────────────────────────────────── */
+    /* Utilitaire message global (uniquement pour Finaliser)       */
+    /* ──────────────────────────────────────────────────────────── */
+
+    function showGlobalMessage(text, type) {
+        const banner = document.getElementById('globalMessage');
+        if (!banner) return;
+        banner.textContent = text;
+        banner.className   = type === 'success' ? 'success-banner' : 'error-banner';
+        banner.style.display = 'block';
+        setTimeout(function () {
+            banner.className     = 'hidden';
+            banner.style.display = '';
+        }, 6000);
+    }
+
+    /* ──────────────────────────────────────────────────────────── */
+    /* Init                                                         */
+    /* ──────────────────────────────────────────────────────────── */
+
+    window.addEventListener('DOMContentLoaded', function () {
+        bindFileInputs();
+        bindUploadForms();
+        bindFinalizeButton();
+    });
+
+})();
