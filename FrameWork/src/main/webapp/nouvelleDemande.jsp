@@ -104,7 +104,7 @@
         </div>
     </div>
 
-    <form id="demandeForm" action="<%= formAction %>" method="post" novalidate>
+    <form id="demandeForm" action="<%= formAction %>" method="post" enctype="multipart/form-data" novalidate>
         <% if (editMode) { %>
             <input type="hidden" name="demande_id" value="<%= formData.get("demande_id") != null ? formData.get("demande_id") : "" %>">
             <input type="hidden" name="passeport_id" value="<%= formData.get("passeport_id") != null ? formData.get("passeport_id") : "" %>">
@@ -399,6 +399,15 @@
                 %>
             </div>
             <div id="pieceTravailleurError" class="error-text"></div>
+        </div>
+
+        <div id="uploadsSection" class="form-section hidden">
+            <h2>Upload des Pièces Justificatives</h2>
+            <p class="hint-text">Téléchargez les fichiers pour chaque pièce justificative sélectionnée. Formats acceptés : JPEG, PNG, PDF (max 10 Mo par fichier).</p>
+            <div id="piecesUploadContainer" class="pieces-upload-grid">
+                <%-- Les champs d'upload seront générés dynamiquement par JavaScript --%>
+            </div>
+            <div id="piecesUploadError" class="error-text"></div>
         </div>
 
         <div class="form-actions">
