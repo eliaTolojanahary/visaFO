@@ -1,4 +1,4 @@
-package main;
+package util;
 
 public class FileUpload {
     private byte[] content;

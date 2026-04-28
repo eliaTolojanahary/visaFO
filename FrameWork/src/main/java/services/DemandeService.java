@@ -3,12 +3,7 @@ package services;
 import dao.DemandeDao;
 import dao.PieceJustificativeDao;
 import dao.ReferenceVisaDao;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -27,21 +22,18 @@ import models.TypeTitre;
 import repo.DemandeRepository;
 import repo.PieceJustificativeRepository;
 import repo.ReferenceVisaRepository;
-import util.DatabaseConnection;
 
 public class DemandeService {
 
     private final DemandeDao demandeDao;
     private final PieceJustificativeDao pieceDao;
     private final ReferenceVisaDao referenceDao;
-    private final PasseportService passeportService;
 
     public DemandeService() {
         System.out.println("[DEBUG SERVICE] Initialisation DemandeService");
         this.demandeDao = new DemandeRepository();
         this.pieceDao = new PieceJustificativeRepository();
         this.referenceDao = new ReferenceVisaRepository();
-        this.passeportService = new PasseportService();
         System.out.println("[DEBUG SERVICE] DAOs initialisés");
     }
 
@@ -114,9 +106,9 @@ public class DemandeService {
     public Demande saveDemandeWithPassportLookup(Map<String, Object> formData) throws SQLException {
         String numeroPasseport = stringValueAny(formData, "numero_passeport", "numeroPasseport");
         if (numeroPasseport != null && !numeroPasseport.isEmpty()) {
-            models.Passeport existingPassport = passeportService.getByNum(numeroPasseport);
-            if (existingPassport != null) {
-                formData.put("passeport_id", String.valueOf(existingPassport.getId()));
+            Long existingPassportId = demandeDao.findPasseportIdByNumero(numeroPasseport);
+            if (existingPassportId != null) {
+                formData.put("passeport_id", String.valueOf(existingPassportId));
             }
         }
 
@@ -190,6 +182,9 @@ public class DemandeService {
         if (existing == null) {
             throw new IllegalArgumentException("Aucune demande trouvée avec l'id " + demandeId);
         }
+        if (existing.isVerrouille()) {
+            throw new DemandeVerrouilleeException("Cette demande est verrouillee et ne peut plus etre modifiee.");
+        }
 
         Demande demande = buildDemandeFromForm(formData);
         demande.setId(demandeId);
@@ -210,6 +205,11 @@ public class DemandeService {
         }
 
         return updated;
+    }
+
+    public boolean isDemandeVerrouillee(long demandeId) throws SQLException {
+        Demande demande = demandeDao.findById(demandeId);
+        return demande != null && demande.isVerrouille();
     }
 
     public Map<String, List<PieceJustificative>> getInfoSpecifique(Long idType) throws SQLException {
@@ -279,202 +279,27 @@ public class DemandeService {
 
     public Long findLatestDemandeIdByNumeroPasseport(Map<String, Object> formData) throws SQLException {
         String numeroPasseport = stringValueAny(formData, "numero_passeport", "numeroPasseport");
-        if (numeroPasseport == null || numeroPasseport.isEmpty()) {
-            return null;
-        }
-
-        String sql = "SELECT d.id "
-            + "FROM demande d "
-            + "JOIN passeport p ON p.id = d.passeport_id "
-            + "WHERE p.numero_passeport = ? "
-            + "ORDER BY d.updated_at DESC, d.id DESC "
-            + "LIMIT 1";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, numeroPasseport);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong("id");
-                }
-            }
-        }
-
-        return null;
+        return demandeDao.findLatestDemandeIdByNumeroPasseport(numeroPasseport);
     }
 
     public Map<String, Object> getFormDataByDemandeId(long demandeId) throws SQLException {
-        String sql = "SELECT d.id AS demande_id, d.passeport_id, d.type_demande_id, d.type_titre_id, "
-            + "d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, "
-            + "dm.nom, dm.prenom, dm.nom_jeune_fille, dm.date_naissance, dm.situation_famille_id, "
-            + "dm.nationalite_id, dm.adresse_madagascar, dm.numero_telephone, dm.email, dm.profession, "
-            + "p.numero_passeport, p.date_delivrance, p.date_expiration, p.pays_delivrance, "
-            + "tt.libelle AS type_titre_libelle "
-            + "FROM demande d "
-            + "JOIN passeport p ON p.id = d.passeport_id "
-            + "JOIN demandeur dm ON dm.id = p.demandeur_id "
-            + "LEFT JOIN type_titre tt ON tt.id = d.type_titre_id "
-            + "WHERE d.id = ? "
-            + "LIMIT 1";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, demandeId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (!rs.next()) {
-                    return null;
-                }
-
-                Map<String, Object> formData = new HashMap<>();
-                formData.put("demande_id", String.valueOf(rs.getLong("demande_id")));
-                formData.put("passeport_id", String.valueOf(rs.getLong("passeport_id")));
-                formData.put("typeDemande", String.valueOf(rs.getLong("type_demande_id")));
-
-                long typeTitreId = rs.getLong("type_titre_id");
-                if (!rs.wasNull()) {
-                    formData.put("typeTitreId", String.valueOf(typeTitreId));
-                }
-
-                Date visaDateEntree = rs.getDate("visa_date_entree");
-                if (visaDateEntree != null) {
-                    formData.put("visaDateEntree", visaDateEntree.toLocalDate().toString());
-                }
-                formData.put("visaLieuEntree", rs.getString("visa_lieu_entree"));
-                Date visaDateExpiration = rs.getDate("visa_date_expiration");
-                if (visaDateExpiration != null) {
-                    formData.put("visaDateExpiration", visaDateExpiration.toLocalDate().toString());
-                }
-
-                formData.put("nom", rs.getString("nom"));
-                formData.put("prenom", rs.getString("prenom"));
-                formData.put("nomJeuneFille", rs.getString("nom_jeune_fille"));
-                Date dateNaissance = rs.getDate("date_naissance");
-                if (dateNaissance != null) {
-                    formData.put("dateNaissance", dateNaissance.toLocalDate().toString());
-                }
-                formData.put("situationFamilleId", String.valueOf(rs.getLong("situation_famille_id")));
-                formData.put("nationaliteId", String.valueOf(rs.getLong("nationalite_id")));
-                formData.put("adresseMadagascar", rs.getString("adresse_madagascar"));
-                formData.put("numeroTelephone", rs.getString("numero_telephone"));
-                formData.put("email", rs.getString("email"));
-                formData.put("profession", rs.getString("profession"));
-
-                formData.put("numeroPasseport", rs.getString("numero_passeport"));
-                Date dateDelivrance = rs.getDate("date_delivrance");
-                if (dateDelivrance != null) {
-                    formData.put("dateDelivrance", dateDelivrance.toLocalDate().toString());
-                }
-                Date dateExpiration = rs.getDate("date_expiration");
-                if (dateExpiration != null) {
-                    formData.put("dateExpiration", dateExpiration.toLocalDate().toString());
-                }
-                formData.put("paysDelivrance", rs.getString("pays_delivrance"));
-
-                String typeTitreLibelle = rs.getString("type_titre_libelle");
-                if (typeTitreLibelle != null) {
-                    if ("investisseur".equalsIgnoreCase(typeTitreLibelle)) {
-                        formData.put("profil", "investisseur");
-                    } else if ("travailleur".equalsIgnoreCase(typeTitreLibelle)) {
-                        formData.put("profil", "travailleur");
-                    }
-                }
-
-                return formData;
-            }
-        }
+        return demandeDao.getFormDataByDemandeId(demandeId);
     }
 
     public List<Long> getSelectedPieceIdsByDemandeId(long demandeId) throws SQLException {
-        List<Long> selected = new ArrayList<>();
-        String sql = "SELECT piece_id FROM demande_piece WHERE demande_id = ? AND cochee = TRUE";
+        return demandeDao.getSelectedPieceIdsByDemandeId(demandeId);
+    }
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, demandeId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    selected.add(rs.getLong("piece_id"));
-                }
-            }
-        }
-
-        return selected;
+    public Map<String, Object> searchDemandeurEtPasseport(String nom, String prenom, String dateNaissance, String numeroPasseport) throws SQLException {
+        return demandeDao.searchDemandeurEtPasseport(nom, prenom, dateNaissance, numeroPasseport);
     }
 
     public Map<String, Object> getLatestDemandeDashboardData() throws SQLException {
-        String sql = "SELECT d.id AS demande_id, d.passeport_id, d.type_demande_id, d.type_titre_id, d.statut_id, "
-            + "d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, d.created_at AS demande_created_at, d.updated_at AS demande_updated_at, "
-            + "dm.nom, dm.prenom, dm.profession, dm.numero_telephone, dm.email, "
-            + "p.numero_passeport, tt.libelle AS type_titre_libelle, td.libelle AS type_demande_libelle, sd.libelle AS statut_libelle "
-            + "FROM demande d "
-            + "JOIN passeport p ON p.id = d.passeport_id "
-            + "JOIN demandeur dm ON dm.id = p.demandeur_id "
-            + "JOIN type_demande td ON td.id = d.type_demande_id "
-            + "LEFT JOIN type_titre tt ON tt.id = d.type_titre_id "
-            + "JOIN statut_demande sd ON sd.id = d.statut_id "
-            + "ORDER BY d.updated_at DESC, d.id DESC "
-            + "LIMIT 1";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            if (!rs.next()) {
-                return null;
-            }
-
-            Map<String, Object> dashboard = new HashMap<>();
-            dashboard.put("demande_id", String.valueOf(rs.getLong("demande_id")));
-            dashboard.put("passeport_id", String.valueOf(rs.getLong("passeport_id")));
-            dashboard.put("typeDemande", String.valueOf(rs.getLong("type_demande_id")));
-            dashboard.put("typeDemandeLibelle", rs.getString("type_demande_libelle"));
-            dashboard.put("typeTitreLibelle", rs.getString("type_titre_libelle"));
-            dashboard.put("statutLibelle", rs.getString("statut_libelle"));
-            dashboard.put("visaDateEntree", rs.getDate("visa_date_entree") != null ? rs.getDate("visa_date_entree").toLocalDate().toString() : null);
-            dashboard.put("visaLieuEntree", rs.getString("visa_lieu_entree"));
-            dashboard.put("visaDateExpiration", rs.getDate("visa_date_expiration") != null ? rs.getDate("visa_date_expiration").toLocalDate().toString() : null);
-            dashboard.put("nom", rs.getString("nom"));
-            dashboard.put("prenom", rs.getString("prenom"));
-            dashboard.put("profession", rs.getString("profession"));
-            dashboard.put("numeroTelephone", rs.getString("numero_telephone"));
-            dashboard.put("email", rs.getString("email"));
-            dashboard.put("numeroPasseport", rs.getString("numero_passeport"));
-            dashboard.put("createdAt", rs.getTimestamp("demande_created_at"));
-            dashboard.put("updatedAt", rs.getTimestamp("demande_updated_at"));
-            return dashboard;
-        }
+        return demandeDao.getLatestDemandeDashboardData();
     }
 
     public List<Map<String, Object>> getDashboardDemandesData() throws SQLException {
-        String sql = "SELECT d.id AS demande_id, dm.nom, dm.prenom, td.libelle AS type_demande_libelle, "
-            + "COALESCE(tt.libelle, '-') AS type_titre_libelle, sd.libelle AS statut_libelle, d.updated_at "
-            + "FROM demande d "
-            + "JOIN passeport p ON p.id = d.passeport_id "
-            + "JOIN demandeur dm ON dm.id = p.demandeur_id "
-            + "JOIN type_demande td ON td.id = d.type_demande_id "
-            + "LEFT JOIN type_titre tt ON tt.id = d.type_titre_id "
-            + "JOIN statut_demande sd ON sd.id = d.statut_id "
-            + "ORDER BY d.updated_at DESC, d.id DESC "
-            + "LIMIT 30";
-
-        List<Map<String, Object>> demandes = new ArrayList<>();
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Map<String, Object> row = new HashMap<>();
-                row.put("demande_id", String.valueOf(rs.getLong("demande_id")));
-                row.put("nom", rs.getString("nom"));
-                row.put("prenom", rs.getString("prenom"));
-                row.put("typeDemandeLibelle", rs.getString("type_demande_libelle"));
-                row.put("typeTitreLibelle", rs.getString("type_titre_libelle"));
-                row.put("statutLibelle", rs.getString("statut_libelle"));
-                row.put("updatedAt", rs.getTimestamp("updated_at"));
-                demandes.add(row);
-            }
-        }
-
-        return demandes;
+        return demandeDao.getDashboardDemandesData();
     }
 
     public Demande searchBy(String column, Object value) throws SQLException {
@@ -544,13 +369,13 @@ public class DemandeService {
         }
 
         String numeroPasseport = stringValueAny(formData, "numero_passeport", "numeroPasseport");
-        Long existingPasseportId = findPasseportIdByNumero(numeroPasseport);
+        Long existingPasseportId = demandeDao.findPasseportIdByNumero(numeroPasseport);
         if (existingPasseportId != null) {
             return existingPasseportId;
         }
 
-        long demandeurId = insertDemandeur(formData);
-        return insertPasseport(demandeurId, formData);
+        long demandeurId = demandeDao.insertDemandeur(formData);
+        return demandeDao.insertPasseport(demandeurId, formData);
     }
 
     private Long resolveTypeTitreId(Map<String, Object> formData) throws SQLException {
@@ -581,79 +406,6 @@ public class DemandeService {
         }
 
         return null;
-    }
-
-    private Long findPasseportIdByNumero(String numeroPasseport) throws SQLException {
-        if (numeroPasseport == null || numeroPasseport.isEmpty()) {
-            return null;
-        }
-
-        String sql = "SELECT id FROM passeport WHERE numero_passeport = ? LIMIT 1";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, numeroPasseport);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong("id");
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private long insertDemandeur(Map<String, Object> formData) throws SQLException {
-        String sql = "INSERT INTO demandeur (nom, prenom, nom_jeune_fille, date_naissance, situation_famille_id, nationalite_id, adresse_madagascar, numero_telephone, email, profession, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, stringValueAny(formData, "nom"));
-            stmt.setString(2, stringValueAny(formData, "prenom"));
-            stmt.setString(3, stringValueAny(formData, "nom_jeune_fille", "nomJeuneFille"));
-            stmt.setDate(4, Date.valueOf(parseDateRequiredAny(formData, "date_naissance", "dateNaissance")));
-            stmt.setLong(5, parseLongRequiredAny(formData, "situation_famille_id", "situationFamilleId"));
-            stmt.setLong(6, parseLongRequiredAny(formData, "nationalite_id", "nationaliteId"));
-            stmt.setString(7, stringValueAny(formData, "adresse_madagascar", "adresseMadagascar"));
-            stmt.setString(8, stringValueAny(formData, "numero_telephone", "numeroTelephone"));
-
-            String email = stringValueAny(formData, "email");
-            if (email == null || email.isEmpty()) {
-                stmt.setNull(9, Types.VARCHAR);
-            } else {
-                stmt.setString(9, email);
-            }
-
-            stmt.setString(10, stringValueAny(formData, "profession"));
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong("id");
-                }
-            }
-        }
-
-        throw new SQLException("Insertion demandeur echouee: aucun id retourne.");
-    }
-
-    private long insertPasseport(long demandeurId, Map<String, Object> formData) throws SQLException {
-        String sql = "INSERT INTO passeport (demandeur_id, numero_passeport, date_delivrance, date_expiration, pays_delivrance, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, demandeurId);
-            stmt.setString(2, stringValueAny(formData, "numero_passeport", "numeroPasseport"));
-            stmt.setDate(3, Date.valueOf(parseDateRequiredAny(formData, "date_delivrance", "dateDelivrance")));
-            stmt.setDate(4, Date.valueOf(parseDateRequiredAny(formData, "date_expiration", "dateExpiration")));
-            stmt.setString(5, stringValueAny(formData, "pays_delivrance", "paysDelivrance"));
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong("id");
-                }
-            }
-        }
-
-        throw new SQLException("Insertion passeport echouee: aucun id retourne.");
     }
 
     private List<Long> parsePieceIds(Map<String, Object> formData) {
