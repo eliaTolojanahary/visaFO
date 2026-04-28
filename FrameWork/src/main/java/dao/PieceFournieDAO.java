@@ -1,14 +1,12 @@
 package dao;
 
+import java.sql.SQLException;
 import java.util.List;
 import models.PieceFournie;
 
-/**
- * Prototype Sprint 3 (sans implementation).
- */
-public interface PieceFournieDAO {
-    PieceFournie create(PieceFournie p);
-    PieceFournie findByDemandeAndPieceRef(long demandeId, long pieceRefId);
-    List<PieceFournie> findAllByDemande(long demandeId);
-    boolean deleteByDemandeAndPieceRef(long demandeId, long pieceRefId);
+public interface PieceFournieDao {
+    PieceFournie create(PieceFournie piece) throws SQLException;
+    PieceFournie findByDemandeAndPieceRef(long demandeId, long pieceRefId) throws SQLException;
+    List<PieceFournie> findAllByDemande(long demandeId) throws SQLException;
+    void deleteByDemandeAndPieceRef(long demandeId, long pieceRefId) throws SQLException;
 }
