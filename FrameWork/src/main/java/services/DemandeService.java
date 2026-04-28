@@ -47,6 +47,13 @@ public class DemandeService {
         return ((DemandeRepository) demandeDao).getDemandeByRef(ref); // ou ajouter la méthode dans l'interface DemandeDao
     }
 
+    public Map<String, Object> getDemandeByRef(String ref) throws SQLException {
+        return ((DemandeRepository) demandeDao).getDemandeByRef(ref); // ou ajouter la méthode dans l'interface DemandeDao
+    }
+    
+    public Map<String, Object> getDemandeMapById(long demandeId) throws SQLException {
+        return demandeDao.getDemandeMapById(demandeId);
+    }
     public Map<String, String> isObligatoire(Map<String, Object> formData) {
         Map<String, String> errors = new HashMap<>();
 

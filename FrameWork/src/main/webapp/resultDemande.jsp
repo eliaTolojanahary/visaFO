@@ -2,6 +2,9 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="models.Demande" %>
+<%@ page import="models.Dossier" %>
+<%@ page import="repo.DossierRepository" %>
+<%@ page import="java.sql.SQLException" %>
 <% String ctx = request.getContextPath(); %>
 <!DOCTYPE html>
 <html>
@@ -70,6 +73,14 @@
             border: none; cursor: pointer;
         }
         .btn-warning:hover { background: #d35400; }
+        .btn-track {
+            display: inline-block; padding: 10px 16px;
+            background: #f0f4f8; color: #1a4a7a;
+            text-decoration: none; border-radius: 6px;
+            font-size: 0.9rem; transition: background 0.2s ease;
+            border: 1px solid #d4dfe9; cursor: pointer;
+        }
+        .btn-track:hover { background: #e4efff; }
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -145,6 +156,9 @@
         String latestStatut = latestDemande != null && latestDemande.get("statutLibelle") != null
             ? String.valueOf(latestDemande.get("statutLibelle"))
             : "";
+        String latestReference = latestDemande != null && latestDemande.get("ref_demande") != null
+            ? String.valueOf(latestDemande.get("ref_demande"))
+            : "";
 
         String statusClass = "badge-gray";
         if (latestStatut.equalsIgnoreCase("En cours de traitement")) statusClass = "badge-blue";
@@ -164,12 +178,37 @@
             </div>
         </div>
         <div class="card">
-            <h2>Dernière demande</h2>
-            <% if (latestDemande != null) { %>
+            <h2>Demandeur / dossier</h2>
+            <% if (latestDemande != null) { 
+                Dossier dossierInfo = null;
+                Long demandeurId = null;
+                try {
+                    if (latestDemande.get("demandeur_id") != null) {
+                        demandeurId = Long.parseLong(String.valueOf(latestDemande.get("demandeur_id")));
+                        DossierRepository dossierRepo = new DossierRepository();
+                        dossierInfo = dossierRepo.findByDemandeurId(demandeurId);
+                    }
+                } catch (SQLException | NumberFormatException e) {
+                    // Gestion silencieuse - le dossier ne s'affichera pas
+                }
+            %>
                 <ul class="meta-list">
                     <li><strong>Nom:</strong> <%= latestDemande.get("nom") != null ? latestDemande.get("nom") : "-" %></li>
                     <li><strong>Prénom:</strong> <%= latestDemande.get("prenom") != null ? latestDemande.get("prenom") : "-" %></li>
                     <li><strong>Numéro passeport:</strong> <%= latestDemande.get("numeroPasseport") != null ? latestDemande.get("numeroPasseport") : "-" %></li>
+                    <li><strong>Référence dossier:</strong> <%= latestReference.isEmpty() ? "-" : latestReference %></li>
+                    <% if (dossierInfo != null) { %>
+                        <li><strong>ID Dossier:</strong> <%= dossierInfo.getId() %></li>
+                        <% if (dossierInfo.getMention() != null && !dossierInfo.getMention().isEmpty()) { %>
+                            <li><strong>Mention:</strong> <%= dossierInfo.getMention() %></li>
+                        <% } %>
+                        <% if (dossierInfo.getPrevious_demande_ref() != null && !dossierInfo.getPrevious_demande_ref().isEmpty()) { %>
+                            <li><strong>Référence antécédent:</strong> <%= dossierInfo.getPrevious_demande_ref() %></li>
+                        <% } %>
+                        <% if (dossierInfo.isVisa_approuve_confirme()) { %>
+                            <li><strong>Visa approuvé:</strong> <span class="badge badge-green">Confirmé par agent</span></li>
+                        <% } %>
+                    <% } %>
                     <li><strong>Type de demande:</strong> <%= latestDemande.get("typeDemandeLibelle") != null ? latestDemande.get("typeDemandeLibelle") : "-" %>
                         <% if (duplicata) { %>
                             <span class="badge badge-orange" style="margin-left:8px;">Duplicata - antecedent non retrouve</span>
@@ -179,9 +218,6 @@
                     <li><strong>Statut:</strong>
                         <span class="badge <%= statusClass %>"><%= latestDemande.get("statutLibelle") != null ? latestDemande.get("statutLibelle") : "-" %></span>
                     </li>
-                    <% if (duplicata) { %>
-                        <li><strong>Visa approuve:</strong> <span class="badge badge-green">Confirme par agent</span></li>
-                    <% } %>
                     <li><strong>Date de création:</strong> <%= latestDemande.get("createdAt") != null ? latestDemande.get("createdAt") : "-" %></li>
                 </ul>
                 <div class="card-actions">
@@ -189,6 +225,18 @@
                         <input type="hidden" name="demande_id" value="<%= latestDemande.get("demande_id") != null ? latestDemande.get("demande_id") : "" %>">
                         <button type="submit" class="btn-secondary">Modifier</button>
                     </form>
+                    <% if (!latestReference.isEmpty()) { %>
+                        <% 
+                            String latestDemandeId = "";
+                            if (latestDemande != null && latestDemande.get("demande_id") != null) {
+                                latestDemandeId = String.valueOf(latestDemande.get("demande_id"));
+                            }
+                        %>
+                        <form action="<%= ctx %>/suivi" method="post" style="display:inline;">
+                            <input type="hidden" name="demande_id" value="<%= latestDemandeId %>">
+                            <button type="submit" class="btn-secondary">Suivi dossier</button>
+                        </form>
+                    <% } %>
                 </div>
             <% } else { %>
                 <p>Aucune demande trouvée pour le moment.</p>
@@ -273,6 +321,7 @@
                             String typeDemande = d.get("typeDemandeLibelle") != null ? String.valueOf(d.get("typeDemandeLibelle")) : "-";
                             String typeTitre = d.get("typeTitreLibelle") != null ? String.valueOf(d.get("typeTitreLibelle")) : "-";
                             String statut = d.get("statutLibelle") != null ? String.valueOf(d.get("statutLibelle")) : "-";
+                            String refDemande = d.get("ref_demande") != null ? String.valueOf(d.get("ref_demande")) : "";
                             %>
                             <tr class="<%= isHighlighted ? "demand-row-highlight" : "" %>">
                                 <td>
@@ -292,8 +341,19 @@
                                             <input type="hidden" name="demande_id" value="<%= demandeId %>">
                                             <button type="submit" class="btn-secondary">Modifier</button>
                                         </form>
-                                        <%-- Supprimer : à adapter si vous ajoutez un mapping delete --%>
-                                                                                <span class="btn-warning">Supprimer indisponible</span>
+                                        <% if (!refDemande.isEmpty()) { %>
+                                            <% 
+                                                String latestDemandeId = "";
+                                                if (latestDemande != null && latestDemande.get("demande_id") != null) {
+                                                    latestDemandeId = String.valueOf(latestDemande.get("demande_id"));
+                                                }
+                                            %>
+                                            <form action="<%= ctx %>/suivi" method="post" style="display:inline;">
+                                                <input type="hidden" name="demande_id" value="<%= latestDemandeId %>">
+                                                <button type="submit" class="btn-secondary">Suivi dossier</button>
+                                            </form>
+                                        <% } %>
+                                        <span class="btn-warning">Supprimer indisponible</span>
                                     </div>
                                 </td>
                             </tr>

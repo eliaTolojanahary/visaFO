@@ -5,7 +5,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import models.Dossier;
 import util.DatabaseConnection;
 
@@ -48,6 +47,31 @@ public class DossierRepository implements DossierDao {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setLong(1, demande_id);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToDossier(rs);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    public Dossier findByDemandeurId(long demandeur_id) throws SQLException {
+        String sql = "SELECT DISTINCT d.id, d.previous_demande_ref, d.new_demande_ref, d.mention, d.visa_approuve_confirme, d.created_at, d.updated_at "
+                + "FROM dossier d "
+                + "INNER JOIN dossier_demande dd ON d.id = dd.dossier_id "
+                + "INNER JOIN demande dem ON dd.demande_id = dem.id "
+                + "INNER JOIN passeport p ON dem.passeport_id = p.id "
+                + "INNER JOIN demandeur demr ON p.demandeur_id = demr.id "
+                + "WHERE demr.id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, demandeur_id);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
