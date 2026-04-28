@@ -200,7 +200,7 @@
                        class="piece-card__checkbox js-piece-checkbox"
                        id="check-${piece.id}"
                        data-piece-id="${piece.id}"
-                       name="selectedPieces"
+                       name="piece_ids"
                        value="${piece.id}"
                        ${checked}>
                 <label for="check-${piece.id}" class="piece-card__checkbox-label">

@@ -214,18 +214,12 @@ public class ScanService {
                     item.put("pieceLibelle", rs.getString("piece_libelle"));
 
                     long pieceFournieId = rs.getLong("piece_fournie_id");
-                    if (rs.wasNull()) {
-                        item.put("pieceFournie", null);
-                    } else {
-                        PieceFournie pieceFournie = new PieceFournie();
-                        pieceFournie.setId(pieceFournieId);
-                        pieceFournie.setDemande_id(demandeId);
-                        pieceFournie.setNom_fichier(rs.getString("nom_fichier"));
-                        pieceFournie.setTaille_bytes(rs.getLong("taille_bytes"));
-                        pieceFournie.setMime_type(rs.getString("mime_type"));
-                        pieceFournie.setUploaded_at(rs.getTimestamp("uploaded_at"));
-                        item.put("pieceFournie", pieceFournie);
-                    }
+                    boolean scanned = !rs.wasNull();
+                    item.put("scanStatut", scanned ? "SCANNÉ" : "EN_ATTENTE");
+                    item.put("fileName", scanned ? rs.getString("nom_fichier") : "");
+                    item.put("fileSizeKo", scanned ? rs.getLong("taille_bytes") / 1024 : 0L);
+                    item.put("uploadedAt", scanned && rs.getTimestamp("uploaded_at") != null ? rs.getTimestamp("uploaded_at").toString() : "");
+                    item.put("pieceFournie", scanned ? buildPieceFournieFromResultSet(rs, demandeId, pieceFournieId) : null);
 
                     liste.add(item);
                 }
@@ -233,6 +227,17 @@ public class ScanService {
         }
 
         return liste;
+    }
+
+    private PieceFournie buildPieceFournieFromResultSet(ResultSet rs, long demandeId, long pieceFournieId) throws SQLException {
+        PieceFournie pieceFournie = new PieceFournie();
+        pieceFournie.setId(pieceFournieId);
+        pieceFournie.setDemande_id(demandeId);
+        pieceFournie.setNom_fichier(rs.getString("nom_fichier"));
+        pieceFournie.setTaille_bytes(rs.getLong("taille_bytes"));
+        pieceFournie.setMime_type(rs.getString("mime_type"));
+        pieceFournie.setUploaded_at(rs.getTimestamp("uploaded_at"));
+        return pieceFournie;
     }
 
     public DownloadFileResponse downloadPiece(long demandeId, long pieceRefId) throws SQLException {

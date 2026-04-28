@@ -32,7 +32,7 @@ public class ScanDemandeController {
     // Route réelle (Sprint 3) — chargement des données depuis la BD
     // ══════════════════════════════════════════════════════════════════
 
-    @MethodeAnnotation("/demande/{id}/scan")
+    @MethodeAnnotation("/mock/demande/{id}/scan")
     @GetMapping
     public ModelView getScanPage(Map<String, Object> pathParams, 
                                  Map<String, Object> queryParams) {
@@ -120,7 +120,7 @@ public class ScanDemandeController {
     // POST /demande/{demandeId}/piece/{pieceRefId}/upload
     // ══════════════════════════════════════════════════════════════════
 
-    @MethodeAnnotation("/demande/{demandeId}/piece/{pieceRefId}/upload")
+    @MethodeAnnotation("/mock/demande/{demandeId}/piece/{pieceRefId}/upload")
     @PostMapping
     @Api
     public Map<String, Object> uploadPiece(Map<String, Object> formData) {
@@ -159,7 +159,7 @@ public class ScanDemandeController {
     //   3. Rediriger avec flashMessage succès
     // ══════════════════════════════════════════════════════════════════
 
-    @MethodeAnnotation("/demande/{demandeId}/verrouiller")
+    @MethodeAnnotation("/mock/demande/{demandeId}/verrouiller")
     @PostMapping
     @Api
     public Map<String, Object> verrouiller(Map<String, Object> formData) {
@@ -186,7 +186,7 @@ public class ScanDemandeController {
     //   3. Envoyer le fichier au client avec bon Content-Type et Content-Disposition
     // ══════════════════════════════════════════════════════════════════
 
-    @MethodeAnnotation("/demande/{demandeId}/piece/{pieceRefId}/download")
+    @MethodeAnnotation("/mock/demande/{demandeId}/piece/{pieceRefId}/download")
     @GetMapping
     public ModelView downloadPiece(Long demandeId, Long pieceRefId) {
         /*

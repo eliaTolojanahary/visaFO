@@ -68,7 +68,6 @@
         <div class="error-banner"><%= request.getAttribute("error") %></div>
     <% } %>
 
-    <div id="globalMessage" class="hidden" role="alert" aria-live="assertive"></div>
 
     <div class="form-section search-section">
         <h2>Recherche demandeur</h2>
@@ -354,35 +353,16 @@
             <div id="piecesUploadError" class="error-text"></div>
         </div>
 
-        <div class="form-actions">
-            <button type="button" id="reviewBtn" disabled>Voir le recapitulatif</button>
+        <div class="form-actions" style="margin-top: 24px;">
+            <div id="globalMessage" class="hidden" role="alert" aria-live="assertive" style="margin-bottom:12px;"></div>
+            <p class="hint-text" style="margin-bottom: 10px;">
+                Les pieces justificatives peuvent etre ajoutees apres l'enregistrement, au fur et a mesure de leur disponibilite.
+                Le dossier sera verrouille une fois toutes les pieces scannees.
+            </p>
+            <button type="button" id="saveDemandeBtn" class="btn-primary">
+                💾 <%= submitLabel %> la demande
+            </button>
             <button type="submit" id="submitBtn" class="hidden"><%= submitLabel %></button>
-        </div>
-
-        <div id="recapSection" class="form-section hidden" aria-live="polite">
-            <h2>Recapitulatif avant soumission</h2>
-            <p class="hint-text">Verifiez les informations ci-dessous. Vous pouvez revenir en modification avant la confirmation finale.</p>
-
-            <div class="result-grid">
-                <div>
-                    <h3>Demandeur</h3>
-                    <ul id="recapDemandeur" class="meta-list compact"></ul>
-                </div>
-                <div>
-                    <h3>Demande</h3>
-                    <ul id="recapDemande" class="meta-list compact"></ul>
-                </div>
-            </div>
-
-            <div style="margin-top: 16px;">
-                <h3>Pieces justificatives cochees</h3>
-                <ul id="recapPieces" class="meta-list compact"></ul>
-            </div>
-
-            <div class="form-actions" style="margin-top: 20px;">
-                <button type="button" id="backToEditBtn" class="btn-alt">Modifier mes donnees</button>
-                <button type="button" id="confirmSubmitBtn">Soumettre la demande</button>
-            </div>
         </div>
     </form>
 </div>

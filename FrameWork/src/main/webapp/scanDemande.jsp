@@ -1,9 +1,22 @@
-﻿<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+﻿﻿<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.HashMap" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="models.PieceJustificative" %>
+
+<%!
+    // Helper pour extraire une valeur d'une Map avec fallback sur plusieurs clés
+    private Object getMapValue(Map<String, Object> map, String... keys) {
+        if (map == null) return null;
+        for (String key : keys) {
+            Object val = map.get(key);
+            if (val != null) return val;
+        }
+        return null;
+    }
+%>
+
 <%
     // ========================================
     // INITIALIZATION - All variables setup
@@ -94,6 +107,7 @@
     if (flashError == null) flashError = (String) request.getAttribute("errorMessage");
     if (flashError == null) flashError = "";
 %>
+
 <% if (renderLayout) { %>
 <!DOCTYPE html>
 <html lang="fr">
@@ -148,12 +162,16 @@
         <div class="piece-list" id="pieceList">
         <%
             for (Map<String, Object> piece : scanPieces) {
-                Long pieceId = piece.get("id") != null ? Long.valueOf(String.valueOf(piece.get("id"))) : 0L;
-                String libelle = piece.get("libelle") != null ? String.valueOf(piece.get("libelle")) : "-";
-                String scanStatut = piece.get("scanStatut") != null ? String.valueOf(piece.get("scanStatut")) : "EN_ATTENTE";
-                String fileName = piece.get("fileName") != null ? String.valueOf(piece.get("fileName")) : "";
+                // Extraction tolérante camelCase / snake_case
+                Long pieceId = null;
+                Object idObj = getMapValue(piece, "pieceRefId", "piece_ref_id", "id");
+                if (idObj != null) pieceId = Long.valueOf(String.valueOf(idObj));
                 
-                boolean scanned = "SCANNED".equalsIgnoreCase(scanStatut);
+                String libelle = String.valueOf(getMapValue(piece, "pieceLibelle", "libelle", "label"));
+                String scanStatut = String.valueOf(getMapValue(piece, "scanStatut", "scan_statut", "statut"));
+                String fileName = String.valueOf(getMapValue(piece, "fileName", "nom_fichier", "fichier"));
+                
+                boolean scanned = "SCANNÉ".equalsIgnoreCase(scanStatut) || "SCANNED".equalsIgnoreCase(scanStatut);
                 String uploadUrl = ctx + "/demande/" + demandeIdValue + "/piece/" + pieceId + "/upload";
         %>
         <div class="piece-card <%= scanned ? "piece-card--done" : "" %>" id="piece-<%= pieceId %>">
@@ -162,9 +180,10 @@
                        class="piece-card__checkbox js-piece-checkbox"
                        id="check-<%= pieceId %>"
                        data-piece-id="<%= pieceId %>"
-                       name="selectedPieces"
+                       name="piece_ids"
                        value="<%= pieceId %>"
-                       <%= scanned ? "checked" : "" %>>
+                       <%= scanned ? "checked" : "" %>
+                       <%= scanned ? "data-server-scanned=\"1\"" : "" %>>
                 <label for="check-<%= pieceId %>" class="piece-card__checkbox-label">
                     <span class="piece-card__status-dot <%= scanned ? "dot--green" : "dot--gray" %>"></span>
                     <span class="piece-card__label"><%= libelle %></span>
@@ -172,7 +191,7 @@
             </div>
             
             <div class="piece-card__right">
-                <% if (scanned && !fileName.isEmpty()) { %>
+                <% if (scanned && !fileName.isEmpty() && !"null".equals(fileName)) { %>
                 <div class="piece-card__file-meta">
                     <span class="piece-card__filename"><%= fileName %></span>
                     <span class="badge badge-green badge-sm">Scanned</span>
@@ -232,9 +251,9 @@
         <div class="completion-status">
             <div class="completion-message <%= demandeComplete ? "complete" : "incomplete" %>">
                 <% if (demandeComplete) { %>
-                <span class="icon">check</span> Toutes les pieces attendues ont ete scannees. Vous pouvez maintenant verrouiller le dossier.
+                <span class="icon">✓</span> Toutes les pieces attendues ont ete scannees. Vous pouvez maintenant verrouiller le dossier.
                 <% } else { %>
-                <span class="icon">warning</span> Des pieces manquent encore. Le bouton sera active quand toutes les pieces seront scannees.
+                 Des pieces manquent encore. Le bouton sera active quand toutes les pieces seront scannees.
                 <% } %>
             </div>
         </div>
@@ -252,7 +271,7 @@
     </div>
 
     <div class="form-actions scan-actions">
-        <a href="<%= ctx %>/form" class="btn-alt">Retour au Dashboard</a>
+        <a href="<%= ctx %>/dashboard" class="btn-alt">Retour au Dashboard</a>
     </div>
     <% } %>
 
@@ -263,6 +282,7 @@
 <% } %>
 </body>
 </html>
+
 <% } else { %>
 <!-- FRAGMENT MODE: No HTML wrapper, just the form section -->
 <div class="form-section">
@@ -281,11 +301,15 @@
     <div class="piece-list" id="pieceList">
     <%
         for (Map<String, Object> piece : scanPieces) {
-            Long pieceId = piece.get("id") != null ? Long.valueOf(String.valueOf(piece.get("id"))) : 0L;
-            String libelle = piece.get("libelle") != null ? String.valueOf(piece.get("libelle")) : "-";
-            String scanStatut = piece.get("scanStatut") != null ? String.valueOf(piece.get("scanStatut")) : "EN_ATTENTE";
+            // Extraction tolérante camelCase / snake_case
+            Long pieceId = null;
+            Object idObj = getMapValue(piece, "pieceRefId", "piece_ref_id", "id");
+            if (idObj != null) pieceId = Long.valueOf(String.valueOf(idObj));
             
-            boolean scanned = "SCANNED".equalsIgnoreCase(scanStatut);
+            String libelle = String.valueOf(getMapValue(piece, "pieceLibelle", "libelle", "label"));
+            String scanStatut = String.valueOf(getMapValue(piece, "scanStatut", "scan_statut", "statut"));
+            
+            boolean scanned = "SCANNÉ".equalsIgnoreCase(scanStatut) || "SCANNED".equalsIgnoreCase(scanStatut);
     %>
     <div class="piece-card <%= scanned ? "piece-card--done" : "" %>" id="piece-<%= pieceId %>">
         <div class="piece-card__info">
@@ -293,9 +317,10 @@
                    class="piece-card__checkbox js-piece-checkbox"
                    id="check-<%= pieceId %>"
                    data-piece-id="<%= pieceId %>"
-                   name="selectedPieces"
+                   name="piece_ids"
                    value="<%= pieceId %>"
-                   <%= scanned ? "checked" : "" %>>
+                   <%= scanned ? "checked" : "" %>
+                   <%= scanned ? "data-server-scanned=\"1\"" : "" %>>
             <label for="check-<%= pieceId %>" class="piece-card__checkbox-label">
                 <span class="piece-card__status-dot <%= scanned ? "dot--green" : "dot--gray" %>"></span>
                 <span class="piece-card__label"><%= libelle %></span>
