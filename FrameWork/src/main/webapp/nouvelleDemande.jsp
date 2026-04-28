@@ -26,6 +26,23 @@
     String selectedSituationFamille = formData.get("situationFamilleId") != null ? String.valueOf(formData.get("situationFamilleId")) : "";
     String selectedNationalite = formData.get("nationaliteId") != null ? String.valueOf(formData.get("nationaliteId")) : "";
     String selectedProfil = formData.get("profil") != null ? String.valueOf(formData.get("profil")) : "";
+    
+    // [NEW] Récupérer les pièces pour l'affichage initial
+    @SuppressWarnings("unchecked")
+    List<Map<String, Object>> listePiecesAttendues = (List<Map<String, Object>>) request.getAttribute("listePiecesAttendues");
+    if (listePiecesAttendues == null) listePiecesAttendues = new ArrayList<>();
+    
+    @SuppressWarnings("unchecked")
+    List<PieceJustificative> piecesCommunes = (List<PieceJustificative>) request.getAttribute("piecesCommunes");
+    if (piecesCommunes == null) piecesCommunes = new ArrayList<>();
+    
+    @SuppressWarnings("unchecked")
+    List<PieceJustificative> piecesInvestisseur = (List<PieceJustificative>) request.getAttribute("piecesInvestisseur");
+    if (piecesInvestisseur == null) piecesInvestisseur = new ArrayList<>();
+    
+    @SuppressWarnings("unchecked")
+    List<PieceJustificative> piecesTravailleur = (List<PieceJustificative>) request.getAttribute("piecesTravailleur");
+    if (piecesTravailleur == null) piecesTravailleur = new ArrayList<>();
 %>
 <!DOCTYPE html>
 <html>
@@ -33,6 +50,8 @@
     <meta charset="UTF-8">
     <title><%= pageTitle %></title>
     <link rel="stylesheet" href="<%= ctx %>/css/style.css">
+    <link rel="stylesheet" href="<%= ctx %>/css/scanDemande.css">
+    <link rel="stylesheet" href="<%= ctx %>/css/fileUploads.css">
 </head>
 <body>
 <div class="container">
@@ -104,7 +123,7 @@
         </div>
     </div>
 
-    <form id="demandeForm" action="<%= formAction %>" method="post" novalidate>
+    <form id="demandeForm" action="<%= formAction %>" method="post" enctype="multipart/form-data" novalidate>
         <% if (editMode) { %>
             <input type="hidden" name="demande_id" value="<%= formData.get("demande_id") != null ? formData.get("demande_id") : "" %>">
             <input type="hidden" name="passeport_id" value="<%= formData.get("passeport_id") != null ? formData.get("passeport_id") : "" %>">
@@ -317,88 +336,22 @@
             <div id="duplicataPieceError" class="error-text"></div>
         </div>
 
-        <div id="piecesCommunes" class="form-section">
-            <h2>Pièces justificatives communes <span class="required">*</span></h2>
-            <div class="select-all-row">
-                <label>
-                    <input type="checkbox" class="js-select-all-pieces" data-target-section="piecesCommunes">
-                    Tout sélectionner
-                </label>
-            </div>
-            <div class="checkbox-group">
-                <%
-                List<PieceJustificative> piecesCommunes = (List<PieceJustificative>) request.getAttribute("piecesCommunes");
-                if (piecesCommunes != null) {
-                    for (PieceJustificative piece : piecesCommunes) {
-                %>
-                    <div class="checkbox-item">
-                        <label>
-                            <input type="checkbox" name="piece_ids" class="required-piece" data-required="true" value="<%= piece.getId() %>" <%= selectedPieceIds.contains(piece.getId()) ? "checked" : "" %>>
-                            <%= piece.getLibelle() %> <span class="required">*</span>
-                        </label>
-                    </div>
-                <%
-                    }
-                }
-                %>
-            </div>
-            <div id="pieceCommuneError" class="error-text"></div>
-        </div>
+        <!-- [NEW] Passer les données piecesCommunes, piecesInvestisseur, piecesTravailleur à scanDemande.jsp -->
+        <%
+            request.setAttribute("mode", editMode ? "UPDATE" : "CREATION");
+            request.setAttribute("renderLayout", Boolean.FALSE);
+            request.setAttribute("listePiecesAttendues", listePiecesAttendues);
+            request.setAttribute("piecesCommunes", piecesCommunes);
+            request.setAttribute("piecesInvestisseur", piecesInvestisseur);
+            request.setAttribute("piecesTravailleur", piecesTravailleur);
+        %>
+        <jsp:include page="scanDemande.jsp" />
 
-        <div id="piecesInvestisseur" class="form-section hidden">
-            <h2>Pièces Investisseur <span class="required">*</span></h2>
-            <div class="select-all-row">
-                <label>
-                    <input type="checkbox" class="js-select-all-pieces" data-target-section="piecesInvestisseur">
-                    Tout sélectionner
-                </label>
-            </div>
-            <div class="checkbox-group">
-                <%
-                List<PieceJustificative> piecesInvestisseur = (List<PieceJustificative>) request.getAttribute("piecesInvestisseur");
-                if (piecesInvestisseur != null) {
-                    for (PieceJustificative piece : piecesInvestisseur) {
-                %>
-                    <div class="checkbox-item">
-                        <label>
-                            <input type="checkbox" name="piece_ids" class="required-piece" data-required="true" value="<%= piece.getId() %>" <%= selectedPieceIds.contains(piece.getId()) ? "checked" : "" %>>
-                            <%= piece.getLibelle() %> <span class="required">*</span>
-                        </label>
-                    </div>
-                <%
-                    }
-                }
-                %>
-            </div>
-            <div id="pieceInvestisseurError" class="error-text"></div>
-        </div>
-
-        <div id="piecesTravailleur" class="form-section hidden">
-            <h2>Pièces Travailleur <span class="required">*</span></h2>
-            <div class="select-all-row">
-                <label>
-                    <input type="checkbox" class="js-select-all-pieces" data-target-section="piecesTravailleur">
-                    Tout sélectionner
-                </label>
-            </div>
-            <div class="checkbox-group">
-                <%
-                List<PieceJustificative> piecesTravailleur = (List<PieceJustificative>) request.getAttribute("piecesTravailleur");
-                if (piecesTravailleur != null) {
-                    for (PieceJustificative piece : piecesTravailleur) {
-                %>
-                    <div class="checkbox-item">
-                        <label>
-                            <input type="checkbox" name="piece_ids" class="required-piece" data-required="true" value="<%= piece.getId() %>" <%= selectedPieceIds.contains(piece.getId()) ? "checked" : "" %>>
-                            <%= piece.getLibelle() %> <span class="required">*</span>
-                        </label>
-                    </div>
-                <%
-                    }
-                }
-                %>
-            </div>
-            <div id="pieceTravailleurError" class="error-text"></div>
+        <div id="uploadsSection" class="form-section hidden">
+            <h2>Uploads des pieces selectionnees</h2>
+            <p class="hint-text">Ajoutez un fichier pour chaque piece cochee (PDF, JPG ou PNG, 10 Mo max).</p>
+            <div id="piecesUploadContainer"></div>
+            <div id="piecesUploadError" class="error-text"></div>
         </div>
 
         <div class="form-actions">
@@ -434,9 +387,52 @@
     </form>
 </div>
 
+<script>
+window.PIECES_DATA = {
+    commun: [
+        <% for (int i = 0; i < piecesCommunes.size(); i++) {
+            PieceJustificative p = piecesCommunes.get(i);
+            String libelle = String.valueOf(p.getLibelle())
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", " ")
+                .replace("\n", " ");
+        %>
+        { id: <%= p.getId() %>, libelle: "<%= libelle %>" }<%= i < (piecesCommunes.size() - 1) ? "," : "" %>
+        <% } %>
+    ],
+    investisseur: [
+        <% for (int i = 0; i < piecesInvestisseur.size(); i++) {
+            PieceJustificative p = piecesInvestisseur.get(i);
+            String libelle = String.valueOf(p.getLibelle())
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", " ")
+                .replace("\n", " ");
+        %>
+        { id: <%= p.getId() %>, libelle: "<%= libelle %>" }<%= i < (piecesInvestisseur.size() - 1) ? "," : "" %>
+        <% } %>
+    ],
+    travailleur: [
+        <% for (int i = 0; i < piecesTravailleur.size(); i++) {
+            PieceJustificative p = piecesTravailleur.get(i);
+            String libelle = String.valueOf(p.getLibelle())
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", " ")
+                .replace("\n", " ");
+        %>
+        { id: <%= p.getId() %>, libelle: "<%= libelle %>" }<%= i < (piecesTravailleur.size() - 1) ? "," : "" %>
+        <% } %>
+    ]
+};
+</script>
+
 <script src="<%= ctx %>/js/dynamicFields.js"></script>
+<script src="<%= ctx %>/js/dynamicPieces.js"></script>
 <script src="<%= ctx %>/js/validation.js"></script>
 <script src="<%= ctx %>/js/searchFlow.js"></script>
+<script src="<%= ctx %>/js/piecesUpload.js"></script>
 <script src="<%= ctx %>/js/recap.js"></script>
 </body>
 </html>

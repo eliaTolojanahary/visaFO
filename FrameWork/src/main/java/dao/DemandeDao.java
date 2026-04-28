@@ -21,4 +21,8 @@ public interface DemandeDao {
     Long findPasseportIdByNumero(String numeroPasseport) throws SQLException;
     long insertDemandeur(Map<String, Object> formData) throws SQLException;
     long insertPasseport(long demandeurId, Map<String, Object> formData) throws SQLException;
+    // Dans dao/DemandeDao.java
+
+    Map<String, Object> getDemandeMapById(long demandeId) throws SQLException;
+    Map<String, Object> getDemandeByRef(String ref) throws SQLException;
 }

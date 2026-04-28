@@ -23,7 +23,56 @@ import models.TypeTitre;
 import util.DatabaseConnection;
 
 public class DemandeRepository implements DemandeDao {
+    // Dans repo/DemandeRepository.java
 
+    public Map<String, Object> getDemandeMapById(long demandeId) throws SQLException {
+        String sql = "SELECT d.id AS demande_id, d.passeport_id, d.ref_demande, d.type_demande_id, d.type_titre_id, d.statut_id, d.verrouille, "
+                   + "d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, d.created_at AS demande_created_at, d.updated_at AS demande_updated_at, "
+                   + "dm.nom, dm.prenom, dm.profession, dm.numero_telephone, dm.email, dm.id AS demandeur_id, "
+                   + "p.numero_passeport, tt.libelle AS type_titre_libelle, td.libelle AS type_demande_libelle, sd.libelle AS statut_libelle "
+                   + "FROM demande d "
+                   + "JOIN passeport p ON p.id = d.passeport_id "
+                   + "JOIN demandeur dm ON dm.id = p.demandeur_id "
+                   + "JOIN type_demande td ON td.id = d.type_demande_id "
+                   + "LEFT JOIN type_titre tt ON tt.id = d.type_titre_id "
+                   + "JOIN statut_demande sd ON sd.id = d.statut_id "
+                   + "WHERE d.id = ? LIMIT 1";
+    
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, demandeId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) return null;
+    
+                Map<String, Object> data = new HashMap<>();
+                data.put("demande_id", String.valueOf(rs.getLong("demande_id")));
+                data.put("passeport_id", String.valueOf(rs.getLong("passeport_id")));
+                data.put("ref_demande", rs.getString("ref_demande"));
+                data.put("typeDemande", String.valueOf(rs.getLong("type_demande_id")));
+                data.put("typeDemandeLibelle", rs.getString("type_demande_libelle"));
+                data.put("typeTitreLibelle", rs.getString("type_titre_libelle"));
+                data.put("statutLibelle", rs.getString("statut_libelle"));
+                data.put("verrouille", rs.getBoolean("verrouille"));
+                // dates
+                java.sql.Date dateEntree = rs.getDate("visa_date_entree");
+                data.put("visaDateEntree", dateEntree != null ? dateEntree.toLocalDate().toString() : null);
+                data.put("visaLieuEntree", rs.getString("visa_lieu_entree"));
+                java.sql.Date dateExp = rs.getDate("visa_date_expiration");
+                data.put("visaDateExpiration", dateExp != null ? dateExp.toLocalDate().toString() : null);
+                // demandeur
+                data.put("nom", rs.getString("nom"));
+                data.put("prenom", rs.getString("prenom"));
+                data.put("profession", rs.getString("profession"));
+                data.put("numeroTelephone", rs.getString("numero_telephone"));
+                data.put("email", rs.getString("email"));
+                data.put("numeroPasseport", rs.getString("numero_passeport"));
+                data.put("demandeur_id", String.valueOf(rs.getLong("demandeur_id")));
+                data.put("createdAt", rs.getTimestamp("demande_created_at"));
+                data.put("updatedAt", rs.getTimestamp("demande_updated_at"));
+                return data;
+            }
+        }
+    }
     @Override
     public long save(Demande demande) throws SQLException {
         String sql = "INSERT INTO demande (passeport_id, type_demande_id, type_titre_id, statut_id, visa_date_entree, visa_lieu_entree, visa_date_expiration, ref_demande, type_document_id, created_at, updated_at) "
@@ -138,10 +187,10 @@ public class DemandeRepository implements DemandeDao {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             if (useDate) {
-                if (value instanceof LocalDate localDate) {
-                    stmt.setDate(1, Date.valueOf(localDate));
-                } else if (value instanceof String text) {
-                    stmt.setDate(1, Date.valueOf(LocalDate.parse(text)));
+                if (value != null && value.getClass() == LocalDate.class) {
+                    stmt.setDate(1, Date.valueOf((LocalDate) value));
+                } else if (value != null && value.getClass() == String.class) {
+                    stmt.setDate(1, Date.valueOf(LocalDate.parse((String) value)));
                 } else {
                     throw new IllegalArgumentException("Valeur invalide pour date_naissance : " + value);
                 }
@@ -458,9 +507,9 @@ public class DemandeRepository implements DemandeDao {
 
     @Override
     public Map<String, Object> getLatestDemandeDashboardData() throws SQLException {
-        String sql = "SELECT d.id AS demande_id, d.passeport_id, d.type_demande_id, d.type_titre_id, d.statut_id, "
+        String sql = "SELECT d.id AS demande_id, d.passeport_id, d.type_demande_id, d.type_titre_id, d.statut_id, d.ref_demande, "
             + "d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, d.created_at AS demande_created_at, d.updated_at AS demande_updated_at, "
-            + "dm.nom, dm.prenom, dm.profession, dm.numero_telephone, dm.email, "
+            + "dm.nom, dm.prenom, dm.profession, dm.numero_telephone, dm.email, dm.id AS demandeur_id, "
             + "p.numero_passeport, tt.libelle AS type_titre_libelle, td.libelle AS type_demande_libelle, sd.libelle AS statut_libelle "
             + "FROM demande d "
             + "JOIN passeport p ON p.id = d.passeport_id "
@@ -480,6 +529,7 @@ public class DemandeRepository implements DemandeDao {
             Map<String, Object> dashboard = new HashMap<>();
             dashboard.put("demande_id", String.valueOf(rs.getLong("demande_id")));
             dashboard.put("passeport_id", String.valueOf(rs.getLong("passeport_id")));
+            dashboard.put("ref_demande", rs.getString("ref_demande"));
             dashboard.put("typeDemande", String.valueOf(rs.getLong("type_demande_id")));
             dashboard.put("typeDemandeLibelle", rs.getString("type_demande_libelle"));
             dashboard.put("typeTitreLibelle", rs.getString("type_titre_libelle"));
@@ -493,15 +543,67 @@ public class DemandeRepository implements DemandeDao {
             dashboard.put("numeroTelephone", rs.getString("numero_telephone"));
             dashboard.put("email", rs.getString("email"));
             dashboard.put("numeroPasseport", rs.getString("numero_passeport"));
+            dashboard.put("demandeur_id", String.valueOf(rs.getLong("demandeur_id")));
             dashboard.put("createdAt", rs.getTimestamp("demande_created_at"));
             dashboard.put("updatedAt", rs.getTimestamp("demande_updated_at"));
             return dashboard;
         }
     }
 
+    public Map<String, Object> getDemandeByRef(String refDemande) throws SQLException {
+        if (refDemande == null || refDemande.trim().isEmpty()) {
+            return null;
+        }
+
+        String sql = "SELECT d.id AS demande_id, d.passeport_id, d.ref_demande, d.type_demande_id, d.type_titre_id, d.statut_id, d.verrouille, "
+            + "d.visa_date_entree, d.visa_lieu_entree, d.visa_date_expiration, d.created_at AS demande_created_at, d.updated_at AS demande_updated_at, "
+            + "dm.nom, dm.prenom, dm.profession, dm.numero_telephone, dm.email, dm.id AS demandeur_id, "
+            + "p.numero_passeport, tt.libelle AS type_titre_libelle, td.libelle AS type_demande_libelle, sd.libelle AS statut_libelle "
+            + "FROM demande d "
+            + "JOIN passeport p ON p.id = d.passeport_id "
+            + "JOIN demandeur dm ON dm.id = p.demandeur_id "
+            + "JOIN type_demande td ON td.id = d.type_demande_id "
+            + "LEFT JOIN type_titre tt ON tt.id = d.type_titre_id "
+            + "JOIN statut_demande sd ON sd.id = d.statut_id "
+            + "WHERE d.ref_demande = ? LIMIT 1";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, refDemande.trim());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+
+                Map<String, Object> dashboard = new HashMap<>();
+                dashboard.put("demande_id", String.valueOf(rs.getLong("demande_id")));
+                dashboard.put("passeport_id", String.valueOf(rs.getLong("passeport_id")));
+                dashboard.put("ref_demande", rs.getString("ref_demande"));
+                dashboard.put("typeDemande", String.valueOf(rs.getLong("type_demande_id")));
+                dashboard.put("typeDemandeLibelle", rs.getString("type_demande_libelle"));
+                dashboard.put("typeTitreLibelle", rs.getString("type_titre_libelle"));
+                dashboard.put("statutLibelle", rs.getString("statut_libelle"));
+                dashboard.put("verrouille", rs.getBoolean("verrouille"));
+                dashboard.put("visaDateEntree", rs.getDate("visa_date_entree") != null ? rs.getDate("visa_date_entree").toLocalDate().toString() : null);
+                dashboard.put("visaLieuEntree", rs.getString("visa_lieu_entree"));
+                dashboard.put("visaDateExpiration", rs.getDate("visa_date_expiration") != null ? rs.getDate("visa_date_expiration").toLocalDate().toString() : null);
+                dashboard.put("nom", rs.getString("nom"));
+                dashboard.put("prenom", rs.getString("prenom"));
+                dashboard.put("profession", rs.getString("profession"));
+                dashboard.put("numeroTelephone", rs.getString("numero_telephone"));
+                dashboard.put("email", rs.getString("email"));
+                dashboard.put("numeroPasseport", rs.getString("numero_passeport"));
+                dashboard.put("demandeur_id", String.valueOf(rs.getLong("demandeur_id")));
+                dashboard.put("createdAt", rs.getTimestamp("demande_created_at"));
+                dashboard.put("updatedAt", rs.getTimestamp("demande_updated_at"));
+                return dashboard;
+            }
+        }
+    }
+
     @Override
     public List<Map<String, Object>> getDashboardDemandesData() throws SQLException {
-        String sql = "SELECT d.id AS demande_id, dm.nom, dm.prenom, td.libelle AS type_demande_libelle, "
+        String sql = "SELECT d.id AS demande_id, d.ref_demande, dm.nom, dm.prenom, td.libelle AS type_demande_libelle, "
             + "COALESCE(tt.libelle, '-') AS type_titre_libelle, sd.libelle AS statut_libelle, d.updated_at "
             + "FROM demande d "
             + "JOIN passeport p ON p.id = d.passeport_id "
@@ -519,6 +621,7 @@ public class DemandeRepository implements DemandeDao {
             while (rs.next()) {
                 Map<String, Object> row = new HashMap<>();
                 row.put("demande_id", String.valueOf(rs.getLong("demande_id")));
+                row.put("ref_demande", rs.getString("ref_demande"));
                 row.put("nom", rs.getString("nom"));
                 row.put("prenom", rs.getString("prenom"));
                 row.put("typeDemandeLibelle", rs.getString("type_demande_libelle"));

@@ -30,29 +30,37 @@
         }).join('');
     }
 
-    function getCheckedPieces() {
-        const checked = Array.from(document.querySelectorAll('input[type="checkbox"][name="piece_ids"]:checked'));
-        return checked.map(function (input) {
-            const item = input.closest('.checkbox-item');
-            if (!item) return null;
-            const label = item.querySelector('label');
-            if (!label) return null;
-            return (label.textContent || '').replace('*', '').trim();
-        }).filter(Boolean);
+    function getUploadedPieces() {
+        const inputs = Array.from(document.querySelectorAll('input.scan-piece-input[type="file"]')).filter(function (input) {
+            const section = input.closest('.pieces-section');
+            return !section || !section.classList.contains('hidden');
+        });
+        return inputs.map(function (input) {
+            const pieceItem = input.closest('.piece-item');
+            const title = pieceItem ? pieceItem.querySelector('.piece-title') : null;
+            const file = input.files && input.files.length ? input.files[0] : null;
+            const existingName = input.getAttribute('data-current-file-name') || '';
+
+            return {
+                label: title ? (title.textContent || '').trim() : 'Pièce',
+                fileName: file ? file.name : (existingName || 'Aucun fichier'),
+                hasFile: Boolean(file || existingName)
+            };
+        });
     }
 
     function fillPieces() {
         const target = byId('recapPieces');
         if (!target) return;
 
-        const pieces = getCheckedPieces();
+        const pieces = getUploadedPieces();
         if (!pieces.length) {
-            target.innerHTML = '<li>Aucune piece selectionnee</li>';
+            target.innerHTML = '<li>Aucune piece disponible</li>';
             return;
         }
 
         target.innerHTML = pieces.map(function (piece) {
-            return '<li>' + piece + '</li>';
+            return '<li><strong>' + piece.label + ':</strong> ' + piece.fileName + '</li>';
         }).join('');
     }
 
