@@ -180,7 +180,10 @@
 
                     if (pieceId) {
                         var check = document.getElementById('check-' + pieceId);
-                        if (check) check.checked = true;
+                        if (check) {
+                            check.checked = true;
+                            check.setAttribute('data-uploaded', '1');
+                        }
                         var chosen = document.getElementById('chosen-' + pieceId);
                         if (chosen && input.files && input.files.length) {
                             chosen.textContent = input.files[0].name;
@@ -288,4 +291,3 @@
     });
 
 })();
-

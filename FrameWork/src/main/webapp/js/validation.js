@@ -97,8 +97,14 @@ function validateForm() {
     }
 
     if (typeof window.validatePieceUploads === 'function') {
-        const uploadsValid = window.validatePieceUploads();
-        valid = valid && uploadsValid;
+        // Les pièces sont optionnelles à la soumission initiale :
+        // elles peuvent être ajoutées après via le scan.
+        // On ne bloque PAS le formulaire sur cette validation.
+    }
+
+    const saveBtn = document.getElementById('saveDemandeBtn');
+    if (saveBtn) {
+        saveBtn.disabled = !valid;
     }
 
     const reviewBtn = document.getElementById('reviewBtn');

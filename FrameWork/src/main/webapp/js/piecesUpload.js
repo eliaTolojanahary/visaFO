@@ -87,9 +87,16 @@
 
         getCheckedCheckboxes().forEach(function (checkbox) {
             var pieceId = checkbox.value;
+            var label = getPieceLabel(pieceId);
+
+            // Pièce déjà uploadée via AJAX (data-uploaded="1")
+            // ou déjà scannée côté serveur (checked au chargement de page = data-server-scanned)
+            var alreadyUploaded = checkbox.getAttribute('data-uploaded') === '1'
+                || checkbox.getAttribute('data-server-scanned') === '1';
+            if (alreadyUploaded) return;
+
             var input = document.getElementById('file-input-' + pieceId);
             var file = input && input.files && input.files.length ? input.files[0] : null;
-            var label = getPieceLabel(pieceId);
 
             if (!file) {
                 valid = false;
