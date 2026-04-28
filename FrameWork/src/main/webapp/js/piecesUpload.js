@@ -20,31 +20,29 @@
         return '';
     }
 
-    function findStatusNode(input) {
-        var item = input.closest('.piece-item');
-        return item ? item.querySelector('.piece-status') : null;
+    function getCheckedCheckboxes() {
+        return Array.prototype.slice.call(document.querySelectorAll('.js-piece-checkbox:checked'));
     }
 
-    function resetStatus(input) {
-        var status = findStatusNode(input);
-        if (!status) return;
-
-        var currentName = input.getAttribute('data-current-file-name') || '';
-        if (currentName) {
-            status.innerHTML = '<div class="file-info"><span class="icon icon-file"></span><strong>Fichier existant :</strong> ' + escapeHtml(currentName) + '</div>';
-            return;
-        }
-
-        status.innerHTML = '<div class="no-file"><span class="icon icon-info"></span> Aucun fichier</div>';
+    function getPieceLabel(pieceId) {
+        var label = document.querySelector('label[for="check-' + pieceId + '"] .piece-card__label');
+        return label ? (label.textContent || '').trim() : ('Pièce ' + pieceId);
     }
 
     function updateStatusForSelection(input) {
-        var status = findStatusNode(input);
+        if (!input) return;
+        var pieceId = input.getAttribute('data-piece-id');
+        var status = document.getElementById('status-' + pieceId);
+        var chosen = document.getElementById('chosen-' + pieceId);
         if (!status) return;
 
         var file = input.files && input.files.length ? input.files[0] : null;
+        status.innerHTML = '';
+        status.className = 'piece-status';
+
         if (!file) {
-            resetStatus(input);
+            if (chosen) chosen.textContent = 'Aucun fichier choisi';
+            status.innerHTML = '<div class="no-file"><span class="icon icon-info"></span> Aucun fichier</div>';
             return;
         }
 
@@ -52,82 +50,92 @@
         if (error) {
             status.innerHTML = '<div class="file-info error"><span class="icon icon-error"></span> ' + escapeHtml(error) + '</div>';
             input.value = '';
+            if (chosen) chosen.textContent = 'Aucun fichier choisi';
             return;
         }
 
         var sizeKb = (file.size / 1024).toFixed(1);
+        if (chosen) chosen.textContent = file.name;
         status.innerHTML = '<div class="file-info success"><span class="icon icon-check"></span><strong>' + escapeHtml(file.name) + '</strong> (' + sizeKb + ' Ko)</div>';
     }
 
-    function bindInputs() {
+    function syncInlineUploadVisibility() {
+        var checkboxes = document.querySelectorAll('.js-piece-checkbox');
+        Array.prototype.forEach.call(checkboxes, function (checkbox) {
+            var pieceId = checkbox.value;
+            var uploadBlock = document.getElementById('form-' + pieceId);
+            if (!uploadBlock) return;
+            uploadBlock.style.display = checkbox.checked ? '' : 'none';
+        });
+    }
+
+    function bindInlineInputs() {
         var inputs = document.querySelectorAll('input.scan-piece-input[type="file"]');
         Array.prototype.forEach.call(inputs, function (input) {
+            if (input.dataset.boundUpload === '1') return;
+            input.dataset.boundUpload = '1';
             input.addEventListener('change', function () {
                 updateStatusForSelection(input);
             });
-            resetStatus(input);
         });
     }
 
     window.validatePieceUploads = function () {
         var valid = true;
-        var inputs = document.querySelectorAll('input.scan-piece-input[type="file"]');
-        var sectionErrors = {};
+        var errors = [];
+        var errorContainer = document.getElementById('piecesUploadError');
 
-        Array.prototype.forEach.call(inputs, function (input) {
-            var section = input.closest('.pieces-section');
-            if (section && section.classList.contains('hidden')) {
-                return;
-            }
+        getCheckedCheckboxes().forEach(function (checkbox) {
+            var pieceId = checkbox.value;
+            var input = document.getElementById('file-input-' + pieceId);
+            var file = input && input.files && input.files.length ? input.files[0] : null;
+            var label = getPieceLabel(pieceId);
 
-            var file = input.files && input.files.length ? input.files[0] : null;
-            var hasExisting = input.getAttribute('data-current-file-name') && input.getAttribute('data-current-file-name').trim() !== '';
-            var required = input.getAttribute('data-required') !== 'false';
-            var sectionId = input.getAttribute('data-section-id') || '';
-            var pieceTitle = '';
-            var pieceItem = input.closest('.piece-item');
-            if (pieceItem) {
-                var titleNode = pieceItem.querySelector('.piece-title');
-                if (titleNode) {
-                    pieceTitle = (titleNode.textContent || '').trim();
-                }
-            }
-
-            if (!file && (!hasExisting || required)) {
+            if (!file) {
                 valid = false;
-                resetStatus(input);
-                if (sectionId) {
-                    if (!sectionErrors[sectionId]) {
-                        sectionErrors[sectionId] = [];
-                    }
-                    sectionErrors[sectionId].push(pieceTitle || 'Pièce');
-                }
+                errors.push('Le fichier pour "' + escapeHtml(label) + '" est obligatoire.');
                 return;
             }
 
-            if (file) {
-                var error = validateFile(file);
-                if (error) {
-                    valid = false;
-                    updateStatusForSelection(input);
-                    if (sectionId) {
-                        if (!sectionErrors[sectionId]) {
-                            sectionErrors[sectionId] = [];
-                        }
-                        sectionErrors[sectionId].push((pieceTitle || 'Pièce') + ' (' + error + ')');
-                    }
-                }
+            var error = validateFile(file);
+            if (error) {
+                valid = false;
+                errors.push('"' + escapeHtml(label) + '": ' + escapeHtml(error));
             }
         });
 
-        Object.keys(sectionErrors).forEach(function (sectionId) {
-            var target = document.getElementById(sectionId);
-            if (!target) return;
-            target.innerHTML = '<ul class="error-list"><li>' + sectionErrors[sectionId].join('</li><li>') + '</li></ul>';
-        });
+        if (!errorContainer) {
+            return valid;
+        }
 
-        return valid;
+        if (!valid) {
+            errorContainer.innerHTML = '<ul class="error-list"><li>' + errors.join('</li><li>') + '</li></ul>';
+            return false;
+        }
+
+        errorContainer.innerHTML = '';
+        return true;
     };
 
-    window.addEventListener('DOMContentLoaded', bindInputs);
+    function onPiecesRendered() {
+        bindInlineInputs();
+        syncInlineUploadVisibility();
+    }
+
+    function initEventListeners() {
+        document.addEventListener('change', function (event) {
+            if (event.target && event.target.classList && event.target.classList.contains('js-piece-checkbox')) {
+                syncInlineUploadVisibility();
+            }
+        });
+
+        document.addEventListener('pieces:updated', onPiecesRendered);
+        onPiecesRendered();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initEventListeners);
+    } else {
+        initEventListeners();
+    }
 })();

@@ -1,16 +1,16 @@
-/**
- * scanDemande.js  –  Sprint 3 / feature/scan-front
+﻿/**
+ * scanDemande.js  ÔÇô  Sprint 3 / feature/scan-front
  *
- * Responsabilités :
- *  1. Gérer les checkboxes pour sélectionner les pièces
- *  2. Afficher/masquer le formulaire d'upload selon sélection
- *  3. Mettre à jour la barre de progression dynamiquement
+ * Responsabilit├®s :
+ *  1. G├®rer les checkboxes pour s├®lectionner les pi├¿ces
+ *  2. Afficher/masquer le formulaire d'upload selon s├®lection
+ *  3. Mettre ├á jour la barre de progression dynamiquement
  *  4. Valider les fichiers (type, taille) avant soumission
  *  5. Verrouiller le bouton upload pendant l'envoi (anti double-submit)
  *  6. Intercepter la soumission du formulaire "verrouiller" pour demander
- *     confirmation via confirm() — soumission native si accepté, annulation sinon.
+ *     confirmation via confirm() ÔÇö soumission native si accept├®, annulation sinon.
  *
- * Note : aucun fetch/Ajax ici. Tout est POST natif + redirect côté serveur.
+ * Note : aucun fetch/Ajax ici. Tout est POST natif + redirect c├┤t├® serveur.
  */
 (function () {
     'use strict';
@@ -33,18 +33,18 @@
         return null;
     }
 
-    /* ─────────────────────────────────────────────────────────────
+    /* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
        0. Gestion des checkboxes et progression dynamique
-    ───────────────────────────────────────────────────────────── */
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
     function bindCheckboxes() {
-        console.log('[bindCheckboxes] Début du binding');
+        console.log('[bindCheckboxes] D├®but du binding');
         var checkboxes = document.querySelectorAll('.js-piece-checkbox');
-        console.log('[bindCheckboxes] ' + checkboxes.length + ' checkboxes trouvées');
+        console.log('[bindCheckboxes] ' + checkboxes.length + ' checkboxes trouv├®es');
         
         forEachNode(checkboxes, function (checkbox) {
             checkbox.addEventListener('change', function () {
                 var pieceId = this.dataset.pieceId;
-                console.log('[bindCheckboxes] Checkbox ' + pieceId + ' -> ' + (this.checked ? 'COCHÉ' : 'DÉCOCHÉ'));
+                console.log('[bindCheckboxes] Checkbox ' + pieceId + ' -> ' + (this.checked ? 'COCH├ë' : 'D├ëCOCH├ë'));
                 
                 var form = document.getElementById('form-' + pieceId);
                 
@@ -54,7 +54,7 @@
                 } else {
                     // Masquer le formulaire d'upload
                     if (form) form.style.display = 'none';
-                    // Réinitialiser le fichier sélectionné
+                    // R├®initialiser le fichier s├®lectionn├®
                     var input = document.getElementById('file-input-' + pieceId);
                     if (input) {
                         input.value = '';
@@ -68,26 +68,26 @@
                 window.updateProgress();
             });
         });
-        console.log('[bindCheckboxes] Binding terminé');
+        console.log('[bindCheckboxes] Binding termin├®');
     }
 
-    /* ─────────────────────────────────────────────────────────────
-       Mise à jour dynamique de la progression
-    ───────────────────────────────────────────────────────────── */
+    /* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+       Mise ├á jour dynamique de la progression
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
     window.updateProgress = function () {
         console.log('[updateProgress] Calcul progression...');
         var totalCheckboxes = document.querySelectorAll('.js-piece-checkbox').length;
         var checkedCount = document.querySelectorAll('.js-piece-checkbox:checked').length;
         
-        console.log('[updateProgress] ' + checkedCount + ' / ' + totalCheckboxes + ' pièces cochées');
+        console.log('[updateProgress] ' + checkedCount + ' / ' + totalCheckboxes + ' pi├¿ces coch├®es');
         
-        // Mettre à jour l'affichage du compteur
+        // Mettre ├á jour l'affichage du compteur
         var scannedEl = document.getElementById('scannedCount');
         if (scannedEl) scannedEl.textContent = checkedCount;
         var totalEl = document.getElementById('totalCount');
         if (totalEl) totalEl.textContent = totalCheckboxes;
         
-        // Mettre à jour la barre
+        // Mettre ├á jour la barre
         var pct = (totalCheckboxes > 0) ? (checkedCount * 100 / totalCheckboxes) : 0;
         var barEl = document.getElementById('progressBarFill');
         if (barEl) {
@@ -95,17 +95,17 @@
             console.log('[updateProgress] Barre : ' + pct + '%');
         }
         
-        // Activer/désactiver le bouton Finaliser
+        // Activer/d├®sactiver le bouton Finaliser
         var finalizeBtn = document.getElementById('finalizeBtn');
         if (finalizeBtn) {
             finalizeBtn.disabled = (checkedCount < totalCheckboxes);
-            console.log('[updateProgress] Bouton finaliser : ' + (finalizeBtn.disabled ? 'DÉSACTIVÉ' : 'ACTIF'));
+            console.log('[updateProgress] Bouton finaliser : ' + (finalizeBtn.disabled ? 'D├ëSACTIV├ë' : 'ACTIF'));
         }
     };
 
-    /* ─────────────────────────────────────────────────────────────
-       1 & 2. Input file → nom affiché + activation bouton submit
-    ───────────────────────────────────────────────────────────── */
+    /* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+       1 & 2. Input file ÔåÆ nom affich├® + activation bouton submit
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
     function bindFileInputs() {
         forEachNode(document.querySelectorAll('.js-upload-input'), function (input) {
             input.addEventListener('change', function () {
@@ -139,9 +139,9 @@
         });
     }
 
-    /* ─────────────────────────────────────────────────────────────
+    /* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
        3 & 4. Submit upload : validation + verrouillage bouton
-    ───────────────────────────────────────────────────────────── */
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
     function bindUploadForms() {
         forEachNode(document.querySelectorAll('.piece-card__upload-form'), function (form) {
             form.addEventListener('submit', function (e) {
@@ -152,7 +152,7 @@
                 var pieceId = btn ? btn.getAttribute('data-piece-id') : null;
 
                 if (!input || !input.files || !input.files.length) {
-                    showInlineError(form, 'Veuillez sélectionner un fichier.');
+                    showInlineError(form, 'Veuillez s├®lectionner un fichier.');
                     return;
                 }
 
@@ -162,7 +162,7 @@
                     return;
                 }
 
-                /* Verrouille pour éviter double-submit */
+                /* Verrouille pour ├®viter double-submit */
                 if (btn) {
                     btn.disabled    = true;
                     btn.textContent = 'Envoi en cours...';
@@ -188,7 +188,7 @@
                     }
 
                     if (btn) {
-                        btn.textContent = 'Uploadé';
+                        btn.textContent = 'Upload├®';
                         btn.disabled = true;
                     }
 
@@ -198,12 +198,12 @@
                     console.error('[upload] erreur', error);
                     showUploadJsonResult({
                         status: 'error',
-                        message: 'Upload échoué (dummy). Vérifiez la route.'
+                        message: 'Upload ├®chou├® (dummy). V├®rifiez la route.'
                     }, true);
 
                     if (btn) {
                         btn.disabled = false;
-                        btn.textContent = 'Uploader cette pièce';
+                        btn.textContent = 'Uploader cette pi├¿ce';
                     }
                 });
             });
@@ -218,35 +218,35 @@
         if (payload && payload.data) inner = payload.data;
 
         target.className = (isError ? 'error-banner' : 'success-banner') + ' flash-banner';
-        target.textContent = 'Réponse JSON upload: ' + JSON.stringify(inner);
+        target.textContent = 'R├®ponse JSON upload: ' + JSON.stringify(inner);
     }
 
-    /* ─────────────────────────────────────────────────────────────
+    /* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
        5. Formulaire verrouiller : confirm() avant soumission native.
-          Si l'utilisateur annule → preventDefault, rien n'est envoyé.
-          Si l'utilisateur confirme → le navigateur soumet normalement.
-    ───────────────────────────────────────────────────────────── */
+          Si l'utilisateur annule ÔåÆ preventDefault, rien n'est envoy├®.
+          Si l'utilisateur confirme ÔåÆ le navigateur soumet normalement.
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
     function bindVerrouillerForm() {
         var form = document.getElementById('verrouillerForm');
         if (!form) return;
 
         form.addEventListener('submit', function (e) {
             var confirmed = confirm(
-                'Toutes les pièces sont scannées. Verrouiller définitivement le dossier ?'
+                'Toutes les pi├¿ces sont scann├®es. Verrouiller d├®finitivement le dossier ?'
             );
             if (!confirmed) {
                 e.preventDefault();
             }
-            /* Si confirmed : soumission native, pas de JS supplémentaire. */
+            /* Si confirmed : soumission native, pas de JS suppl├®mentaire. */
         });
     }
 
-    /* ─────────────────────────────────────────────────────────────
+    /* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
        Validation fichier
-    ───────────────────────────────────────────────────────────── */
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
     function validateFile(file) {
         if (ACCEPTED_TYPES.indexOf(file.type) === -1) {
-            return 'Format non accepté. Utilisez PDF, JPG ou PNG.';
+            return 'Format non accept├®. Utilisez PDF, JPG ou PNG.';
         }
         if (file.size > MAX_BYTES) {
             return 'Fichier trop volumineux (max 10 Mo).';
@@ -254,9 +254,9 @@
         return null;
     }
 
-    /* ─────────────────────────────────────────────────────────────
+    /* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
        Messages d'erreur inline (sous chaque formulaire upload)
-    ───────────────────────────────────────────────────────────── */
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
     function showInlineError(form, message) {
         if (!form) return;
         var err = form.querySelector('.upload-form-error');
@@ -275,16 +275,17 @@
         if (err) err.textContent = '';
     }
 
-    /* ─────────────────────────────────────────────────────────────
+    /* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
        Init
-    ───────────────────────────────────────────────────────────── */
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
     window.addEventListener('DOMContentLoaded', function () {
         console.log('[JS DOMContentLoaded] Initialisation du module scan');
         bindCheckboxes();
         bindFileInputs();
         bindUploadForms();
         bindVerrouillerForm();
-        console.log('[JS DOMContentLoaded] Initialisation terminée');
+        console.log('[JS DOMContentLoaded] Initialisation termin├®e');
     });
 
 })();
+
