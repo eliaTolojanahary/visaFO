@@ -189,6 +189,9 @@ public class DemandeService {
         if (existing == null) {
             throw new IllegalArgumentException("Aucune demande trouvée avec l'id " + demandeId);
         }
+        if (existing.isVerrouille()) {
+            throw new DemandeVerrouilleeException("Cette demande est verrouillee et ne peut plus etre modifiee.");
+        }
 
         Demande demande = buildDemandeFromForm(formData);
         demande.setId(demandeId);
@@ -209,6 +212,11 @@ public class DemandeService {
         }
 
         return updated;
+    }
+
+    public boolean isDemandeVerrouillee(long demandeId) throws SQLException {
+        Demande demande = demandeDao.findById(demandeId);
+        return demande != null && demande.isVerrouille();
     }
 
     public Map<String, List<PieceJustificative>> getInfoSpecifique(Long idType) throws SQLException {

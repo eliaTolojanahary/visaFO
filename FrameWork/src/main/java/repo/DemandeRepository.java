@@ -143,7 +143,7 @@ public class DemandeRepository implements DemandeDao {
 
     @Override
     public Demande findById(long id) throws SQLException {
-        String sql = "SELECT id, passeport_id, type_demande_id, type_titre_id, statut_id, visa_date_entree, visa_lieu_entree, visa_date_expiration, created_at, updated_at FROM  demande WHERE id = ?";
+        String sql = "SELECT id, passeport_id, type_demande_id, type_titre_id, statut_id, visa_date_entree, visa_lieu_entree, visa_date_expiration, ref_demande, type_document_id, verrouille, created_at, updated_at FROM  demande WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -253,6 +253,10 @@ public class DemandeRepository implements DemandeDao {
                 typeDocument.setId(typeDocumentId);
                 demande.setType_document(typeDocument);
             }
+        }
+
+        if (hasColumn(rs, "verrouille")) {
+            demande.setVerrouille(rs.getBoolean("verrouille"));
         }
 
         Timestamp created = rs.getTimestamp("created_at");

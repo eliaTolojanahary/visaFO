@@ -13,6 +13,7 @@ public class Demande {
     private String visa_lieu_entree;
     private LocalDate visa_date_expiration;
     private String ref_demande;
+    private boolean verrouille;
     private TypeDocument type_document;
     private Timestamp created_at;
     private Timestamp updated_at;
@@ -44,6 +45,9 @@ public class Demande {
 
     public String getRef_demande() { return ref_demande; }
     public void setRef_demande(String ref_demande) { this.ref_demande = ref_demande; }
+
+    public boolean isVerrouille() { return verrouille; }
+    public void setVerrouille(boolean verrouille) { this.verrouille = verrouille; }
 
     public TypeDocument getType_document() { return type_document; }
     public void setType_document(TypeDocument type_document) { this.type_document = type_document; }

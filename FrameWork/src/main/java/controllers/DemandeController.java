@@ -20,6 +20,7 @@ import models.TypeDemande;
 import models.TypeTitre;
 import modelview.ModelView;
 import services.DemandeService;
+import services.DemandeVerrouilleeException;
 
 @ClasseAnnotation("")
 public class DemandeController {
@@ -279,6 +280,17 @@ public class DemandeController {
             } catch (SQLException ex) {
                 System.err.println("[DEBUG CONTROLLER] ERREUR rechargeFormData: " + ex.getMessage());
             }
+        } catch (DemandeVerrouilleeException e) {
+            mv.setView("/resultDemande.jsp");
+            mv.addData("success", false);
+            mv.addData("error", e.getMessage());
+            try {
+                mv.addData("dashboardMode", true);
+                mv.addData("latestDemande", demandeService.getLatestDemandeDashboardData());
+                mv.addData("dashboardDemandes", demandeService.getDashboardDemandesData());
+            } catch (SQLException ex) {
+                mv.addData("error", e.getMessage());
+            }
         } catch (IllegalArgumentException e) {
             mv.setView("/nouvelleDemande.jsp");
             mv.addData("mode", "CREATION");
@@ -320,6 +332,17 @@ public class DemandeController {
                 throw new IllegalArgumentException("Aucune demande trouvee pour l'id " + demandeId + ".");
             }
 
+            boolean verrouille = Boolean.TRUE.equals(existingFormData.get("verrouille"));
+            if (verrouille) {
+                mv.setView("/resultDemande.jsp");
+                mv.addData("success", false);
+                mv.addData("error", "Cette demande est verrouillee et ne peut plus etre modifiee.");
+                mv.addData("dashboardMode", true);
+                mv.addData("latestDemande", demandeService.getLatestDemandeDashboardData());
+                mv.addData("dashboardDemandes", demandeService.getDashboardDemandesData());
+                return mv;
+            }
+
             rechargeFormData(mv);
             mv.addData("formData", existingFormData);
             mv.addData("selectedPieceIds", demandeService.getSelectedPieceIdsByDemandeId(demandeId));
@@ -333,6 +356,17 @@ public class DemandeController {
                 rechargeFormData(mv);
             } catch (SQLException ex) {
                 System.err.println("[DEBUG CONTROLLER] ERREUR rechargeFormData: " + ex.getMessage());
+            }
+        } catch (DemandeVerrouilleeException e) {
+            mv.setView("/resultDemande.jsp");
+            mv.addData("success", false);
+            mv.addData("error", e.getMessage());
+            try {
+                mv.addData("dashboardMode", true);
+                mv.addData("latestDemande", demandeService.getLatestDemandeDashboardData());
+                mv.addData("dashboardDemandes", demandeService.getDashboardDemandesData());
+            } catch (SQLException ex) {
+                mv.addData("error", e.getMessage());
             }
         } catch (IllegalArgumentException e) {
             mv.addData("error", e.getMessage());
@@ -376,6 +410,17 @@ public class DemandeController {
                 rechargeFormData(mv);
             } catch (SQLException ex) {
                 System.err.println("[DEBUG CONTROLLER] ERREUR rechargeFormData: " + ex.getMessage());
+            }
+        } catch (DemandeVerrouilleeException e) {
+            mv.setView("/resultDemande.jsp");
+            mv.addData("success", false);
+            mv.addData("error", e.getMessage());
+            try {
+                mv.addData("dashboardMode", true);
+                mv.addData("latestDemande", demandeService.getLatestDemandeDashboardData());
+                mv.addData("dashboardDemandes", demandeService.getDashboardDemandesData());
+            } catch (SQLException ex) {
+                mv.addData("error", e.getMessage());
             }
         } catch (IllegalArgumentException e) {
             mv.setView("/nouvelleDemande.jsp");
