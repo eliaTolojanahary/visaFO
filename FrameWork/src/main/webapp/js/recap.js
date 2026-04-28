@@ -97,34 +97,47 @@
 
     window.addEventListener('DOMContentLoaded', function () {
         const form = byId('demandeForm');
+        const saveBtn = byId('saveDemandeBtn');
+
+        // Anciens boutons recap (gardés pour compatibilité si présents)
         const reviewBtn = byId('reviewBtn');
         const backBtn = byId('backToEditBtn');
         const confirmBtn = byId('confirmSubmitBtn');
 
-        if (!form || !reviewBtn || !confirmBtn || !backBtn) return;
+        // Bouton principal : enregistrer la demande directement
+        if (saveBtn && form) {
+            saveBtn.addEventListener('click', function () {
+                window.__reviewAttempted = true;
+                const valid = typeof validateForm === 'function' ? validateForm() : true;
+                if (!valid) return;
+                form.requestSubmit();
+            });
+        }
 
-        reviewBtn.addEventListener('click', function () {
-            window.__reviewAttempted = true;
-            const valid = typeof validateForm === 'function' ? validateForm() : true;
-            if (!valid) return;
+        // Compatibilité avec l'ancien flow recap si les boutons existent encore
+        if (reviewBtn) {
+            reviewBtn.addEventListener('click', function () {
+                window.__reviewAttempted = true;
+                const valid = typeof validateForm === 'function' ? validateForm() : true;
+                if (!valid) return;
+                buildRecap();
+                toggleRecap(true);
+            });
+        }
 
-            buildRecap();
-            toggleRecap(true);
-        });
-
-        backBtn.addEventListener('click', function () {
-            toggleRecap(false);
-            reviewBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-
-        confirmBtn.addEventListener('click', function () {
-            window.__reviewAttempted = true;
-            const valid = typeof validateForm === 'function' ? validateForm() : true;
-            if (!valid) {
+        if (backBtn) {
+            backBtn.addEventListener('click', function () {
                 toggleRecap(false);
-                return;
-            }
-            form.requestSubmit();
-        });
+            });
+        }
+
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function () {
+                window.__reviewAttempted = true;
+                const valid = typeof validateForm === 'function' ? validateForm() : true;
+                if (!valid) { toggleRecap(false); return; }
+                form.requestSubmit();
+            });
+        }
     });
 })();

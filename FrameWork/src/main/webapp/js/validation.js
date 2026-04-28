@@ -136,10 +136,17 @@ function validateForm() {
             showError('typeDocumentError', 'Le type de document doit etre Titre de residence');
         }
 
-        if (checkedTotal < 1) {
-            valid = false;
-            showError('duplicataPieceError', 'Au moins une piece justificative doit etre cochee pour le duplicata');
-        }
+    }
+
+    if (typeof window.validatePieceUploads === 'function') {
+        // Les pièces sont optionnelles à la soumission initiale :
+        // elles peuvent être ajoutées après via le scan.
+        // On ne bloque PAS le formulaire sur cette validation.
+    }
+
+    const saveBtn = document.getElementById('saveDemandeBtn');
+    if (saveBtn) {
+        saveBtn.disabled = !valid;
     }
 
     const reviewBtn = document.getElementById('reviewBtn');

@@ -1,6 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
+<%@ page import="java.net.URLEncoder" %>
 <%@ page import="models.Demande" %>
 <% String ctx = request.getContextPath(); %>
 <!DOCTYPE html>
@@ -145,6 +146,17 @@
         String latestStatut = latestDemande != null && latestDemande.get("statutLibelle") != null
             ? String.valueOf(latestDemande.get("statutLibelle"))
             : "";
+        String latestReference = latestDemande != null && latestDemande.get("ref_demande") != null
+            ? String.valueOf(latestDemande.get("ref_demande"))
+            : "";
+        String encodedLatestReference = "";
+        try {
+            if (!latestReference.isEmpty()) {
+                encodedLatestReference = URLEncoder.encode(latestReference, "UTF-8");
+            }
+        } catch (Exception e) {
+            encodedLatestReference = latestReference;
+        }
 
         String statusClass = "badge-gray";
         if (latestStatut.equalsIgnoreCase("En cours de traitement")) statusClass = "badge-blue";
@@ -186,10 +198,22 @@
                     <li><strong>Date de création:</strong> <%= latestDemande.get("createdAt") != null ? latestDemande.get("createdAt") : "-" %></li>
                 </ul>
                 <div class="card-actions">
-                    <form action="<%= ctx %>/form/edit" method="post" style="display:inline;">
-                        <input type="hidden" name="demande_id" value="<%= latestDemande.get("demande_id") != null ? latestDemande.get("demande_id") : "" %>">
-                        <button type="submit" class="btn-secondary">Modifier</button>
-                    </form>
+                    <%
+                        boolean latestVerrouille = Boolean.TRUE.equals(latestDemande.get("verrouille"));
+                        String latestDemandeIdStr = latestDemande.get("demande_id") != null ? String.valueOf(latestDemande.get("demande_id")) : "";
+                    %>
+                    <% if (!latestVerrouille && !latestDemandeIdStr.isEmpty()) { %>
+                        <form action="<%= ctx %>/form/edit" method="post" style="display:inline;">
+                            <input type="hidden" name="demande_id" value="<%= latestDemandeIdStr %>">
+                            <button type="submit" class="btn-secondary">Modifier</button>
+                        </form>
+                        <a href="<%= ctx %>/demande/<%= latestDemandeIdStr %>/scan" class="btn-primary">&#128196; Scanner les pieces</a>
+                    <% } else if (latestVerrouille) { %>
+                        <span class="badge badge-purple" style="padding:6px 12px;">&#128274; Dossier verrouille</span>
+                    <% } %>
+                    <% if (!latestReference.isEmpty()) { %>
+                        <a href="<%= ctx %>/suivi?ref=<%= encodedLatestReference %>" class="btn-secondary">Suivi dossier</a>
+                    <% } %>
                 </div>
             <% } else { %>
                 <p>Aucune demande trouvée pour le moment.</p>
@@ -289,12 +313,27 @@
                             <td><strong style="color: #27ae60;"><%= statut %></strong></td>
                                 <td>
                                     <div class="action-links">
-                                        <form action="<%= ctx %>/form/edit" method="post" style="display:inline;">
-                                            <input type="hidden" name="demande_id" value="<%= demandeId %>">
-                                            <button type="submit" class="btn-secondary">Modifier</button>
-                                        </form>
-                                        <%-- Supprimer : à adapter si vous ajoutez un mapping delete --%>
-                                                                                <span class="btn-warning">Supprimer indisponible</span>
+                                        <%
+                                            boolean rowVerrouille = Boolean.TRUE.equals(d.get("verrouille"));
+                                            String encodedRefDemande = "";
+                                            try {
+                                                if (!refDemande.isEmpty()) encodedRefDemande = URLEncoder.encode(refDemande, "UTF-8");
+                                            } catch (Exception e) { encodedRefDemande = refDemande; }
+                                        %>
+                                        <% if (!rowVerrouille) { %>
+                                            <form action="<%= ctx %>/form/edit" method="post" style="display:inline;">
+                                                <input type="hidden" name="demande_id" value="<%= demandeId %>">
+                                                <button type="submit" class="btn-secondary">Modifier</button>
+                                            </form>
+                                            <% if (!demandeId.isEmpty()) { %>
+                                                <a href="<%= ctx %>/demande/<%= demandeId %>/scan" class="btn-primary">&#128196; Scanner</a>
+                                            <% } %>
+                                        <% } else { %>
+                                            <span class="badge badge-purple">&#128274; Verrouille</span>
+                                        <% } %>
+                                        <% if (!refDemande.isEmpty()) { %>
+                                            <a href="<%= ctx %>/suivi?ref=<%= encodedRefDemande %>" class="btn-secondary">Suivi</a>
+                                        <% } %>
                                     </div>
                                 </td>
                             </tr>
