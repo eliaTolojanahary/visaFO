@@ -1,0 +1,999 @@
+/* ═══════════════════════════════════════════════════════════════
+   scanDemande.css  –  Sprint 3 / feature/scan-front
+   Étend style.css sans le modifier.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Icônes (symboles Unicode via ::before) ──────────────────── */
+.icon {
+    display: inline-block;
+    margin-right: 6px;
+    font-weight: bold;
+}
+
+.icon-success::before       { content: "✓"; color: #1d6f37; font-weight: bold; }
+.icon-error::before         { content: "✕"; color: #c0392b; font-weight: bold; }
+.icon-lock::before          { content: "[Lock]"; }
+.icon-file::before          { content: "[File]"; }
+.icon-info::before          { content: "[Info]"; }
+.icon-check::before         { content: "[✓]"; color: #1d6f37; }
+.icon-warning::before       { content: "[!]"; color: #9a6500; }
+
+/* ── Flash message (après redirect PRG) ─────────────────────── */
+.flash-message {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.3s ease;
+}
+
+.flash-success {
+    background: #e6f4ea;
+    color: #1d6f37;
+    border-left: 4px solid #1d6f37;
+}
+
+.flash-error {
+    background: #fce8e8;
+    color: #c0392b;
+    border-left: 4px solid #c0392b;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── En-tête scan ────────────────────────────────────────────── */
+.header-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    border: 1px solid #e4e9f2;
+}
+
+.header-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.info-item {
+    background: #f8fafd;
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 3px solid #1a4a7a;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #1a4a7a;
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.info-item span {
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+/* ── Bandeau dossier verrouillé ─────────────────────────────── */
+.locked-banner {
+    background: #fce8e8;
+    color: #c0392b;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    border-left: 4px solid #c0392b;
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.locked-banner h3 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+}
+
+.locked-banner p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* ── Pièces justificatives ──────────────────────────────────── */
+.pieces-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    border: 1px solid #e4e9f2;
+}
+
+.pieces-section h2 {
+    margin-top: 0;
+    color: #1a4a7a;
+    border-bottom: 2px solid #e4e9f2;
+    padding-bottom: 10px;
+}
+
+.no-pieces {
+    color: #999;
+    font-style: italic;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.piece-item {
+    background: #f8fafd;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #1a4a7a;
+    margin-bottom: 20px;
+}
+
+.piece-item:last-child {
+    margin-bottom: 0;
+}
+
+.piece-title {
+    font-weight: 600;
+    color: #1a4a7a;
+    font-size: 1rem;
+    margin-bottom: 12px;
+}
+
+/* ── État du fichier ────────────────────────────────────────── */
+.piece-status {
+    background: white;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    border: 1px solid #e4e9f2;
+}
+
+.file-info {
+    color: #333;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.file-info strong {
+    color: #1a4a7a;
+}
+
+.no-file {
+    color: #999;
+    font-style: italic;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-download {
+    display: inline-block;
+    padding: 8px 14px;
+    background: #1a4a7a;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: background 0.2s ease;
+    margin-top: 8px;
+}
+
+.btn-download:hover {
+    background: #163f6d;
+}
+
+/* ── Formulaire upload ──────────────────────────────────────── */
+.upload-form {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #d9e2ef;
+    margin-top: 12px;
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+.form-group input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d9e2ef;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.form-group input[type="file"]:focus {
+    outline: none;
+    border-color: #3e78b2;
+    box-shadow: 0 0 0 4px rgba(62, 120, 178, 0.12);
+}
+
+.btn-upload {
+    display: inline-block;
+    padding: 10px 16px;
+    background: #1a4a7a;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-upload:hover {
+    background: #163f6d;
+}
+
+/* ── Bloc finalisation ──────────────────────────────────────── */
+.finalize-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    border: 1px solid #e4e9f2;
+}
+
+.finalize-section h2 {
+    margin-top: 0;
+    color: #1a4a7a;
+    border-bottom: 2px solid #e4e9f2;
+    padding-bottom: 10px;
+}
+
+.completion-status {
+    background: #f8fafd;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    border-left: 4px solid #1a4a7a;
+}
+
+.completion-message {
+    font-size: 0.95rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.completion-message.complete {
+    color: #1d6f37;
+    font-weight: 600;
+}
+
+.completion-message.incomplete {
+    color: #9a6500;
+    font-weight: 600;
+}
+
+.btn-finalize {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #1a4a7a;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-weight: 600;
+}
+
+.btn-finalize:hover:not(:disabled) {
+    background: #163f6d;
+}
+
+.btn-finalize:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: #a0a0a0;
+}
+
+/* ── Navigation ─────────────────────────────────────────────── */
+.nav-section {
+    text-align: center;
+    margin-top: 25px;
+}
+
+.btn-back {
+    display: inline-block;
+    padding: 10px 16px;
+    background: #e8eef7;
+    color: #1a4a7a;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+}
+
+.btn-back:hover {
+    background: #d4dfe9;
+}
+
+/* ── Badge violet (statut SCAN TERMINÉ) ─────────────────────── */
+.badge-purple {
+    background: #f3e5f5;
+    color: #6a1b9a;
+}
+
+/* ── En-tête scan ────────────────────────────────────────────── */
+.header-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    border: 1px solid #e4e9f2;
+}
+
+.header-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.info-item {
+    background: #f8fafd;
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 3px solid #1a4a7a;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #1a4a7a;
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.info-item span {
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+/* ── Bandeau dossier verrouillé ─────────────────────────────── */
+.locked-banner {
+    background: #fce8e8;
+    color: #c0392b;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    border-left: 4px solid #c0392b;
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.locked-banner h3 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+}
+
+.locked-banner p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* ── Pièces justificatives ──────────────────────────────────── */
+.pieces-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    border: 1px solid #e4e9f2;
+}
+
+.pieces-section h2 {
+    margin-top: 0;
+    color: #1a4a7a;
+    border-bottom: 2px solid #e4e9f2;
+    padding-bottom: 10px;
+}
+
+.no-pieces {
+    color: #999;
+    font-style: italic;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.piece-item {
+    background: #f8fafd;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #1a4a7a;
+    margin-bottom: 20px;
+}
+
+.piece-item:last-child {
+    margin-bottom: 0;
+}
+
+.piece-title {
+    font-weight: 600;
+    color: #1a4a7a;
+    font-size: 1rem;
+    margin-bottom: 12px;
+}
+
+/* ── État du fichier ────────────────────────────────────────── */
+.piece-status {
+    background: white;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    border: 1px solid #e4e9f2;
+}
+
+.file-info {
+    color: #333;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.file-info strong {
+    color: #1a4a7a;
+}
+
+.no-file {
+    color: #999;
+    font-style: italic;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-download {
+    display: inline-block;
+    padding: 8px 14px;
+    background: #1a4a7a;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: background 0.2s ease;
+    margin-top: 8px;
+}
+
+.btn-download:hover {
+    background: #163f6d;
+}
+
+/* ── Formulaire upload ──────────────────────────────────────── */
+.upload-form {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #d9e2ef;
+    margin-top: 12px;
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+.form-group input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d9e2ef;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.form-group input[type="file"]:focus {
+    outline: none;
+    border-color: #3e78b2;
+    box-shadow: 0 0 0 4px rgba(62, 120, 178, 0.12);
+}
+
+.btn-upload {
+    display: inline-block;
+    padding: 10px 16px;
+    background: #1a4a7a;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-upload:hover {
+    background: #163f6d;
+}
+
+/* ── Bloc finalisation ──────────────────────────────────────── */
+.finalize-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    border: 1px solid #e4e9f2;
+}
+
+.finalize-section h2 {
+    margin-top: 0;
+    color: #1a4a7a;
+    border-bottom: 2px solid #e4e9f2;
+    padding-bottom: 10px;
+}
+
+.completion-status {
+    background: #f8fafd;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    border-left: 4px solid #1a4a7a;
+}
+
+.completion-message {
+    font-size: 0.95rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.completion-message.complete {
+    color: #1d6f37;
+    font-weight: 600;
+}
+
+.completion-message.incomplete {
+    color: #9a6500;
+    font-weight: 600;
+}
+
+.btn-finalize {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #1a4a7a;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-weight: 600;
+}
+
+.btn-finalize:hover:not(:disabled) {
+    background: #163f6d;
+}
+
+.btn-finalize:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: #a0a0a0;
+}
+
+/* ── Navigation ─────────────────────────────────────────────── */
+.nav-section {
+    text-align: center;
+    margin-top: 25px;
+}
+
+.btn-back {
+    display: inline-block;
+    padding: 10px 16px;
+    background: #e8eef7;
+    color: #1a4a7a;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+}
+
+.btn-back:hover {
+    background: #d4dfe9;
+}
+
+/* ── Badge violet (statut SCAN TERMINÉ) ─────────────────────── */
+.badge-purple {
+    background: #f3e5f5;
+    color: #6a1b9a;
+}
+
+/* ── En-tête scan ────────────────────────────────────────────── */
+.scan-header {
+    background: linear-gradient(135deg, #1a4a7a, #3e78b2);
+    color: #fff;
+    border-radius: 10px;
+    padding: 28px 28px 22px;
+    margin-bottom: 25px;
+}
+
+.scan-header__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.scan-header__ref {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+.scan-header__ref-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+}
+
+.scan-header__ref-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.04em;
+}
+
+.scan-header__name {
+    margin: 0 0 6px 0;
+    font-size: 1.85rem;
+    font-weight: 700;
+}
+
+.scan-header__hint {
+    margin: 0;
+    opacity: 0.85;
+    font-size: 0.92rem;
+}
+
+.scan-header .badge {
+    border: 1px solid rgba(255,255,255,0.25);
+    backdrop-filter: blur(4px);
+}
+
+/* ── Section progression ─────────────────────────────────────── */
+.progress-section { padding: 18px 25px !important; }
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.progress-label {
+    font-weight: 600;
+    color: #1a4a7a;
+    font-size: 0.95rem;
+}
+
+.progress-count {
+    font-size: 0.88rem;
+    color: #4c5d73;
+}
+
+.progress-bar-track {
+    height: 8px;
+    background: #e4e9f2;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3e78b2, #27ae60);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+/* ── Liste des pièces ─────────────────────────────────────────── */
+.piece-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Carte pièce : layout en deux lignes */
+.piece-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f8fafd;
+    border: 1px solid #dce6f2;
+    border-radius: 10px;
+    padding: 16px 20px;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.piece-card--done {
+    background: #f0fbf4;
+    border-color: #a8dab5;
+}
+
+/* Ligne 1 : dot + libellé */
+.piece-card__info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Checkbox stylisée */
+.piece-card__checkbox {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    cursor: pointer;
+    accent-color: #27ae60;
+}
+
+/* Label cliquable pour checkbox */
+.piece-card__checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    margin: 0;
+    flex: 1;
+    user-select: none;
+}
+
+.piece-card__checkbox-label:hover {
+    text-decoration: none;
+}
+
+.piece-card__status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.dot--green { background: #27ae60; box-shadow: 0 0 0 3px rgba(39,174,96,0.18); }
+.dot--gray  { background: #b0bec9; }
+
+.piece-card__label {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.95rem;
+}
+
+/* Bloc droite : métadonnées + formulaire */
+.piece-card__right {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-left: 20px; /* alignement avec le libellé */
+    border-left: 2px solid #e4e9f2;
+}
+
+.piece-card--done .piece-card__right {
+    border-left-color: #a8dab5;
+}
+
+/* ── Métadonnées fichier ─────────────────────────────────────── */
+.piece-card__file-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.piece-card__file-meta--empty {
+    opacity: 0.75;
+}
+
+.piece-card__download-link {
+    color: #1a4a7a;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.piece-card__download-link:hover { color: #3e78b2; text-decoration: underline; }
+
+.piece-card__file-info {
+    font-size: 0.82rem;
+    color: #4c5d73;
+}
+
+.piece-card__no-file {
+    font-size: 0.88rem;
+    color: #8a9ab0;
+    font-style: italic;
+}
+
+/* ── Formulaire d'upload ─────────────────────────────────────── */
+.piece-card__upload-form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Label sélecteur de fichier stylisé */
+.piece-card__file-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 0;             /* annule le margin-bottom: 8px du label global */
+    font-weight: normal;
+}
+
+.piece-card__file-trigger {
+    /* reprend .btn-alt .btn-sm */
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.piece-card__file-trigger.file-selected {
+    border: 1px solid #3e78b2;
+    color: #1a4a7a;
+}
+
+.piece-card__file-chosen {
+    font-size: 0.83rem;
+    color: #4c5d73;
+    font-style: italic;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Bouton upload désactivé */
+.piece-card__upload-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* ── Message d'erreur inline (upload) ──────────────────────── */
+.upload-form-error {
+    color: #c0392b;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 6px 8px;
+    margin-top: 4px;
+}
+
+/* ── Tailles de boutons/badges ───────────────────────────────── */
+.btn-sm {
+    padding: 8px 16px !important;
+    font-size: 0.88rem !important;
+}
+
+.badge-sm {
+    padding: 3px 8px;
+    font-size: 0.78rem;
+}
+
+/* ── Bouton primaire (style du bouton "Scan Terminé") ────────── */
+.btn-primary {
+    background: linear-gradient(135deg, #1a4a7a, #0f3a5f);
+    color: #fff;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(26, 74, 122, 0.18);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #163f6d, #0a2f4d);
+    box-shadow: 0 6px 16px rgba(26, 74, 122, 0.28);
+    transform: translateY(-2px);
+}
+
+.btn-primary:disabled {
+    background: linear-gradient(135deg, #b0bec9, #90a4ae);
+    color: rgba(255, 255, 255, 0.6);
+    box-shadow: none;
+    opacity: 1;
+    cursor: not-allowed;
+}
+
+/* ── Actions bas de page ─────────────────────────────────────── */
+.scan-actions { margin-top: 10px; }
+
+/* ── Input file invisible ────────────────────────────────────── */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 680px) {
+    .scan-header__name       { font-size: 1.4rem; }
+    .piece-card              { padding: 12px 14px; }
+    .piece-card__right       { padding-left: 12px; }
+    .piece-card__file-chosen { max-width: 160px; }
+    .piece-card__upload-form { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── Mini sections (Communes / Specifiques) ─────────────────── */
+.piece-mini-section {
+    margin-bottom: 14px;
+    padding: 12px;
+    border: 1px solid #d9e2ef;
+    border-radius: 8px;
+    background: #f9fbff;
+}
+
+.piece-mini-section:last-child {
+    margin-bottom: 0;
+}
+
+.piece-mini-section__title {
+    margin: 0 0 10px 0;
+    font-size: 0.95rem;
+    color: #1a4a7a;
+    font-weight: 700;
+}
+
+.piece-mini-section__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.piece-mini-section .piece-card {
+    margin-bottom: 0;
+}
+
+.piece-mini-section__hint {
+    margin: 0;
+}

@@ -21,8 +21,12 @@ echo [2/3] Application des evolutions Sprint 2...
 psql -v ON_ERROR_STOP=1 -U %User% -d %DB% -f sql/alter_sprint2.sql
 if %ERRORLEVEL% neq 0 ( echo ERREUR etape 2 & exit /b 1 )
 
-echo [3/3] Insertion des donnees de test...
-psql -v ON_ERROR_STOP=1 -U %User% -d %DB% -f sql/donnees_mini_test.sql
+echo [3/4] Application des evolutions Sprint 3...
+psql -v ON_ERROR_STOP=1 -U %User% -d %DB% -f sql/alter_sprint3.sql
 if %ERRORLEVEL% neq 0 ( echo ERREUR etape 3 & exit /b 1 )
+
+echo [4/4] Insertion des donnees de test...
+psql -v ON_ERROR_STOP=1 -U %User% -d %DB% -f sql/donnees_mini_test.sql
+if %ERRORLEVEL% neq 0 ( echo ERREUR etape 4 & exit /b 1 )
 
 echo Initialisation terminee avec succes.

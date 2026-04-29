@@ -1,5 +1,7 @@
+# Controller de test ScanDemande Controller  
+
 # Build artifacts (Java/Tomcat)
-FrameWork/build/
+FrameWork/build/*
 
 # Compiled bytecode and packaged archives
 *.class

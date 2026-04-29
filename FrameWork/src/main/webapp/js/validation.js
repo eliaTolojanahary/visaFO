@@ -15,20 +15,8 @@ function isDuplicataSelected() {
     return getSelectedTypeDemandeLabel() === 'duplicata';
 }
 
-function getCheckedCountInSection(sectionId) {
-    const section = document.getElementById(sectionId);
-    if (!section) return 0;
-    return section.querySelectorAll('input[type="checkbox"][name="piece_ids"]:checked').length;
-}
-
-function getTotalCountInSection(sectionId) {
-    const section = document.getElementById(sectionId);
-    if (!section) return 0;
-    return section.querySelectorAll('input[type="checkbox"][name="piece_ids"]').length;
-}
-
-function hasAtLeastOneChecked(sectionId) {
-    return getCheckedCountInSection(sectionId) > 0;
+function getPieceInputSections() {
+    return Array.from(document.querySelectorAll('.pieces-section'));
 }
 
 function clearErrors() {
@@ -92,39 +80,9 @@ function validateForm() {
 
     const duplicataMode = isDuplicataSelected();
 
-    const piecesCommunesTotal = getTotalCountInSection('piecesCommunes');
-    const checkedCommunes = getCheckedCountInSection('piecesCommunes');
-
-    if (!duplicataMode && piecesCommunesTotal > 0 && checkedCommunes === 0) {
-        valid = false;
-        showError('pieceCommuneError', 'Veuillez cocher au moins une piece commune');
-    }
-
-    if (profil) {
-        if (profil.value === 'investisseur') {
-            const piecesInvestisseurTotal = getTotalCountInSection('piecesInvestisseur');
-            const checkedInvestisseur = getCheckedCountInSection('piecesInvestisseur');
-            if (!duplicataMode && piecesInvestisseurTotal > 0 && checkedInvestisseur === 0) {
-                valid = false;
-                showError('pieceInvestisseurError', 'Veuillez cocher au moins une piece investisseur');
-            }
-        }
-        if (profil.value === 'travailleur') {
-            const piecesTravailleurTotal = getTotalCountInSection('piecesTravailleur');
-            const checkedTravailleur = getCheckedCountInSection('piecesTravailleur');
-            if (!duplicataMode && piecesTravailleurTotal > 0 && checkedTravailleur === 0) {
-                valid = false;
-                showError('pieceTravailleurError', 'Veuillez cocher au moins une piece travailleur');
-            }
-        }
-    }
-
     if (duplicataMode) {
         const visaApprouve = document.getElementById('visaApprouveConfirme');
         const typeDocument = document.getElementById('typeDocument');
-        const checkedTotal = checkedCommunes
-            + getCheckedCountInSection('piecesInvestisseur')
-            + getCheckedCountInSection('piecesTravailleur');
 
         if (!visaApprouve || !visaApprouve.checked) {
             valid = false;

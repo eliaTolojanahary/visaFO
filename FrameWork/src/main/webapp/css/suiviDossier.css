@@ -1,0 +1,431 @@
+/* ═══════════════════════════════════════════════════════════════
+   suiviDossier.css  –  Sprint 3 / feature/scan-front
+   Étend style.css sans le modifier.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Icônes (symboles Unicode via ::before) ──────────────────── */
+.icon {
+    display: inline-block;
+    margin-right: 6px;
+    font-weight: bold;
+}
+
+.icon-lock::before       { content: "[Lock]"; }
+.icon-file::before       { content: "[File]"; }
+.icon-info::before       { content: "[Info]"; }
+
+/* ── Section info ────────────────────────────────────────────── */
+.info-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    border: 1px solid #e4e9f2;
+}
+
+.info-section h2 {
+    margin-top: 0;
+    color: #1a4a7a;
+    border-bottom: 2px solid #e4e9f2;
+    padding-bottom: 10px;
+}
+
+.demand-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.info-block {
+    background: #f8fafd;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #1a4a7a;
+}
+
+.info-block label {
+    font-weight: 600;
+    color: #1a4a7a;
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.info-block span {
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.status-display {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+/* ── Bandeau dossier verrouillé ─────────────────────────────── */
+.locked-banner {
+    background: #fce8e8;
+    color: #c0392b;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    border-left: 4px solid #c0392b;
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.locked-banner h2 {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+}
+
+.locked-banner p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* ── Documents section ──────────────────────────────────────── */
+.documents-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    border: 1px solid #e4e9f2;
+}
+
+.documents-section h2 {
+    margin-top: 0;
+    color: #1a4a7a;
+    border-bottom: 2px solid #e4e9f2;
+    padding-bottom: 10px;
+}
+
+.documents-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.document-item {
+    background: #f8fafd;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #1a4a7a;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.document-item:last-child {
+    margin-bottom: 0;
+}
+
+.document-info {
+    flex: 1;
+}
+
+.document-name {
+    font-weight: 600;
+    color: #1a4a7a;
+    margin-bottom: 5px;
+    font-size: 0.95rem;
+}
+
+.document-file {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.document-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.btn-download {
+    display: inline-block;
+    padding: 8px 14px;
+    background: #1a4a7a;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: background 0.2s ease;
+}
+
+.btn-download:hover {
+    background: #163f6d;
+}
+
+.no-documents {
+    background: #f0f4f8;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+.scan-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.btn-primary {
+    display: inline-block;
+    padding: 10px 16px;
+    background: #1a4a7a;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background: #163f6d;
+}
+
+/* ── Navigation ─────────────────────────────────────────────── */
+.btn-back {
+    display: inline-block;
+    padding: 10px 16px;
+    background: #e8eef7;
+    color: #1a4a7a;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+}
+
+.btn-back:hover {
+    background: #d4dfe9;
+}
+
+/* ── Badge violet (statut SCAN TERMINÉ) ─────────────────────── */
+.badge-purple {
+    background: #f3e5f5;
+    color: #6a1b9a;
+}
+
+/* ── Section info ────────────────────────────────────────────── */
+.info-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    border: 1px solid #e4e9f2;
+}
+
+.info-section h2 {
+    margin-top: 0;
+    color: #1a4a7a;
+    border-bottom: 2px solid #e4e9f2;
+    padding-bottom: 10px;
+}
+
+.demand-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.info-block {
+    background: #f8fafd;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #1a4a7a;
+}
+
+.info-block label {
+    font-weight: 600;
+    color: #1a4a7a;
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.info-block span {
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.status-display {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+/* ── Bandeau dossier verrouillé ─────────────────────────────── */
+.locked-banner {
+    background: #fce8e8;
+    color: #c0392b;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    border-left: 4px solid #c0392b;
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.locked-banner h2 {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+}
+
+.locked-banner p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* ── Documents section ──────────────────────────────────────── */
+.documents-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    border: 1px solid #e4e9f2;
+}
+
+.documents-section h2 {
+    margin-top: 0;
+    color: #1a4a7a;
+    border-bottom: 2px solid #e4e9f2;
+    padding-bottom: 10px;
+}
+
+.documents-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.document-item {
+    background: #f8fafd;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #1a4a7a;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.document-item:last-child {
+    margin-bottom: 0;
+}
+
+.document-info {
+    flex: 1;
+}
+
+.document-name {
+    font-weight: 600;
+    color: #1a4a7a;
+    margin-bottom: 5px;
+    font-size: 0.95rem;
+}
+
+.document-file {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.document-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.btn-download {
+    display: inline-block;
+    padding: 8px 14px;
+    background: #1a4a7a;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: background 0.2s ease;
+}
+
+.btn-download:hover {
+    background: #163f6d;
+}
+
+.no-documents {
+    background: #f0f4f8;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+.scan-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.btn-primary {
+    display: inline-block;
+    padding: 10px 16px;
+    background: #1a4a7a;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background: #163f6d;
+}
+
+/* ── Navigation ─────────────────────────────────────────────── */
+.btn-back {
+    display: inline-block;
+    padding: 10px 16px;
+    background: #e8eef7;
+    color: #1a4a7a;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+}
+
+.btn-back:hover {
+    background: #d4dfe9;
+}
+
+/* ── Badge violet (statut SCAN TERMINÉ) ─────────────────────── */
+.badge-purple {
+    background: #f3e5f5;
+    color: #6a1b9a;
+}

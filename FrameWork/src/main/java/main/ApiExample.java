@@ -5,6 +5,7 @@ import annotation.ClasseAnnotation;
 import annotation.GetMapping;
 import annotation.PostMapping;
 import annotation.RequestParam;
+import util.FileUpload;
 import annotation.Api;
 import java.util.*;
 
@@ -59,7 +60,7 @@ public class ApiExample {
         java.util.Map<String, Object> res = new java.util.HashMap<>();
         if (fileContent != null) {
             String name = (filename != null && !filename.isEmpty()) ? filename : ("upload_" + System.currentTimeMillis());
-            main.FileUpload fu = new main.FileUpload(fileContent, name, "application/octet-stream", fileContent.length);
+            util.FileUpload fu = new util.FileUpload(fileContent, name, "application/octet-stream", fileContent.length);
             // Try to save to fallback uploads folder (user.dir/uploads)
             try {
                 java.io.File dir = new java.io.File(System.getProperty("user.dir"), "uploads");

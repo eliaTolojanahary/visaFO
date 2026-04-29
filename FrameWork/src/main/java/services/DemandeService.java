@@ -36,7 +36,14 @@ public class DemandeService {
         this.referenceDao = new ReferenceVisaRepository();
         System.out.println("[DEBUG SERVICE] DAOs initialisés");
     }
-
+    
+    public Map<String, Object> getDemandeByRef(String ref) throws SQLException {
+        return ((DemandeRepository) demandeDao).getDemandeByRef(ref); // ou ajouter la méthode dans l'interface DemandeDao
+    }
+    
+    public Map<String, Object> getDemandeMapById(long demandeId) throws SQLException {
+        return demandeDao.getDemandeMapById(demandeId);
+    }
     public Map<String, String> isObligatoire(Map<String, Object> formData) {
         Map<String, String> errors = new HashMap<>();
 
@@ -182,6 +189,9 @@ public class DemandeService {
         if (existing == null) {
             throw new IllegalArgumentException("Aucune demande trouvée avec l'id " + demandeId);
         }
+        if (existing.isVerrouille()) {
+            throw new DemandeVerrouilleeException("Cette demande est verrouillee et ne peut plus etre modifiee.");
+        }
 
         Demande demande = buildDemandeFromForm(formData);
         demande.setId(demandeId);
@@ -202,6 +212,11 @@ public class DemandeService {
         }
 
         return updated;
+    }
+
+    public boolean isDemandeVerrouillee(long demandeId) throws SQLException {
+        Demande demande = demandeDao.findById(demandeId);
+        return demande != null && demande.isVerrouille();
     }
 
     public Map<String, List<PieceJustificative>> getInfoSpecifique(Long idType) throws SQLException {
