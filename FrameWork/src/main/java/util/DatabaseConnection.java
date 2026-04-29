@@ -15,7 +15,7 @@ public class DatabaseConnection {
         loadEnvFile();
         URL      = getEnvOrDefault("DB_URL",      "jdbc:postgresql://localhost:5432/visa");
         USER     = getEnvOrDefault("DB_USER",     "postgres");
-        PASSWORD = getEnvOrDefault("DB_PASSWORD", "3369");
+        PASSWORD = getEnvOrDefault("DB_PASSWORD", "NouveauMotDePasse");
 
         try {
             Class.forName("org.postgresql.Driver");
