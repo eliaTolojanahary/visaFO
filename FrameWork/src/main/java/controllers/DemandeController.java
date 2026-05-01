@@ -21,11 +21,13 @@ import models.TypeTitre;
 import modelview.ModelView;
 import services.DemandeService;
 import services.DemandeVerrouilleeException;
+import services.QrCodeService;
 
 @ClasseAnnotation("")
 public class DemandeController {
 
     private final DemandeService demandeService = new DemandeService();
+    private final QrCodeService qrCodeService = new QrCodeService();
 
     @MethodeAnnotation("/form/search")
     @PostMapping
@@ -239,73 +241,83 @@ public class DemandeController {
     }
 
     // CORRIGÉ: Enregistrement demande
-    @MethodeAnnotation("/form/save")
-    @PostMapping
-    public ModelView save(Map<String, Object> formData){
-        ModelView mv = new ModelView("/resultDemande.jsp");
+@MethodeAnnotation("/form/save")
+@PostMapping
+public ModelView save(Map<String, Object> formData) {
+    ModelView mv = new ModelView("/resultDemande.jsp");
 
-        try {
-            Long existingDemandeId = demandeService.findLatestDemandeIdByNumeroPasseport(formData);
-            if (existingDemandeId != null) {
-                formData.put("demande_id", String.valueOf(existingDemandeId));
-                boolean updated = demandeService.updateDemande(formData);
-                if (updated) {
-                    return new ModelView(dashboardRedirectUrl(
-                        "update",
-                        existingDemandeId,
-                        "Une demande existe deja pour ce numero de passeport. Elle a ete mise a jour."
-                    ));
-                }
-                return new ModelView(dashboardRedirectUrl(
-                    "update",
-                    existingDemandeId,
-                    "Aucune demande existante n a pu etre mise a jour."
-                ));
-            }
+    try {
+        Long existingDemandeId = demandeService.findLatestDemandeIdByNumeroPasseport(formData);
 
-            Demande demande = demandeService.saveDemande(formData);
-            return new ModelView(dashboardRedirectUrl(
-                "create",
-                demande.getId(),
-                "Demande enregistree avec succes."
-            ));
-        } catch (SQLException e) {
-            mv.setView("/nouvelleDemande.jsp");
-            mv.addData("mode", "CREATION");
-            mv.addData("success", false);
-            mv.addData("error", "Erreur base de donnees: " + e.getMessage());
-            mv.addData("formData", formData);
-            try {
-                rechargeFormData(mv);
-            } catch (SQLException ex) {
-                System.err.println("[DEBUG CONTROLLER] ERREUR rechargeFormData: " + ex.getMessage());
-            }
-        } catch (DemandeVerrouilleeException e) {
-            mv.setView("/resultDemande.jsp");
-            mv.addData("success", false);
-            mv.addData("error", e.getMessage());
-            try {
-                mv.addData("dashboardMode", true);
-                mv.addData("latestDemande", demandeService.getLatestDemandeDashboardData());
-                mv.addData("dashboardDemandes", demandeService.getDashboardDemandesData());
-            } catch (SQLException ex) {
-                mv.addData("error", e.getMessage());
-            }
-        } catch (IllegalArgumentException e) {
-            mv.setView("/nouvelleDemande.jsp");
-            mv.addData("mode", "CREATION");
-            mv.addData("success", false);
-            mv.addData("error", e.getMessage());
-            mv.addData("validationErrors", demandeService.isObligatoire(formData));
-            mv.addData("formData", formData);
-            try {
-                rechargeFormData(mv);
-            } catch (SQLException ex) {
-                System.err.println("[DEBUG CONTROLLER] ERREUR rechargeFormData: " + ex.getMessage());
-            }
+        if (existingDemandeId != null) {
+            formData.put("demande_id", String.valueOf(existingDemandeId));
+            boolean updated = demandeService.updateDemande(formData);
+            //String refDemande = demandeService.getRefDemande(existingDemandeId);
+            // Générer QR code sur update
+            Demande existing = demandeService.findById(existingDemandeId);
+            String refDemande = existing.getRef_demande();
+            genererQrCodeSilencieux(refDemande);
+
+            String msg = updated
+                ? "Une demande existe deja pour ce passeport. Elle a ete mise a jour."
+                : "Aucune demande existante n a pu etre mise a jour.";
+            return new ModelView(dashboardRedirectUrl("update", existingDemandeId, msg));
         }
-        return mv;
+
+        // Nouveau save
+        Demande demande = demandeService.saveDemande(formData);
+
+        // Générer QR code sur create
+        genererQrCodeSilencieux(demande.getRef_demande());
+
+        return new ModelView(dashboardRedirectUrl(
+            "create", demande.getId(), "Demande enregistree avec succes."
+        ));
+
+    } catch (SQLException e) {
+        mv.setView("/nouvelleDemande.jsp");
+        mv.addData("mode", "CREATION");
+        mv.addData("success", false);
+        mv.addData("error", "Erreur base de donnees: " + e.getMessage());
+        mv.addData("formData", formData);
+        try { rechargeFormData(mv); } catch (SQLException ex) {
+            System.err.println("[DEBUG] rechargeFormData: " + ex.getMessage());
+        }
+    } catch (DemandeVerrouilleeException e) {
+        mv.setView("/resultDemande.jsp");
+        mv.addData("success", false);
+        mv.addData("error", e.getMessage());
+        try {
+            mv.addData("dashboardMode", true);
+            mv.addData("latestDemande", demandeService.getLatestDemandeDashboardData());
+            mv.addData("dashboardDemandes", demandeService.getDashboardDemandesData());
+        } catch (SQLException ex) {
+            mv.addData("error", e.getMessage());
+        }
+    } catch (IllegalArgumentException e) {
+        mv.setView("/nouvelleDemande.jsp");
+        mv.addData("mode", "CREATION");
+        mv.addData("success", false);
+        mv.addData("error", e.getMessage());
+        mv.addData("validationErrors", demandeService.isObligatoire(formData));
+        mv.addData("formData", formData);
+        try { rechargeFormData(mv); } catch (SQLException ex) {
+            System.err.println("[DEBUG] rechargeFormData: " + ex.getMessage());
+        }
     }
+    return mv;
+}
+
+// Helper : ne jamais crasher pour un QR
+private void genererQrCodeSilencieux(String ref) {
+    if (ref == null || ref.isBlank()) return;
+    try {
+        qrCodeService.genererQrCode(ref);
+        System.out.println("[QR] Généré pour : " + ref);
+    } catch (Exception e) {
+        System.err.println("[QR] Erreur génération : " + e.getMessage());
+    }
+}
 
     @MethodeAnnotation("/form/edit")
     @PostMapping
@@ -392,6 +404,9 @@ public class DemandeController {
             if (updated) {
                 String idRaw = formData.get("demande_id") != null ? String.valueOf(formData.get("demande_id")) : "0";
                 long demandeId = Long.parseLong(idRaw);
+
+                Demande existing = demandeService.findById(demandeId);
+    genererQrCodeSilencieux(existing != null ? existing.getRef_demande() : null);
                 return new ModelView(dashboardRedirectUrl("update", demandeId, "Demande mise a jour avec succes."));
             }
 

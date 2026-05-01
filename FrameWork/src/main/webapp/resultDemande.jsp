@@ -185,6 +185,22 @@
             <div class="card-actions">
                 <a href="<%= ctx %>/form" class="btn-primary">Créer une demande</a>
             </div>
+            <% if (latestDemande != null && !latestReference.isEmpty()) { %>
+    <div class="card" style="text-align:center;">
+        <h2>QR Code de suivi</h2>
+        <img src="/qrcodes/<%= latestReference %>.png"
+             alt="QR Code <%= latestReference %>"
+             width="200" height="200"
+             style="display:block; margin:12px auto; border:1px solid #e4e9f2; border-radius:8px;"
+             onerror="this.style.display='none'; document.getElementById('qrFallback').style.display='block'">
+        <div id="qrFallback" style="display:none; color:#999; font-size:0.85rem;">
+            QR Code non disponible
+        </div>
+        <p style="font-size:0.85rem; color:#666; margin-top:8px;">
+            Référence : <%= latestReference %>
+        </p>
+    </div>
+    <% } %>
         </div>
         <div class="card">
             <h2>Demandeur / dossier</h2>
