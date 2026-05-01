@@ -81,11 +81,11 @@
                 <strong>Statut actuel :</strong>
                 <%
                     String statusClass = "badge-gray";
-                    if (statutLibelle != null && statutLibelle.equalsIgnoreCase("En cours de traitement")) statusClass = "badge-blue";
+                    if (statutLibelle != null && statutLibelle.equalsIgnoreCase("demande creee")) statusClass = "badge-blue";
                     else if (statutLibelle != null && statutLibelle.equalsIgnoreCase("En attente")) statusClass = "badge-orange";
                     else if (statutLibelle != null && statutLibelle.equalsIgnoreCase("Valide")) statusClass = "badge-green";
                     else if (statutLibelle != null && statutLibelle.equalsIgnoreCase("Refuse")) statusClass = "badge-red";
-                    else if (statutLibelle != null && statutLibelle.equalsIgnoreCase("SCAN TERMINÉ")) statusClass = "badge-purple";
+                    else if (statutLibelle != null && statutLibelle.equalsIgnoreCase("SCAN TERMINE")) statusClass = "badge-purple";
                 %>
                 <span class="badge <%= statusClass %>"><%= statutLibelle != null ? statutLibelle : "-" %></span>
             </div>

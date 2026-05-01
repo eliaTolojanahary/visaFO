@@ -170,7 +170,7 @@
         }
 
         String statusClass = "badge-gray";
-        if (latestStatut.equalsIgnoreCase("En cours de traitement")) statusClass = "badge-blue";
+        if (latestStatut.equalsIgnoreCase("demande creee")) statusClass = "badge-blue";
         else if (latestStatut.equalsIgnoreCase("En attente")) statusClass = "badge-orange";
         else if (latestStatut.equalsIgnoreCase("Valide")) statusClass = "badge-green";
         else if (latestStatut.equalsIgnoreCase("Refuse")) statusClass = "badge-red";

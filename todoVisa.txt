@@ -97,7 +97,394 @@ Mioty - Frontend
 - Afficher clairement les erreurs/champs incomplets avant envoi.
 - Permettre la modification d'une demande deja creee en rechargeant les donnees dans le formulaire.
 
+--------------------------------------------------------------------------------------------------------------------------
+Sprint 2 - duplicata titre residence (pas d'antecedent en base)
 
+NB : Lancer le script alter_sprint2.sql apres table.sql pour ajouter les nouvelles tables et colonnes necessaires
 
+Contexte
 
+Un demandeur arrive au guichet, il dit qu'il a perdu son titre de residence.
+Sauf que dans la base on retrouve rien (ancienne demande introuvable).
 
+Objectif
+
+* on ouvre un nouveau dossier
+* on met une mention "duplicata — antecedent non retrouvé"
+* l'agent confirme a la main que le visa etait deja approuvé
+* et on lance le duplicata normal
+
+1. Database - Jemima (TL) Branche: dev
+
+* Ajout des table document et type_document
+* Changement dans la table demande :
+
+  * type_document_id
+  * ref_demande
+* Ajout des tables dossier et dossier_demande :
+
+  * dossier : id, previous_demande_ref, new_demande_ref, mention, visa_approuve_confirme, created_at, updated_at
+  * dossier_demande : id, dossier_id, demande_id (suivi des dossier rajouter a la demande)
+* Ajout statuts manquants dans statut_demande :
+
+  * En cours de traitement, En attente, Valide, Refuse
+* script de migration : alter_sprint2.sql
+
+  * a ajouter dans start.bat apres table.sql
+
+2. Back-end - Mioty : Branche: sprint/2/feature/recherche-dossier
+
+Module Recherche :
+
+Pour voir si la demande est presente ou pas dans la base de donnée
+
+* Classe: DemandeDAO
+  => prototype: findBy(colonne, valeur)
+* Classe: DemandeRepository
+  => fonction: findBy(colonne, valeur) => retourne une demande ou null
+* Classe: DemandeService
+  => fonction: searchBy(colonne, valeur) => appel repository.findBy(colonne, valeur)
+
+chercher demandeur avec :
+
+* nom
+* prenom
+* date naissance
+
+Pour voir si le passeport est presente ou pas dans la base de donnée
+
+* Classe: PasseportDAO
+  => prototype: findByNum(numero_passeport)
+* Classe: PasseportRepository
+  => fonction: findByNum(colonne, valeur) => retourne un passeport ou null
+* Classe: PasseportService
+  => fonction: getByNum(colonne, valeur) => appel repository.findByNum(colonne, valeur)
+
+chercher passeport avec :
+
+* numero_passeport
+
+Si trouvé
+
+* on reutilise demandeur + passeport
+* flow normal
+
+Si pas trouvé
+
+* on cree :
+
+  * nouveau demandeur
+  * nouveau passeport
+* Statut de la demande de visa : Valide
+* Statut de la demande de titre de residence / duplicata ou autre : En cours de traitement
+
+Module Dossier :
+
+Pour creer et suivre un dossier
+
+* Classe: DossierDAO
+  => prototype: create(dossier)
+  => prototype: findByDemande(demande_id)
+
+* Classe: DossierRepository
+  => fonction: create(dossier) => retourne le dossier cree
+  => fonction: findByDemande(demande_id) => retourne un dossier ou null
+
+* Classe: DossierService
+  => fonction: ouvrirDossierDuplicata(demandeur, passeport, previous_demande_ref)
+  - cree la demande avec type_demande = Duplicata, type_document = Titre de residence
+  - statut = En cours de traitement
+  - genere ref_demande format : YYYYMMDD-HHMMSS-DUP
+  - cree le dossier avec :
+  + mention = "Duplicata — antecedent non retrouve"
+  + visa_approuve_confirme = true
+  + previous_demande_ref = ref fournie par le demandeur (nullable)
+  + new_demande_ref = ref_demande generee
+  - insere dans dossier_demande
+
+  => fonction: attacherDemande(dossier_id, demande_id)
+  - insere dans dossier_demande si pas deja present
+
+Regles metier a enforcer cote application :
+
+* type_document_id obligatoire si type_demande = Duplicata
+* previous_demande_ref renseigne => new_demande_ref obligatoire
+* un passeport ne peut pas etre rattache a deux demandeurs differents
+
+3. Front-end - Elia - Branche : sprint/2/feature/refact-flow-demande
+
+Recherche
+
+Avant le formulaire :
+
+* champ recherche :
+  nom / prenom / date naissance
+
+si trouvé :
+
+* afficher infos demandeur + passeport
+* actions :
+
+  * Mettre a jour
+  * Nouvelle demande (choix type)
+
+si pas trouvé :
+
+* message : "Aucun demandeur trouvé..."
+* choix type de demande
+* si visa => flux normal
+* sinon => creation dossier avec statut visa valide
+
+Etape 2 : formulaire
+
+Bloc A (normal)
+
+* infos demandeur
+* infos passeport
+
+Bloc B (duplicata)
+
+* checkbox : visa approuve
+* champ : previous_demande_ref (optionnel)
+* pieces justificatives (au moins une obligatoire)
+* mention (read only) :
+  "Duplicata — antecedent non retrouvé"
+
+Etape 3 : soumission
+
+* validation :
+
+  * Bloc A complet
+  * checkbox cochée
+  * au moins une piece
+  * type_document = Titre de residence
+* appel DossierService.ouvrirDossierDuplicata()
+* redirect vers suivi dossier
+
+Suivi dossier
+
+Afficher :
+
+* mention (badge orange)
+* statut
+* visa confirme
+
+Donnees :
+
+* ref_demande
+* type_demande + type_document
+* nom complet
+* statut (couleur)
+
+  * En cours => bleu
+  * En attente => orange
+  * Valide => vert
+  * Refuse => rouge
+* pieces justificatives
+* mention dossier
+* "Visa approuvé confirmé par agent"
+-----------------------------------------------------------------------------------------------------------
+Sprint 3 - Finalisation et Scan (SCAN TERMINE)
+
+Contexte
+
+L’operateur a saisi la demande (Sprint 1) et a eventuellement gere un duplicata (Sprint 2).
+Il possede maintenant les documents physiques du demandeur.
+Il doit les numeriser et les rattacher a chaque piece justificative attendue.
+
+Une fois toutes les pieces scannees, l’operateur verrouille le dossier : plus aucune modification possible sur la demande, le demandeur ou le passeport.
+Le statut de la demande passe alors de CREE ou "demande creee" a SCAN TERMINE.
+
+Objectif
+
+* Ajouter la gestion des fichiers scannes (upload) par piece justificative
+* Controler la completude : bouton "SCAN TERMINE" actif uniquement quand toutes les pieces attendues (cochees dans demande_piece) ont un fichier associe
+* Verrouillage definitif des donnees apres clic sur "SCAN TERMINE"
+* Nouveau statut SCAN TERMINE dans la table statut_demande
+
+---
+
+1. Database - Mioty (TL)
+   Branche : sprint/3/feature/scan-finalisation
+
+Nouvelles tables et colonnes
+
+* Ajouter table piece_fournie pour stocker les fichiers scannes
+* Ajout du statut SCAN TERMINE dans statut_demande
+* Ajout d’une colonne verrouille BOOLEAN DEFAULT FALSE dans la table demande
+
+Index :
+
+* idx_piece_fournie_demande sur piece_fournie(demande_id)
+* idx_piece_fournie_piece sur piece_fournie(piece_ref_id)
+
+Script de migration : alter_sprint3.sql
+A executer apres alter_sprint2.sql dans start.bat
+
+---
+
+2. Back-end - Elia
+   Branche : sprint/3/feature/scan-backend
+
+Nouvelles classes
+
+DAO
+
+* PieceFournieDAO
+
+  * create(PieceFournie p)
+  * findByDemandeAndPieceRef(demandeId, pieceRefId)
+  * findAllByDemande(demandeId)
+  * deleteByDemandeAndPieceRef(demandeId, pieceRefId)
+
+Repository
+
+* PieceFournieRepository
+
+  * sauvegarder(piece)
+  * recuperer(demandeId, pieceRefId)
+  * listerParDemande(demandeId)
+  * supprimer(demandeId, pieceRefId)
+
+Service
+
+* ScanService
+
+  * uploadPiece(demandeId, pieceRefId, Part fichier)
+    -> sauvegarde fichier sur disque + en base
+    -> remplace l’existant
+    -> verifie taille max 10 Mo
+    -> verifie types autorises (jpeg, png, pdf)
+    -> lance DemandeVerrouilleeException si verrouille
+
+  * isDemandeComplete(demandeId)
+    -> true si chaque piece cochee a une piece_fournie
+
+  * verrouillerDemande(demandeId)
+    -> verifie completude
+    -> met verrouille = true
+    -> statut = SCAN TERMINE
+
+* DemandeService (modification)
+
+  * updateDemande, updateDemandeur, updatePasseport
+    -> verifier verrouille == false
+    -> sinon DemandeVerrouilleeException
+
+Controllers MVC
+
+* ScanController
+
+  GET /demande/{id}/scan
+
+  * affiche scanDemande.jsp
+  * model : demande, listePiecesAttendues, demandeComplete
+  * si verrouille => bloquer interface
+
+  POST /demande/{demandeId}/piece/{pieceRefId}/upload
+
+  * upload fichier
+  * redirection avec message
+
+  POST /demande/{demandeId}/verrouiller
+
+  * appelle verrouillerDemande
+  * redirection vers /suivi?ref=...
+
+  GET /demande/{demandeId}/piece/{pieceRefId}/download
+
+  * telechargement fichier
+
+Controleur complementaire
+
+* SuiviController
+
+  * GET /suivi?ref=...
+  * ajouter piece_fournie au modele
+
+---
+
+Regles metier
+
+* Taille max : 10 Mo
+* Types autorises :
+  image/jpeg
+  image/png
+  application/pdf
+* Une piece peut etre remplacee
+* Verrouillage irreversible
+* Si aucune piece attendue => complet = true
+
+---
+
+3. Front-end - Jemima
+   Branche : sprint/3/feature/scan-front
+
+Page : scanDemande.jsp
+
+URL : /demande/{id}/scan
+
+Bloc en-tete
+
+* ref_demande
+* nom complet
+* statut (badge)
+* si verrouille => message rouge
+
+Bloc pieces
+
+Pour chaque piece cochee :
+
+* libelle
+
+* etat :
+
+  * fichier present => nom, taille, date, download
+  * sinon => aucun fichier
+
+* formulaire upload :
+
+  * input file (jpeg, png, pdf)
+  * bouton upload
+
+Bloc bouton SCAN TERMINE
+
+* POST /demande/{id}/verrouiller
+* bouton desactive si incomplet
+* confirmation JS :
+  confirm("Toutes les pieces sont scannees. Verrouiller ?")
+
+---
+
+Suivi dossier (suiviDossier.jsp)
+
+Section : Documents scannes
+
+* liste piece_fournie
+* nom + lien download
+* si vide => aucun document
+
+Statut
+
+* afficher SCAN TERMINE avec badge violet
+
+---
+
+4. Routes
+
+ScanController
+
+* GET /demande/{id}/scan
+* POST /demande/{demandeId}/piece/{pieceRefId}/upload
+* POST /demande/{demandeId}/verrouiller
+* GET /demande/{demandeId}/piece/{pieceRefId}/download
+
+SuiviController
+
+* GET /suivi
+  -> ajoute piecesScannees
+
+DemandeController
+
+* toutes les modifications doivent verifier verrouille
+* sinon erreur ou redirection

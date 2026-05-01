@@ -20,9 +20,22 @@ INSERT INTO type_titre (libelle) VALUES
 ('Investisseur'),
 ('Travailleur');
 
-INSERT INTO statut_demande (libelle) VALUES
-('demande creee'),
-('Scan termine');
+
+-- Insere uniquement les statuts absents pour rester idempotent.
+INSERT INTO statut_demande (libelle)
+SELECT libelle FROM (VALUES
+    ('demande creee'),
+    ('En attente'),
+    ('Valide'),
+    ('Refuse')
+) AS nouveaux(libelle)
+WHERE NOT EXISTS (
+    SELECT 1 FROM statut_demande s WHERE s.libelle = nouveaux.libelle
+);
+INSERT INTO statut_demande (libelle)
+SELECT 'SCAN TERMINE'
+WHERE NOT EXISTS (SELECT 1 FROM statut_demande WHERE libelle = 'SCAN TERMINE');
+
 
 INSERT INTO piece_justificative_ref (libelle, id_type_titre) VALUES
 

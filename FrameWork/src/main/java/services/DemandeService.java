@@ -161,7 +161,7 @@ public class DemandeService {
             return referenceDao.findStatutByLibelle("Valide");
         }
         if (libelle.contains("duplicata") || libelle.contains("titre") || libelle.contains("titre de residence")) {
-            return referenceDao.findStatutByLibelle("En cours de traitement");
+            return referenceDao.findStatutByLibelle("demande creee");
         }
 
         return referenceDao.findStatutByLibelle("demande creee");

@@ -199,26 +199,6 @@ CREATE TABLE IF NOT EXISTS dossier_demande (
 );
 
 
--- =============================================================
--- 4. STATUTS MANQUANTS
--- =============================================================
-
--- Insere uniquement les statuts absents pour rester idempotent.
-INSERT INTO statut_demande (libelle)
-SELECT libelle FROM (VALUES
-    ('En cours de traitement'),
-    ('En attente'),
-    ('Valide'),
-    ('Refuse')
-) AS nouveaux(libelle)
-WHERE NOT EXISTS (
-    SELECT 1 FROM statut_demande s WHERE s.libelle = nouveaux.libelle
-);
-
-
--- =============================================================
--- 5. NOUVEAUX INDEX
--- =============================================================
 
 CREATE INDEX IF NOT EXISTS idx_demande_document     ON demande(type_document_id);
 CREATE INDEX IF NOT EXISTS idx_dossier_demande_lien ON dossier_demande(dossier_id, demande_id);
@@ -237,10 +217,7 @@ CREATE TABLE IF NOT EXISTS piece_fournie (
     UNIQUE(demande_id, piece_ref_id)
 );
 
--- Ajout du statut SCAN TERMINÉ
-INSERT INTO statut_demande (libelle)
-SELECT 'SCAN TERMINÉ'
-WHERE NOT EXISTS (SELECT 1 FROM statut_demande WHERE libelle = 'SCAN TERMINÉ');
+-- Ajout du statut SCAN TERMINE
 
 -- Colonne verrouille
 ALTER TABLE demande ADD COLUMN IF NOT EXISTS verrouille BOOLEAN NOT NULL DEFAULT FALSE;
