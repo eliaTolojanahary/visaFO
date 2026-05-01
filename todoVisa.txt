@@ -503,7 +503,7 @@ en gros :
 3. framework(frontoffice )→ on change juste l'URL du QR code pour pointer vers Vue.js
 
 Jemima — BACKEND (Ilay backOffice) (Spring Boot):
-
+  branche: sprint 4/feature/expoEndPoint
 1. Créer l'entité Demande avec les champs :
     - id, numDemande, numPasseport, typeDemande, statut, dateCreation, historique
 
@@ -536,7 +536,7 @@ Jemima — BACKEND (Ilay backOffice) (Spring Boot):
 
 
 Mioty — FRONTEND (Vue.js)
-
+  branche: sprint 4/feature/utilisationEndPoint/historiqueStatutDemande
 1. Initialiser le projet frontend (choisir : Vue.js)
 
 2. Créer la page principale de recherche :
