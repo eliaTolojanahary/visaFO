@@ -45,8 +45,8 @@ public class DossierService {
         TypeDocument typeDocument = getTypeDocumentByLibelle("Titre de residence");
         demande.setType_document(typeDocument);
 
-        // Statut = En cours de traitement
-        StatutDemande statut = getStatutDemandeByLibelle("En cours de traitement");
+        // Statut = demande creee
+        StatutDemande statut = getStatutDemandeByLibelle("demande creee");
         demande.setStatut(statut);
 
         demande.setRef_demande(ref_demande);

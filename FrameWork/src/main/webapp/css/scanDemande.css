@@ -340,7 +340,7 @@
     background: #d4dfe9;
 }
 
-/* ── Badge violet (statut SCAN TERMINÉ) ─────────────────────── */
+/* ── Badge violet (statut SCAN TERMINE) ─────────────────────── */
 .badge-purple {
     background: #f3e5f5;
     color: #6a1b9a;
@@ -640,7 +640,7 @@
     background: #d4dfe9;
 }
 
-/* ── Badge violet (statut SCAN TERMINÉ) ─────────────────────── */
+/* ── Badge violet (statut SCAN TERMINE) ─────────────────────── */
 .badge-purple {
     background: #f3e5f5;
     color: #6a1b9a;
@@ -919,7 +919,7 @@
     font-size: 0.78rem;
 }
 
-/* ── Bouton primaire (style du bouton "Scan Terminé") ────────── */
+/* ── Bouton primaire (style du bouton "SCAN TERMINE") ────────── */
 .btn-primary {
     background: linear-gradient(135deg, #1a4a7a, #0f3a5f);
     color: #fff;
