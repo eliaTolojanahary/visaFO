@@ -502,6 +502,8 @@ en gros :
 2. Vue.js  → consomme ces endpoints + reçoit les redirections QR
 3. framework(frontoffice )→ on change juste l'URL du QR code pour pointer vers Vue.js
 
+TL : Elia - implementation du generation code qr dans FrontOffice(framework) 
+
 Jemima — BACKEND (Ilay backOffice) (Spring Boot):
   branche: sprint 4/feature/expoEndPoint
 1. Créer l'entité Demande avec les champs :
