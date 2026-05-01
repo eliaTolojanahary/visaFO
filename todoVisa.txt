@@ -488,3 +488,91 @@ DemandeController
 
 * toutes les modifications doivent verifier verrouille
 * sinon erreur ou redirection
+---------------------------------------------------------------------------------------------
+Sprint 4 - Scan Qr code
+Contexte: 
+On veut une application frontend (Vue.js) qui permet de suivre les demandes d’un utilisateur en entrant soit un numéro de demande, soit un numéro de passeport. L’application appelle une API REST développée en Spring Boot.
+Si l’utilisateur entre un numéro de passeport, toutes ses demandes s’affichent avec leurs statuts, triées par ordre chronologique (la plus récente en premier). Si c’est un numéro de demande, cette demande apparaît en premier, suivie des autres demandes liées.
+Chaque demande doit afficher un historique de statuts (ex : dossier créé, scan terminé, etc.), pour permettre un suivi complet.
+Lors de la création d’une demande, un QR code est généré contenant une URL. En scannant ce QR code avec un téléphone, l’utilisateur est redirigé vers l’application qui affiche directement le suivi de ses demandes via l’API.
+L’application peut être accessible en localhost ou via l’adresse IP du PC pour un accès mobile.
+
+en gros :
+1. Spring Boot (backoffice) → expose les endpoints API
+2. Vue.js  → consomme ces endpoints + reçoit les redirections QR
+3. framework(frontoffice )→ on change juste l'URL du QR code pour pointer vers Vue.js
+
+Jemima — BACKEND (Ilay backOffice) (Spring Boot):
+
+1. Créer l'entité Demande avec les champs :
+    - id, numDemande, numPasseport, typeDemande, statut, dateCreation, historique
+
+2. Créer l'entité HistoriqueStatut :
+    - id, statut, dateChangement, demande (FK)
+
+3. Mettre en place le repository JPA pour Demande et HistoriqueStatut
+
+4. Implémenter le service de recherche :
+    - Par numéro de demande → retourne cette demande en premier + les autres du même passeport
+    - Par numéro de passeport → retourne toutes les demandes par ordre chronologique,du plus recent 
+
+5. Créer l'endpoint REST : GET /api/demandes?numDemande={num}
+    - Retourne la demande ciblée en tête + les autres en dessous
+
+6. Créer l'endpoint REST : GET /api/demandes?numPasseport={num}
+    - Retourne toutes les demandes triées par date (la plus récente en premier)
+
+7. Générer un QR code à la création de chaque demande :
+    - Le QR code contient l'URL du frontend avec le numéro de demande en paramètre
+    - Ex : http://<ip-pc>:<port>/suivi?numDemande=12345
+    - Utiliser une lib Java (ex: ZXing)
+
+8. Exposer l'endpoint de génération QR code : GET /api/qrcode?numDemande={num}
+    - Retourne l'image QR code (PNG ou base64)
+
+9. Configurer CORS pour autoriser les appels depuis le frontend (localhost ou IP PC)
+
+10. Tester tous les endpoints avec Postman ou Swagger
+
+
+Mioty — FRONTEND (Vue.js)
+
+1. Initialiser le projet frontend (choisir : Vue.js)
+
+2. Créer la page principale de recherche :
+    - Champ saisie : Numéro de demande OU Numéro de passeport
+    - Bouton "Rechercher"
+
+3. Lire les paramètres d'URL au chargement de la page :
+    - Si ?numDemande=xxx ou ?numPasseport=xxx est présent → lancer la recherche automatiquement
+    - (Utilisé quand on scanne le QR code avec un téléphone)
+
+4. Appeler l'API Spring Boot selon la saisie ou le paramètre URL :
+    - GET /api/demandes?numDemande={num}
+    - GET /api/demandes?numPasseport={num}
+
+5. Afficher les résultats de demandes :
+    - La demande principale en haut (mise en avant)
+    - Les autres demandes du même passeport en dessous, par ordre chronologique
+
+6. Pour chaque demande, afficher :
+    - Numéro de demande
+    - Type de demande (ex: Duplicata sans données intérieur)
+    - Statut actuel (ex: Approuvé, Dossier créé, Scan terminé...)
+    - Historique des statuts avec les dates
+
+7. Afficher l'historique des statuts sous forme de timeline :
+    - Ex : Demande créée → Scan terminé →.....
+
+8. Gérer les cas d'erreur :
+    - Numéro introuvable → message clair à l'utilisateur
+    - Erreur réseau → message d'erreur
+
+9. Rendre l'interface responsive (compatible mobile, utilisé après scan QR)
+
+10. Configurer l'URL de l'API pour fonctionner en localhost ET par IP PC
+    - Utiliser une variable d'environnement (ex: VITE_API_URL ou .env)
+
+11. Tester le flux complet :
+    - Simuler un scan QR → redirection URL → affichage automatique des demandes
+
