@@ -5,6 +5,8 @@ import dao.PieceJustificativeDao;
 import dao.ReferenceVisaDao;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,12 +30,14 @@ public class DemandeService {
     private final DemandeDao demandeDao;
     private final PieceJustificativeDao pieceDao;
     private final ReferenceVisaDao referenceDao;
+    private final QrCodeService qrCodeService;
 
     public DemandeService() {
         System.out.println("[DEBUG SERVICE] Initialisation DemandeService");
         this.demandeDao = new DemandeRepository();
         this.pieceDao = new PieceJustificativeRepository();
         this.referenceDao = new ReferenceVisaRepository();
+        this.qrCodeService = new QrCodeService();
         System.out.println("[DEBUG SERVICE] DAOs initialisés");
     }
     
@@ -91,6 +95,7 @@ public class DemandeService {
         }
 
         Demande demande = buildDemandeFromForm(formData);
+        demande.setRef_demande(ensureRefDemande(demande));
 
         StatutDemande statut = resolveStatusForForm(formData);
         if (statut == null) {
@@ -106,6 +111,7 @@ public class DemandeService {
 
         List<Long> pieceIds = parsePieceIds(formData);
         demandeDao.saveDemandePieces(demandeId, pieceIds);
+        tryGenerateQrCode(demande.getRef_demande());
 
         return demande;
     }
@@ -125,6 +131,7 @@ public class DemandeService {
         }
 
         Demande demande = buildDemandeFromForm(formData);
+        demande.setRef_demande(ensureRefDemande(demande));
         StatutDemande statut = resolveStatusForForm(formData);
         if (statut == null) {
             statut = referenceDao.findStatutByLibelle("demande creee");
@@ -139,6 +146,7 @@ public class DemandeService {
 
         List<Long> pieceIds = parsePieceIds(formData);
         demandeDao.saveDemandePieces(demandeId, pieceIds);
+        tryGenerateQrCode(demande.getRef_demande());
 
         return demande;
     }
@@ -212,6 +220,10 @@ public class DemandeService {
         }
 
         return updated;
+    }
+    
+    public Demande findById(long demandeId) throws SQLException {
+        return demandeDao.findById(demandeId);
     }
 
     public boolean isDemandeVerrouillee(long demandeId) throws SQLException {
@@ -354,6 +366,46 @@ public class DemandeService {
         String value = stringValueAny(formData, acceptedKeys);
         if (value == null || value.isEmpty()) {
             errors.put(canonicalKey, "Champ obligatoire manquant");
+        }
+    }
+
+    private String ensureRefDemande(Demande demande) {
+        if (demande != null && demande.getRef_demande() != null && !demande.getRef_demande().trim().isEmpty()) {
+            return demande.getRef_demande().trim();
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        String timestamp = now.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+        String typeCode = resolveTypeCode(demande != null ? demande.getType_demande() : null);
+        return timestamp + "-" + typeCode;
+    }
+
+    private String resolveTypeCode(TypeDemande typeDemande) {
+        if (typeDemande == null || typeDemande.getLibelle() == null || typeDemande.getLibelle().trim().isEmpty()) {
+            return "DEM";
+        }
+
+        String normalized = typeDemande.getLibelle().trim().toLowerCase();
+        if (normalized.contains("duplicata")) {
+            return "DUP";
+        }
+        if (normalized.contains("nouveau")) {
+            return "NVT";
+        }
+        if (normalized.contains("transfert")) {
+            return "TRF";
+        }
+        if (normalized.contains("visa")) {
+            return "VISA";
+        }
+        return "DEM";
+    }
+
+    private void tryGenerateQrCode(String numDemande) {
+        try {
+            qrCodeService.genererQrCode(numDemande);
+        } catch (Exception e) {
+            System.err.println("[WARN QR] Generation QR echouee pour la demande " + numDemande + ": " + e.getMessage());
         }
     }
 
