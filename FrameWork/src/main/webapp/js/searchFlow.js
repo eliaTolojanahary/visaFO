@@ -1,4 +1,5 @@
 (function () {
+    console.log('[SEARCHFLOW.JS] Script loaded successfully!');
     let lastFetchedSnapshot = null;
 
     function byId(id) {
@@ -100,21 +101,27 @@
             return response.json();
         })
         .then(data => {
-            const payload = data && data.data ? data.data : data;
-            const found = !!(payload && payload.found);
-            const snapshot = found
-                ? (payload.data || payload.demandeur || payload.result || payload)
-                : null;
+            console.log('[FRONTEND DEBUG] Réponse brute reçue:', data);
+            
+            // CORRECTION: FrontServlet enveloppe la réponse dans { status: "success", code: 200, data: {...} }
+            // Donc la vraie réponse est dans data.data
+            const innerResponse = data && data.data ? data.data : null;
+            const isFound = innerResponse && innerResponse.status === 'found';
+            const payload = isFound ? innerResponse.data : null;
+            
+            console.log('[FRONTEND DEBUG] innerResponse:', innerResponse);
+            console.log('[FRONTEND DEBUG] isFound:', isFound, 'status:', innerResponse?.status);
+            console.log('[FRONTEND DEBUG] payload:', payload);
 
-            if (payload && payload.message) {
+            if (innerResponse && innerResponse.message) {
                 const statusText = byId('searchStatusText');
                 if (statusText) {
-                    statusText.textContent = payload.message;
-                    statusText.style.color = found ? 'green' : 'red';
+                    statusText.textContent = innerResponse.message;
+                    statusText.style.color = isFound ? 'green' : 'red';
                 }
             }
 
-            showSearchResult(found, snapshot);
+            showSearchResult(isFound, payload);
         })
         .catch(error => {
             console.error('Erreur lors de la recherche:', error);

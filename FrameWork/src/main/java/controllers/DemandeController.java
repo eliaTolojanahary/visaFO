@@ -40,18 +40,31 @@ public class DemandeController {
             String dateNaissance = formData.get("dateNaissance") != null ? formData.get("dateNaissance").toString() : null;
             String numeroPasseport = formData.get("numeroPasseport") != null ? formData.get("numeroPasseport").toString() : null;
 
-            Map<String, Object> result = demandeService.searchDemandeurEtPasseport(nom, prenom, dateNaissance, numeroPasseport);
-            response.put("found", result != null);
-            response.put("message", result != null
-                ? "Resultat trouve dans la base de donnees."
-                : "Aucun demandeur trouve avec ces criteres.");
-            if (result != null) {
+            // TÂCHE 5: Utiliser nouvelle méthode rechercherDemandeur() avec logique consolidée
+            try {
+                Map<String, Object> result = demandeService.rechercherDemandeur(nom, prenom, dateNaissance, numeroPasseport);
+                
+                response.put("status", "found");
+                response.put("message", "Demandeur trouvé dans la base de données.");
                 response.put("data", result);
+                response.put("nextAction", "show_options"); // Actions: update, new_demande, duplicata
+                
+            } catch (IllegalArgumentException e) {
+                // Aucun critère fourni
+                response.put("status", "error");
+                response.put("message", e.getMessage());
+                response.put("nextAction", "show_search_form");
             }
+            
         } catch (SQLException e) {
-            response.put("found", false);
-            response.put("message", "Recherche indisponible pour le moment.");
+            // Pas trouvé OU erreur BD
+            response.put("status", "not_found");
+            response.put("message", "Aucun demandeur trouvé avec ces critères.");
+            response.put("nextAction", "create_demandeur"); // Signal pour créer nouveau demandeur
+            
+            System.err.println("[WARN] Erreur recherche: " + e.getMessage());
         }
+        
         return response;
     }
 
