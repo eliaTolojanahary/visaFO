@@ -1,8 +1,5 @@
 package services;
 
-import dao.DemandeDao;
-import dao.PieceJustificativeDao;
-import dao.ReferenceVisaDao;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,6 +10,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import dao.DemandeDao;
+import dao.PieceJustificativeDao;
+import dao.ReferenceVisaDao;
 import models.Demande;
 import models.Nationalite;
 import models.Passeport;
@@ -48,6 +49,14 @@ public class DemandeService {
     public Map<String, Object> getDemandeMapById(long demandeId) throws SQLException {
         return demandeDao.getDemandeMapById(demandeId);
     }
+
+    /**
+     * Valide tous les champs obligatoires du formulaire de demande.
+     * @param formData Map contenant les données du formulaire
+     * @return Map<String, String> des erreurs (clé=nomChamp, valeur=message d'erreur)
+     *         - Si vide = validation OK
+     *         - Si non-vide = validation échouée
+     */
     public Map<String, String> isObligatoire(Map<String, Object> formData) {
         Map<String, String> errors = new HashMap<>();
 
@@ -88,6 +97,14 @@ public class DemandeService {
         return errors;
     }
 
+    /**
+     * Crée une nouvelle Demande avec statut "CREE".
+     * Enregistre aussi les pièces justificatives cochées et génère le QR code.
+     * @param formData Map contenant tous les champs du formulaire (demandeur, passeport, etc.)
+     * @return Demande créée (avec ID et refDemande)
+     * @throws IllegalArgumentException si validation échoue
+     * @throws SQLException si erreur BD
+     */
     public Demande saveDemande(Map<String, Object> formData) throws SQLException {
         Map<String, String> errors = isObligatoire(formData);
         if (!errors.isEmpty()) {
@@ -175,6 +192,13 @@ public class DemandeService {
         return referenceDao.findStatutByLibelle("demande creee");
     }
 
+    /**
+     * Met à jour une Demande existante (non-verrouillée).
+     * @param formData Map contenant id + tous les champs à updater
+     * @return true si update OK, false sinon
+     * @throws DemandeVerrouilleeException si demande verrouillée
+     * @throws SQLException si erreur BD
+     */
     public boolean updateDemande(Map<String, Object> formData) throws SQLException {
         String idRaw = stringValue(formData.get("demande_id"));
         if (idRaw == null || idRaw.isEmpty()) {
@@ -231,6 +255,11 @@ public class DemandeService {
         return demande != null && demande.isVerrouille();
     }
 
+    /**
+     * Récupère les pièces justificatives selon le type de titre.
+     * @param idTypeTitre ID du type de titre (ex: 1=Investisseur, 2=Travailleur)
+     * @return Map contenant "piecesCommunes" et "piecesSpecifiques"
+     */
     public Map<String, List<PieceJustificative>> getInfoSpecifique(Long idType) throws SQLException {
         List<PieceJustificative> pieces = pieceDao.findAll();
 
