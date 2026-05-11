@@ -1,4 +1,5 @@
 # jdk11 pour le local
+Activate-JDK11.ps1
 use-jdk11.bat
 # Controller de test ScanDemande Controller  
 
