@@ -578,3 +578,248 @@ Mioty — FRONTEND (Vue.js)
 11. Tester le flux complet :
     - Simuler un scan QR → redirection URL → affichage automatique des demandes
 
+---------------------------------------------------------------------------------
+# Sprint 5 : Capture Biométrique et Finalisation Scan
+
+## Contexte
+
+Ajout de captures biométriques (photo d'identité webcam + signature numérique) comme pièces justificatives obligatoires pour finaliser un dossier. Intégration dans visaFO (interface agent).
+
+**Stack existant visaFO :**
+
+* Backend : `ScanController.java`, `ScanService.java`, repository pattern
+* Frontend : `scanDemande.jsp`, JS utilitaires dans `FrameWork/src/main/webapp/js/`
+* Structure : Spring Boot (ou servlet classique) + JSP
+
+---
+
+## Flux Métier Global
+
+```txt
+Agent ouvre dossier (scanDemande.jsp)
+  → Upload pièces justificatives (Sprint 3 existant)
+  → Capture photo identité (webcam, bloc à ajouter)
+  → Capture signature (canvas, bloc à ajouter)
+  → Vérification : TOUTES pièces cochées = SCAN_TERMINE
+  → Affichage fiche complète (page JSP nouvelle)
+```
+
+**Point clé :** `photo` et `signature` sont des **pièces justificatives spéciales** dans `piece_fournie`, pas des tables séparées.
+
+---
+
+## Architecture Clarifiée
+
+### Photo d'Identité + Signature = Pièces Justificatives
+
+**Utiliser table existante `piece_fournie` :**
+
+* Quand agent capture webcam → INSERT dans `piece_fournie` avec `piece_ref_id=99` (ou ID photo d'identité)
+* Quand agent capture signature → INSERT dans `piece_fournie` avec `piece_ref_id=100` (ou ID signature)
+* `cochee` se met à TRUE **automatiquement** lors de l'upload (pas de table séparée)
+
+### SCAN_TERMINE = Condition Simple
+
+Un dossier/demande est "SCAN_TERMINE" quand **TOUTES les pièces obligatoires pour son `type_titre` sont uploadées** (existent dans `piece_fournie` avec `cochee=TRUE`).
+
+---
+
+## Upload Photo d'Identité (Webcam) - Elia - visaFO `sprint5/feat/photo`
+
+**Fichiers à modifier :**
+
+* Backend Service : `FrameWork/src/main/java/services/ScanService.java` (adapter existant)
+* Backend Controller : `FrameWork/src/main/java/controllers/ScanController.java` (adapter existant)
+* Frontend JSP : `FrameWork/src/main/webapp/scanDemande.jsp` (ajouter bloc photo)
+* Frontend JS : `FrameWork/src/main/webapp/js/photoWebcam.js` (créer nouveau)
+
+### Backend - Model (ORM)
+
+* [ ] Vérifier entity `PieceFournie.java` (dans `FrameWork/src/main/java/models/`)
+
+  * [ ] Vérifier propriétés : `id`, `demande`, `pieceRef`, `cheminFichier`, `nomFichier`, `tailleBytes`, `mimeType`, `uploadedAt`, `cochee`
+  * [ ] Si manquantes, les ajouter avec getters/setters
+
+### Backend - Service
+
+* [ ] Dans `ScanService.java` (existant dans `FrameWork/src/main/java/services/`)
+
+  * [ ] Ajouter méthode : `PieceFournie sauvegarderPhotoIdentite(MultipartFile file, Long demandeId, Long dossierId)`
+
+    * [ ] Valider : extension JPG/PNG seulement
+    * [ ] Valider : taille ≤ 5MB
+    * [ ] Créer répertoire `/uploads/pieces/photos/{dossierId}/` si n'existe pas
+    * [ ] Générer nom unique : `{dossierId}_photo_{timestamp}_{hash}.{ext}`
+    * [ ] Sauvegarder fichier sur disque
+    * [ ] **Créer objet `PieceFournie`** : `demande_id=demandeId`, `piece_ref_id=99 (Photo identité)`, `chemin_fichier`, `nom_fichier`, `taille_bytes`, `mime_type`, `uploaded_at=NOW`, `cochee=TRUE`
+    * [ ] Sauvegarder dans BD via repository
+    * [ ] Retourner l'objet `PieceFournie` créé
+    * [ ] Vérifier automatiquement le statut du scan après upload photo
+    * [ ] Rafraîchir le résumé des pièces si toutes les pièces sont présentes
+
+### Backend - Controller
+
+* [ ] Dans `ScanController.java` (existant dans `FrameWork/src/main/java/controllers/`)
+
+  * [ ] Ajouter endpoint : `POST /api/demandes/{demandeId}/dossiers/{dossierId}/photo-identite`
+
+    * [ ] Paramètres : `@PathVariable Long demandeId`, `@PathVariable Long dossierId`, `@RequestParam MultipartFile file`
+    * [ ] Appeler `ScanService.sauvegarderPhotoIdentite(file, demandeId, dossierId)`
+    * [ ] Retourner JSON : `{ id, nomFichier, uploadedAt, success: true }`
+    * [ ] Gérer erreurs : 400 (format/taille invalide), 404 (demande/dossier absent), 500 (erreur serveur)
+
+### Frontend - visaFO (JSP)
+
+* [ ] Dans `scanDemande.jsp` (existant dans `FrameWork/src/main/webapp/`)
+
+  * [ ] Ajouter **bloc "Capture Photo d'Identité"** (après bloc pièces justificatives existant)
+
+### Frontend - visaFO (JS)
+
+* [ ] Créer nouveau fichier : `FrameWork/src/main/webapp/js/photoWebcam.js`
+
+  * [ ] Capturer photo webcam
+  * [ ] Prévisualiser photo capturée
+  * [ ] Upload photo vers API
+  * [ ] Afficher statut upload réussi/échoué
+  * [ ] Rafraîchir automatiquement le résumé du scan après upload
+
+---
+
+## Upload Signature (Canvas) - Mioty - visaFO `sprint5/feat/signature`
+
+**Fichiers à modifier :**
+
+* Backend Service : `FrameWork/src/main/java/services/ScanService.java` (adapter existant)
+* Backend Controller : `FrameWork/src/main/java/controllers/ScanController.java` (adapter existant)
+* Frontend JSP : `FrameWork/src/main/webapp/scanDemande.jsp` (ajouter bloc signature)
+* Frontend JS : `FrameWork/src/main/webapp/js/signatureCanvas.js` (créer nouveau)
+
+### Backend - Service
+
+* [ ] Dans `ScanService.java` (existant)
+
+  * [ ] Ajouter méthode : `PieceFournie sauvegarderSignatureCanvas(String base64DataUrl, Long demandeId, Long dossierId)`
+
+    * [ ] Vérifier format base64 : `data:image/png;base64,...`
+    * [ ] Décoder base64 → PNG bytes
+    * [ ] Valider taille ≤ 1MB
+    * [ ] Créer répertoire `/uploads/pieces/signatures/{dossierId}/` si n'existe pas
+    * [ ] Générer nom unique : `{dossierId}_sig_{timestamp}_{hash}.png`
+    * [ ] Sauvegarder fichier sur disque
+    * [ ] **Créer objet `PieceFournie`** : `demande_id=demandeId`, `piece_ref_id=100 (Signature)`, `chemin_fichier`, `nom_fichier`, `taille_bytes`, `mime_type='image/png'`, `uploaded_at=NOW`, `cochee=TRUE`
+    * [ ] Sauvegarder dans BD via repository
+    * [ ] Retourner l'objet `PieceFournie` créé
+    * [ ] Vérifier automatiquement le statut du scan après upload signature
+    * [ ] Rafraîchir le résumé des pièces si toutes les pièces sont présentes
+
+### Backend - Controller
+
+* [ ] Dans `ScanController.java` (existant)
+
+  * [ ] Ajouter endpoint : `POST /api/demandes/{demandeId}/dossiers/{dossierId}/signature`
+
+    * [ ] Paramètres : `@PathVariable Long demandeId`, `@PathVariable Long dossierId`, `@RequestBody Map<String, String> { dataUrl }`
+    * [ ] Appeler `ScanService.sauvegarderSignatureCanvas(dataUrl, demandeId, dossierId)`
+    * [ ] Retourner JSON : `{ id, nomFichier, uploadedAt, success: true }`
+    * [ ] Gérer erreurs : 400 (base64 invalide, taille dépassée), 404 (demande/dossier absent)
+
+### Frontend - visaFO (JSP)
+
+* [ ] Dans `scanDemande.jsp` (existant)
+
+  * [ ] Ajouter **bloc "Capture Signature"** (après bloc photo)
+
+### Frontend - visaFO (JS)
+
+* [ ] Créer nouveau fichier : `FrameWork/src/main/webapp/js/signatureCanvas.js`
+
+  * [ ] Capturer signature canvas
+  * [ ] Prévisualiser signature
+  * [ ] Upload signature vers API
+  * [ ] Afficher statut upload réussi/échoué
+  * [ ] Rafraîchir automatiquement le résumé du scan après upload
+
+---
+
+## Vérification du Scan et Finalisation - Jemima - visaFO `sprint5/feat/validation`
+
+**Fichiers à modifier :**
+
+* Backend Service : `FrameWork/src/main/java/services/ScanService.java` (adapter existant)
+* Backend Controller : `FrameWork/src/main/java/controllers/ScanController.java` (adapter existant)
+* Frontend JSP : `FrameWork/src/main/webapp/scanDemande.jsp` (ajouter bloc récapitulatif)
+* Frontend JS : `FrameWork/src/main/webapp/js/scanSummary.js` (créer nouveau)
+
+### Backend - Model (ORM)
+
+* [ ] Vérifier entity `Dossier.java` (dans `FrameWork/src/main/java/models/`)
+
+  * [ ] Vérifier propriétés : `scanTermine` (boolean), `dateScanComplete` (LocalDateTime)
+  * [ ] Si manquantes, les ajouter avec getters/setters
+
+### Backend - Service
+
+* [ ] Dans `ScanService.java` (existant)
+
+  * [ ] Ajouter méthode : `boolean verifierScanComplet(Long demandeId)`
+
+    * [ ] Récupérer la demande et son type de titre
+    * [ ] Récupérer la liste des pièces obligatoires pour ce type de titre
+    * [ ] Vérifier que photo d'identité (piece_ref_id=99) existe et cochee=TRUE
+    * [ ] Vérifier que signature (piece_ref_id=100) existe et cochee=TRUE
+    * [ ] Vérifier toutes les autres pièces obligatoires existent et cochee=TRUE
+    * [ ] Retourner true si toutes présentes, false sinon
+
+  * [ ] Ajouter méthode : `Dossier marquerScanTermine(Long dossierId, Long demandeId)`
+
+    * [ ] Appeler `verifierScanComplet(demandeId)`
+    * [ ] Si retour false, lever exception `ScanIncompleteException`
+    * [ ] Charger le dossier via repository
+    * [ ] Mettre à jour : `scanTermine=true`, `dateScanComplete=NOW()`
+    * [ ] Sauvegarder le dossier en BD
+    * [ ] Mettre à jour le statut de la demande à `SCAN_TERMINE`
+    * [ ] Créer entrée dans historique des statuts (`type_changement`, `ancien_statut`, `nouveau_statut`, `date_changement`)
+    * [ ] Retourner le dossier mis à jour
+
+### Backend - Controller
+
+* [ ] Dans `ScanController.java` (existant)
+
+  * [ ] Ajouter endpoint : `GET /api/demandes/{demandeId}/scan-status`
+
+    * [ ] Paramètres : `@PathVariable Long demandeId`
+    * [ ] Appeler `ScanService.verifierScanComplet(demandeId)`
+    * [ ] Récupérer liste complète des pièces fournies pour cette demande
+    * [ ] Retourner JSON : `{ scanComplet: boolean, pieces: [ { id, nom, statut, cochee } ], photoId, signatureId }`
+    * [ ] Gérer erreurs : 404 (demande absent)
+
+  * [ ] Ajouter endpoint : `POST /api/dossiers/{dossierId}/demandes/{demandeId}/finaliser-scan`
+
+    * [ ] Paramètres : `@PathVariable Long dossierId`, `@PathVariable Long demandeId`
+    * [ ] Appeler `ScanService.marquerScanTermine(dossierId, demandeId)`
+    * [ ] Retourner JSON : `{ success: true, dossier: {...}, message: "Scan finalisé" }`
+    * [ ] Gérer erreurs : 400 (scan incomplet), 404 (dossier/demande absent), 500 (erreur métier)
+
+### Frontend - visaFO (JSP)
+
+* [ ] Dans `scanDemande.jsp` (existant)
+
+  * [ ] Ajouter **bloc "Résumé du Scan et Finalisation"** (après blocs photo et signature) :
+
+    * [ ] Afficher statut du scan (complet/incomplet)
+    * [ ] Lister toutes les pièces avec indicateur cochée/manquante
+    * [ ] Afficher état photo d'identité (✓/✗)
+    * [ ] Afficher état signature (✓/✗)
+    * [ ] Bouton "Finaliser le Scan" (actif seulement si scan complet)
+    * [ ] Spinner de chargement et message de statut
+
+### Frontend - visaFO (JS)
+
+* [ ] Créer nouveau fichier : `FrameWork/src/main/webapp/js/scanSummary.js`
+
+  * [ ] Fonction `chargerStatutScan(demandeId)` : appel GET `/api/demandes/{demandeId}/scan-status`, met à jour affichage
+  * [ ] Fonction `afficherPieceStatus(pieces)` : boucle et affiche chaque pièce avec statut (cochée/manquante)
+  * [ ] Fonction `finaliserScan(dossierId, demandeId)` : appel POST `/api/dossiers/{dossierId}/demandes/{demandeId}/finaliser-scan`
+  * [ ] Fonction `redirigerVersFiche(dossierId)` : redirige vers `/fiche-demande?dossierId={dossierId}` après finalisation
+  * [ ] Gestion erreurs : afficher message utilisateur, retry possible
