@@ -4,6 +4,7 @@
   ],
   "java.project.outputPath": "FrameWork/build/WEB-INF/classes",
   "java.project.referencedLibraries": [
-    "FrameWork/lib/**/*.jar"
+    "FrameWork/lib/**/*.jar",
+    "test-lib\\**\\*.jar"
   ]
 }
