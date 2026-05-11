@@ -478,14 +478,16 @@ public class DemandeService {
             return ids;
         }
 
-        if (raw instanceof String[] values) {
+        if (raw instanceof String[]) {
+            String[] values = (String[]) raw;
             for (String value : values) {
                 tryAddLong(ids, value);
             }
             return ids;
         }
 
-        if (raw instanceof String single) {
+        if (raw instanceof String) {
+            String single = (String) raw;
             if (single.contains(",")) {
                 String[] values = single.split(",");
                 for (String value : values) {
@@ -564,7 +566,8 @@ public class DemandeService {
         if (raw == null) {
             return null;
         }
-        if (raw instanceof String[] values) {
+        if (raw instanceof String[]) {
+            String[] values = (String[]) raw;
             if (values.length == 0) {
                 return null;
             }
