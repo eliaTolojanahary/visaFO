@@ -8,67 +8,68 @@
 -- =============================================================
 -- 1. DONNEES DE REFERENCE (Énumérés)
 -- =============================================================
+INSERT INTO situation_famille (libelle) VALUES
+('Celibataire'),
+('MARIE'),
+('DIVORCE'),
+('VEUF');
 
--- Situation familiale
-INSERT INTO situation_famille (id, libelle) VALUES (1, 'Célibataire') ON CONFLICT (id) DO NOTHING;
-INSERT INTO situation_famille (id, libelle) VALUES (2, 'Marié(e)') ON CONFLICT (id) DO NOTHING;
-INSERT INTO situation_famille (id, libelle) VALUES (3, 'Divorcé(e)') ON CONFLICT (id) DO NOTHING;
-INSERT INTO situation_famille (id, libelle) VALUES (4, 'Veuf(ve)') ON CONFLICT (id) DO NOTHING;
-INSERT INTO situation_famille (id, libelle) VALUES (5, 'Pacsé(e)') ON CONFLICT (id) DO NOTHING;
+INSERT INTO nationalite (libelle) VALUES
+('Malagasy'),
+('Francaise'),
+('Indienne'),
+('Chinoise'),
+('Canadienne'),
+('Americaine');
 
--- Nationalité
-INSERT INTO nationalite (id, libelle) VALUES (1, 'France') ON CONFLICT (id) DO NOTHING;
-INSERT INTO nationalite (id, libelle) VALUES (2, 'Madagascar') ON CONFLICT (id) DO NOTHING;
-INSERT INTO nationalite (id, libelle) VALUES (3, 'Belgique') ON CONFLICT (id) DO NOTHING;
-INSERT INTO nationalite (id, libelle) VALUES (4, 'Suisse') ON CONFLICT (id) DO NOTHING;
-INSERT INTO nationalite (id, libelle) VALUES (5, 'Canada') ON CONFLICT (id) DO NOTHING;
-INSERT INTO nationalite (id, libelle) VALUES (6, 'États-Unis') ON CONFLICT (id) DO NOTHING;
+INSERT INTO type_demande (libelle) VALUES
+('Nouveau titre'),
+('Duplicata'),
+('Transfert visa');
 
--- Type de demande
-INSERT INTO type_demande (id, libelle) VALUES (1, 'Visa Initial') ON CONFLICT (id) DO NOTHING;
-INSERT INTO type_demande (id, libelle) VALUES (2, 'Renouvellement') ON CONFLICT (id) DO NOTHING;
-INSERT INTO type_demande (id, libelle) VALUES (3, 'Duplicata') ON CONFLICT (id) DO NOTHING;
-INSERT INTO type_demande (id, libelle) VALUES (4, 'Titre de Résidence') ON CONFLICT (id) DO NOTHING;
-INSERT INTO type_demande (id, libelle) VALUES (5, 'Prolongation') ON CONFLICT (id) DO NOTHING;
+INSERT INTO type_titre (libelle) VALUES
+('Commun'),
+('Investisseur'),
+('Travailleur');
 
--- Type de titre (document délivré)
-INSERT INTO type_titre (id, libelle) VALUES (1, 'Visa Court Séjour') ON CONFLICT (id) DO NOTHING;
-INSERT INTO type_titre (id, libelle) VALUES (2, 'Visa Long Séjour') ON CONFLICT (id) DO NOTHING;
-INSERT INTO type_titre (id, libelle) VALUES (3, 'Titre de Résidence') ON CONFLICT (id) DO NOTHING;
-INSERT INTO type_titre (id, libelle) VALUES (4, 'Autorisation de Séjour') ON CONFLICT (id) DO NOTHING;
 
--- Statut de demande
-INSERT INTO statut_demande (id, libelle) VALUES (1, 'BROUILLON') ON CONFLICT (id) DO NOTHING;
-INSERT INTO statut_demande (id, libelle) VALUES (2, 'EN ATTENTE') ON CONFLICT (id) DO NOTHING;
-INSERT INTO statut_demande (id, libelle) VALUES (3, 'EN EXAMEN') ON CONFLICT (id) DO NOTHING;
-INSERT INTO statut_demande (id, libelle) VALUES (4, 'APPROUVE') ON CONFLICT (id) DO NOTHING;
-INSERT INTO statut_demande (id, libelle) VALUES (5, 'REJETE') ON CONFLICT (id) DO NOTHING;
-INSERT INTO statut_demande (id, libelle) VALUES (6, 'REJET_INCOMPLETUDE') ON CONFLICT (id) DO NOTHING;
-INSERT INTO statut_demande (id, libelle) VALUES (7, 'SCAN_TERMINE') ON CONFLICT (id) DO NOTHING;
-INSERT INTO statut_demande (id, libelle) VALUES (8, 'SUSPENDU') ON CONFLICT (id) DO NOTHING;
+-- Insere uniquement les statuts absents pour rester idempotent.
+INSERT INTO statut_demande (libelle)
+SELECT libelle FROM (VALUES
+    ('demande creee'),
+    ('En attente'),
+    ('Valide'),
+    ('Refuse'),
+    ('REJETE'),
+    ('REJET_INCOMPLETUDE'),
+    ('SCAN TERMINE'),
+    ('SUSPENDU')
+) AS nouveaux(libelle)
+WHERE NOT EXISTS (
+    SELECT 1 FROM statut_demande s WHERE s.libelle = nouveaux.libelle
+);
+
+
+INSERT INTO piece_justificative_ref (libelle, id_type_titre) VALUES
+
+('02 photos d''identite', NULL),
+('Notice de renseignement', NULL),
+('Demande adressee au Ministere de l''Interieur et de la Decentralisation', NULL),
+('Photocopie certifiee du visa en cours de validite', NULL),
+('Photocopie certifiee de la premiere page du passeport', NULL),
+('Photocopie certifiee de la carte de resident en cours de validite', NULL),
+('Certificat de residence a Madagascar', NULL),
+('Extrait de casier judiciaire de moins de 3 mois', NULL),
+('Statut de la societe', 2),
+('Extrait d''inscription au registre du commerce', 2),
+('Carte fiscale', 2),
+('Autorisation d''emploi delivree a Madagascar', 3),
+('Attestation d''emploi delivree par l''employeur (original)', 3);
 
 -- Type de document (document physique à remettre)
 INSERT INTO type_document (id, libelle) VALUES (1, 'Visa') ON CONFLICT (id) DO NOTHING;
 INSERT INTO type_document (id, libelle) VALUES (2, 'Titre de Résidence') ON CONFLICT (id) DO NOTHING;
 INSERT INTO type_document (id, libelle) VALUES (3, 'Cachet d''Entrée') ON CONFLICT (id) DO NOTHING;
-
--- Pièces justificatives de référence
-INSERT INTO piece_justificative_ref (id, libelle, id_type_titre) VALUES 
-  (1, 'Passeport valide', 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO piece_justificative_ref (id, libelle, id_type_titre) VALUES 
-  (2, 'Copie d''identité', 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO piece_justificative_ref (id, libelle, id_type_titre) VALUES 
-  (3, 'Justificatif de domicile', 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO piece_justificative_ref (id, libelle, id_type_titre) VALUES 
-  (4, 'Attestation d''emploi', 2) ON CONFLICT (id) DO NOTHING;
-INSERT INTO piece_justificative_ref (id, libelle, id_type_titre) VALUES 
-  (5, 'Certificat de scolarité', 2) ON CONFLICT (id) DO NOTHING;
-INSERT INTO piece_justificative_ref (id, libelle, id_type_titre) VALUES 
-  (6, 'Bulletin de salaire', 2) ON CONFLICT (id) DO NOTHING;
-INSERT INTO piece_justificative_ref (id, libelle, id_type_titre) VALUES 
-  (7, 'Preuve de solvabilité', 3) ON CONFLICT (id) DO NOTHING;
-INSERT INTO piece_justificative_ref (id, libelle, id_type_titre) VALUES 
-  (8, 'Acte de mariage', 3) ON CONFLICT (id) DO NOTHING;
 
 -- =============================================================
 -- 2. SCENARIO 1 : DEMANDE SIMPLE VALIDE (parcours nominal)
@@ -376,7 +377,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO demande (id, passeport_id, type_demande_id, type_titre_id, statut_id, 
                      visa_date_entree, visa_lieu_entree, visa_date_expiration, ref_demande, type_document_id)
-VALUES (8, 6, 1, 1, 5, '2025-06-01'::DATE, 'Antananarivo', '2025-12-01'::DATE, 
+VALUES (8, 6, 1, 1, 5, '2025-06-01'::DATE, 'Antananarivo', '2025-10-01'::DATE, 
         '20250511-165000-VIS', 1)
 ON CONFLICT (id) DO NOTHING;
 
