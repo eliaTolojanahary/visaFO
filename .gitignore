@@ -1,3 +1,5 @@
+# jdk11 pour le local
+use-jdk11.bat
 # Controller de test ScanDemande Controller  
 
 # Build artifacts (Java/Tomcat)
