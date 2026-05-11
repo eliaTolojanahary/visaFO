@@ -100,21 +100,24 @@
             return response.json();
         })
         .then(data => {
-            const payload = data && data.data ? data.data : data;
-            const found = !!(payload && payload.found);
-            const snapshot = found
-                ? (payload.data || payload.demandeur || payload.result || payload)
-                : null;
+            console.log('[FRONTEND DEBUG] Réponse brute reçue:', data);
+            
+            // CORRECTION: Utiliser data.status (du Controller) au lieu de payload.found
+            const isFound = data && data.status === 'found';
+            const payload = isFound ? data.data : null;
+            
+            console.log('[FRONTEND DEBUG] isFound:', isFound, 'status:', data?.status);
+            console.log('[FRONTEND DEBUG] payload:', payload);
 
-            if (payload && payload.message) {
+            if (data && data.message) {
                 const statusText = byId('searchStatusText');
                 if (statusText) {
-                    statusText.textContent = payload.message;
-                    statusText.style.color = found ? 'green' : 'red';
+                    statusText.textContent = data.message;
+                    statusText.style.color = isFound ? 'green' : 'red';
                 }
             }
 
-            showSearchResult(found, snapshot);
+            showSearchResult(isFound, payload);
         })
         .catch(error => {
             console.error('Erreur lors de la recherche:', error);
