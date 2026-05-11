@@ -178,15 +178,23 @@ public class DemandeService {
         String libelle = typeDemande.getLibelle().trim().toLowerCase();
         boolean visaApprouveConfirme = isTrueValue(stringValueAny(formData, "visaApprouveConfirme", "visa_approuve_confirme"));
 
+        // TÂCHE 4: Adapter statut selon type_demande
+        // Duplicata → "En cours de traitement" (au lieu de "demande creee")
+        if (libelle.contains("duplicata") || libelle.contains("titre de residence")) {
+            StatutDemande statut = referenceDao.findStatutByLibelle("En cours de traitement");
+            if (statut != null) {
+                return statut;
+            }
+            // Fallback si "En cours de traitement" n'existe pas en BD
+            return referenceDao.findStatutByLibelle("demande creee");
+        }
+
         if (!libelle.contains("nouveau") && visaApprouveConfirme) {
             return referenceDao.findStatutByLibelle("Valide");
         }
 
         if (libelle.contains("visa")) {
             return referenceDao.findStatutByLibelle("Valide");
-        }
-        if (libelle.contains("duplicata") || libelle.contains("titre") || libelle.contains("titre de residence")) {
-            return referenceDao.findStatutByLibelle("demande creee");
         }
 
         return referenceDao.findStatutByLibelle("demande creee");
@@ -336,6 +344,31 @@ public class DemandeService {
 
     public List<Long> getSelectedPieceIdsByDemandeId(long demandeId) throws SQLException {
         return demandeDao.getSelectedPieceIdsByDemandeId(demandeId);
+    }
+
+    /**
+     * TÂCHE 1: Recherche avec logique consolidée
+     * - Priorité numéro passeport (recherche exacte)
+     * - Sinon recherche flexible par (nom, prenom, dateNaissance)
+     * - Erreur si aucun critère fourni
+     */
+    public Map<String, Object> rechercherDemandeur(String nom, String prenom, String dateNaissance, String numeroPasseport) throws SQLException {
+        // Priorité 1: Si numeroPasseport renseigné → chercher QUE par passeport
+        if (numeroPasseport != null && !numeroPasseport.trim().isEmpty()) {
+            System.out.println("[DEBUG] Recherche par num passeport: " + numeroPasseport);
+            return demandeDao.searchDemandeurEtPasseport(null, null, null, numeroPasseport.trim());
+        }
+        
+        // Priorité 2: Chercher par (nom, prenom, dateNaissance) - recherche flexible
+        if ((nom != null && !nom.trim().isEmpty()) || 
+            (prenom != null && !prenom.trim().isEmpty()) || 
+            (dateNaissance != null && !dateNaissance.trim().isEmpty())) {
+            System.out.println("[DEBUG] Recherche flexible: nom=" + nom + ", prenom=" + prenom + ", dateNaissance=" + dateNaissance);
+            return demandeDao.searchDemandeurEtPasseport(nom, prenom, dateNaissance, null);
+        }
+        
+        // Aucun critère fourni
+        throw new IllegalArgumentException("Entrez au moins un critère de recherche (nom, prénom, date naissance, ou numéro passeport)");
     }
 
     public Map<String, Object> searchDemandeurEtPasseport(String nom, String prenom, String dateNaissance, String numeroPasseport) throws SQLException {
