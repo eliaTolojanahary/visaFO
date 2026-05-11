@@ -1,4 +1,5 @@
 (function () {
+    console.log('[SEARCHFLOW.JS] Script loaded successfully!');
     let lastFetchedSnapshot = null;
 
     function byId(id) {
@@ -102,17 +103,20 @@
         .then(data => {
             console.log('[FRONTEND DEBUG] Réponse brute reçue:', data);
             
-            // CORRECTION: Utiliser data.status (du Controller) au lieu de payload.found
-            const isFound = data && data.status === 'found';
-            const payload = isFound ? data.data : null;
+            // CORRECTION: FrontServlet enveloppe la réponse dans { status: "success", code: 200, data: {...} }
+            // Donc la vraie réponse est dans data.data
+            const innerResponse = data && data.data ? data.data : null;
+            const isFound = innerResponse && innerResponse.status === 'found';
+            const payload = isFound ? innerResponse.data : null;
             
-            console.log('[FRONTEND DEBUG] isFound:', isFound, 'status:', data?.status);
+            console.log('[FRONTEND DEBUG] innerResponse:', innerResponse);
+            console.log('[FRONTEND DEBUG] isFound:', isFound, 'status:', innerResponse?.status);
             console.log('[FRONTEND DEBUG] payload:', payload);
 
-            if (data && data.message) {
+            if (innerResponse && innerResponse.message) {
                 const statusText = byId('searchStatusText');
                 if (statusText) {
-                    statusText.textContent = data.message;
+                    statusText.textContent = innerResponse.message;
                     statusText.style.color = isFound ? 'green' : 'red';
                 }
             }
