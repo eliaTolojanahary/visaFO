@@ -46,6 +46,14 @@
         catch (Exception ignore) {}
     }
     String demandeIdValue = demandeId != null ? String.valueOf(demandeId) : "";
+
+    // dossierId – transmis par le controller ou extrait de la demande
+    Long dossierId = null;
+    if (request.getAttribute("dossierId") != null) {
+        try { dossierId = Long.parseLong(String.valueOf(request.getAttribute("dossierId"))); }
+        catch (Exception ignore) {}
+    }
+    String dossierIdValue = dossierId != null ? String.valueOf(dossierId) : "";
     
     String reference = request.getAttribute("reference") != null ? String.valueOf(request.getAttribute("reference")) 
                      : (demande.get("ref_demande") != null ? String.valueOf(demande.get("ref_demande")) : "");
@@ -73,13 +81,10 @@
     List<Map<String, Object>> scanPieces = null;
     
     if (listePiecesAttendues != null && !listePiecesAttendues.isEmpty()) {
-        // Mode SCAN ou DATA déjà préparée : utiliser directement
         scanPieces = listePiecesAttendues;
     } else if (pieces != null && !pieces.isEmpty()) {
-        // Fallback sur pieces
         scanPieces = pieces;
     } else if (isCreationMode && piecesCommunes != null && !piecesCommunes.isEmpty()) {
-        // [NEW] Mode CREATION sans données préparées : construire à partir de piecesCommunes
         scanPieces = new ArrayList<>();
         for (PieceJustificative p : piecesCommunes) {
             Map<String, Object> pieceMap = new HashMap<>();
@@ -88,6 +93,21 @@
             pieceMap.put("scanStatut", "EN_ATTENTE");
             pieceMap.put("fileName", "");
             scanPieces.add(pieceMap);
+        }
+    }
+
+    // Déterminer si la pièce "Signature numérique" (id=100) est déjà scannée
+    boolean signatureDejaScannee = false;
+    String signatureFileName = "";
+    if (scanPieces != null) {
+        for (Map<String, Object> p : scanPieces) {
+            Object idObj = getMapValue(p, "pieceRefId", "piece_ref_id", "id");
+            if (idObj != null && "100".equals(String.valueOf(idObj))) {
+                String statut = String.valueOf(getMapValue(p, "scanStatut", "scan_statut", "statut"));
+                signatureDejaScannee = "SCANNÉ".equalsIgnoreCase(statut) || "SCANNED".equalsIgnoreCase(statut);
+                signatureFileName = String.valueOf(getMapValue(p, "fileName", "nom_fichier", "fichier"));
+                break;
+            }
         }
     }
     
@@ -117,6 +137,90 @@
     <title>Scan - <%= reference.isEmpty() ? "Demande" : reference %></title>
     <link rel="stylesheet" href="<%= ctx %>/css/style.css">
     <link rel="stylesheet" href="<%= ctx %>/css/scanDemande.css">
+    <style>
+        /* ── Bloc Signature ────────────────────────────────────────────── */
+        .signature-bloc {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color, #d1d5db);
+            border-radius: 0.5rem;
+            background: var(--card-bg, #ffffff);
+        }
+        .signature-bloc h3 {
+            margin: 0 0 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary, #111827);
+        }
+        .signature-canvas-wrapper {
+            position: relative;
+            border: 2px dashed var(--border-color, #d1d5db);
+            border-radius: 0.375rem;
+            background: #fafafa;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        #signatureCanvas {
+            display: block;
+            width: 100%;
+            height: 180px;
+            border-radius: 0.375rem;
+        }
+        /* Texte indicatif via pseudo-element : jamais dans le flux d'evenements */
+        .signature-canvas-wrapper::before {
+            content: 'Signez ici avec la souris ou le doigt';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #9ca3af;
+            font-size: 0.875rem;
+            pointer-events: none;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .signature-canvas-wrapper.has-drawing::before { display: none; }
+        #signatureCanvas {
+            display: block;
+            width: 100%;
+            height: 180px;
+            border-radius: 0.375rem;
+        }
+        .signature-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 0.75rem;
+        }
+        .signature-preview-wrapper {
+            margin-top: 0.75rem;
+        }
+        .signature-preview-wrapper img {
+            max-width: 300px;
+            border: 1px solid var(--border-color, #d1d5db);
+            border-radius: 0.25rem;
+            background: #fff;
+        }
+        .signature-status {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            min-height: 1.25rem;
+        }
+        .signature-status--success { color: #16a34a; }
+        .signature-status--error   { color: #dc2626; }
+        .signature-status--loading { color: var(--text-muted, #6b7280); font-style: italic; }
+        .signature-already-done {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            color: #15803d;
+            margin-bottom: 0.75rem;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -162,7 +266,6 @@
         <div class="piece-list" id="pieceList">
         <%
             for (Map<String, Object> piece : scanPieces) {
-                // Extraction tolérante camelCase / snake_case
                 Long pieceId = null;
                 Object idObj = getMapValue(piece, "pieceRefId", "piece_ref_id", "id");
                 if (idObj != null) pieceId = Long.valueOf(String.valueOf(idObj));
@@ -245,11 +348,67 @@
         <% } %>
     </div>
 
+    <%-- ================================================================
+         BLOC CAPTURE SIGNATURE (sprint 5)
+         Visible uniquement en mode SCAN et si le dossier n'est pas verrouillé
+         ================================================================ --%>
+    <% if (isScanMode && !isCreationMode) { %>
+    <div class="form-section">
+        <h2>Capture Signature</h2>
+
+        <div class="signature-bloc"
+             id="signatureBloc"
+             data-demande-id="<%= demandeIdValue %>"
+             data-dossier-id="<%= dossierIdValue %>">
+
+            <h3>Signature numérique du demandeur</h3>
+
+            <% if (signatureDejaScannee) { %>
+            <div class="signature-already-done">
+                <span>✓</span>
+                <span>Signature déjà enregistrée : <strong><%= signatureFileName %></strong></span>
+            </div>
+            <% } %>
+
+            <% if (!isLocked) { %>
+            <div class="signature-canvas-wrapper" id="signatureCanvasWrapper">
+                <canvas id="signatureCanvas" aria-label="Zone de signature"></canvas>
+            </div>
+
+            <div class="signature-actions">
+                <button type="button" class="btn-alt btn-sm" id="signatureBtnClear">
+                    Effacer
+                </button>
+                <button type="button" class="btn-alt btn-sm" id="signatureBtnPreview">
+                    Prévisualiser
+                </button>
+                <button type="button" class="btn-primary btn-sm" id="signatureBtnUpload">
+                    <%= signatureDejaScannee ? "Remplacer la signature" : "Enregistrer la signature" %>
+                </button>
+            </div>
+
+            <div class="signature-preview-wrapper">
+                <img id="signaturePreview"
+                     src=""
+                     alt="Aperçu de la signature"
+                     style="display:none;"
+                     aria-live="polite">
+            </div>
+
+            <div id="signatureStatus" class="signature-status" aria-live="polite"></div>
+            <% } else { %>
+            <p class="hint-text">Le dossier est verrouillé — aucune modification possible.</p>
+            <% } %>
+
+        </div>
+    </div>
+    <% } %>
+
     <% if (!isCreationMode) { %>
     <div class="form-section">
         <h2>Finaliser le Scan</h2>
         <div class="completion-status">
-            <div class="completion-message <%= demandeComplete ? "complete" : "incomplete" %>">
+            <div class="completion-message <%= demandeComplete ? "complete" : "incomplete" %>" id="completionMessage">
                 <% if (demandeComplete) { %>
                 <span class="icon">✓</span> Toutes les pieces attendues ont ete scannees. Vous pouvez maintenant verrouiller le dossier.
                 <% } else { %>
@@ -279,6 +438,7 @@
 
 <% if (!isCreationMode) { %>
 <script src="<%= ctx %>/js/scanDemande.js"></script>
+<script src="<%= ctx %>/js/signatureCanvas.js"></script>
 <% } %>
 </body>
 </html>
@@ -301,7 +461,6 @@
     <div class="piece-list" id="pieceList">
     <%
         for (Map<String, Object> piece : scanPieces) {
-            // Extraction tolérante camelCase / snake_case
             Long pieceId = null;
             Object idObj = getMapValue(piece, "pieceRefId", "piece_ref_id", "id");
             if (idObj != null) pieceId = Long.valueOf(String.valueOf(idObj));

@@ -1,0 +1,11 @@
+SELECT id, libelle FROM piece_justificative_ref WHERE LOWER(libelle) LIKE '%signature%';
+
+-- ovaina anle id eo amle signature ilay piece_id 
+
+INSERT INTO demande_piece (demande_id, piece_id, cochee)
+SELECT d.id, 2, TRUE
+FROM demande d
+WHERE NOT EXISTS (
+    SELECT 1 FROM demande_piece dp
+    WHERE dp.demande_id = d.id AND dp.piece_id = 2
+);
