@@ -9,13 +9,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -34,6 +37,9 @@ import util.FileUpload;
 public class ScanService {
 
     private static final long MAX_FILE_SIZE = 10L * 1024L * 1024L;
+    private static final long MAX_SIGNATURE_SIZE = 1L * 1024L * 1024L;
+    private static final String BASE64_PNG_PREFIX = "data:image/png;base64,";
+    private static final String LIBELLE_SIGNATURE = "Signature num\u00e9rique";
     private static final Set<String> ALLOWED_MIME_TYPES = new HashSet<>();
 
     static {
@@ -51,6 +57,192 @@ public class ScanService {
         this.pieceFournieDao = new PieceFournieRepository();
         this.pieceJustificativeDao = new PieceJustificativeRepository();
     }
+
+    // =========================================================================
+    // SIGNATURE CANVAS
+    // =========================================================================
+
+    /**
+     * Sauvegarde une signature capturée depuis un canvas HTML (data URL PNG base64).
+     *
+     * @param base64DataUrl  la data URL complète : "data:image/png;base64,<payload>"
+     * @param demandeId      identifiant de la demande
+     * @param dossierId      identifiant du dossier (utilisé pour l'arborescence disque)
+     * @return l'objet {@link PieceFournie} persisté
+     * @throws IllegalArgumentException si le format ou la taille sont invalides
+     * @throws SQLException             en cas d'erreur base de données ou disque
+     */
+    public PieceFournie sauvegarderSignatureCanvas(String base64DataUrl, Long demandeId, Long dossierId)
+            throws SQLException {
+
+        // 1. Validation du format base64
+        if (base64DataUrl == null || !base64DataUrl.startsWith(BASE64_PNG_PREFIX)) {
+            throw new IllegalArgumentException(
+                "Format de signature invalide. Une image PNG encodee en base64 est attendue.");
+        }
+
+        String payload = base64DataUrl.substring(BASE64_PNG_PREFIX.length()).trim();
+        if (payload.isEmpty()) {
+            throw new IllegalArgumentException("Le contenu de la signature est vide.");
+        }
+
+        byte[] pngBytes;
+        try {
+            pngBytes = Base64.getDecoder().decode(payload);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Encodage base64 invalide : " + e.getMessage(), e);
+        }
+
+        // 2. Validation de la taille (≤ 1 Mo)
+        if (pngBytes.length > MAX_SIGNATURE_SIZE) {
+            throw new IllegalArgumentException(
+                "La signature depasse la taille maximale autorisee (1 Mo).");
+        }
+
+        // 3. Vérification de l'existence de la demande
+        Demande demande = demandeDao.findById(demandeId);
+        if (demande == null) {
+            throw new IllegalArgumentException("Demande introuvable : " + demandeId);
+        }
+        if (demande.isVerrouille()) {
+            throw new DemandeVerrouilleeException(
+                "Le dossier est verrouille : aucune modification n'est autorisee.");
+        }
+
+        // 4a. Résoudre dossierId si non fourni (0 ou null)
+        long resolvedDossierId = (dossierId != null && dossierId > 0)
+            ? dossierId
+            : findDossierIdByDemande(demandeId);
+
+        // 4b. Résoudre l'id réel de "Signature numérique" directement en SQL
+        long pieceRefId = findPieceRefIdByLibelle(LIBELLE_SIGNATURE);
+        if (pieceRefId < 0) {
+            throw new IllegalArgumentException(
+                "La reference de piece 'Signature numerique' est introuvable en base. "
+                + "Verifiez que sprint5.sql a bien ete execute.");
+        }
+
+        // 5. Suppression de l'ancienne signature si elle existe déjà
+        PieceFournie existante = pieceFournieDao.findByDemandeAndPieceRef(demandeId, pieceRefId);
+        if (existante != null) {
+            deleteFileQuietly(existante.getChemin_fichier());
+        }
+
+        // 6. Construction du chemin et écriture sur disque
+        Path targetPath = buildSignaturePath(resolvedDossierId, demandeId, pngBytes);
+        writeFile(targetPath, pngBytes);
+
+        // 7. Construction de PieceFournie avec pieceRefId résolu dynamiquement
+        PieceJustificative pieceRef = pieceJustificativeDao.findById(pieceRefId);
+        PieceFournie pieceFournie = new PieceFournie();
+        pieceFournie.setDemande_id(demandeId);
+        pieceFournie.setPiece_ref(pieceRef);
+        pieceFournie.setChemin_fichier(targetPath.toAbsolutePath().toString());
+        pieceFournie.setNom_fichier(targetPath.getFileName().toString());
+        pieceFournie.setTaille_bytes(pngBytes.length);
+        pieceFournie.setMime_type("image/png");
+
+        try {
+            PieceFournie saved = pieceFournieDao.create(pieceFournie);
+            refreshScanStatusIfComplete(demandeId);
+            return saved;
+        } catch (SQLException e) {
+            deleteFileQuietly(targetPath.toString());
+            throw e;
+        }
+    }
+
+    /**
+     * Met à jour le statut du dossier si toutes les pièces sont présentes.
+     * Appel silencieux : les erreurs sont loggées mais ne remontent pas.
+     */
+    private void refreshScanStatusIfComplete(long demandeId) {
+        try {
+            if (isDemandeComplete(demandeId)) {
+                // On peut déclencher ici toute logique métier supplémentaire
+                // (ex: notification, mise à jour de statut intermédiaire).
+                // Pour l'instant on se contente de la vérification passive.
+            }
+        } catch (SQLException ignored) {
+            // best effort
+        }
+    }
+
+
+    /**
+     * Trouve le dossier_id lié à une demande via dossier_demande.
+     * Retourne demandeId comme fallback si aucun dossier n'est trouvé.
+     */
+    private long findDossierIdByDemande(long demandeId) throws SQLException {
+        String sql = "SELECT dossier_id FROM dossier_demande WHERE demande_id = ? LIMIT 1";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, demandeId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("dossier_id");
+                }
+            }
+        }
+        return demandeId; // fallback
+    }
+
+    /**
+     * Retourne l'id de piece_justificative_ref correspondant au libelle,
+     * ou -1 si introuvable. Pas de dépendance au model PieceJustificative.
+     */
+    private long findPieceRefIdByLibelle(String libelle) throws SQLException {
+        String sql = "SELECT id FROM piece_justificative_ref WHERE LOWER(libelle) = LOWER(?) LIMIT 1";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, libelle);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("id");
+                }
+            }
+        }
+        return -1L;
+    }
+
+    /**
+     * Construit le chemin cible pour la signature :
+     * {@code <base>/uploads/pieces/signatures/<dossierId>/<dossierId>_sig_<ts>_<hash>.png}
+     */
+    private Path buildSignaturePath(long dossierId, Long demandeId, byte[] content) throws SQLException {
+        String configured = System.getProperty("visa.scan.upload.dir");
+        File baseDir;
+        if (configured != null && !configured.trim().isEmpty()) {
+            baseDir = new File(configured, "pieces/signatures/" + dossierId);
+        } else {
+            baseDir = new File(System.getProperty("user.dir"),
+                "upload/scans/pieces/signatures/" + dossierId);
+        }
+
+        if (!baseDir.exists() && !baseDir.mkdirs()) {
+            throw new SQLException("Impossible de creer le repertoire de signatures : " + baseDir.getAbsolutePath());
+        }
+
+        String hash = computeShortHash(content);
+        String filename = dossierId + "_sig_" + System.currentTimeMillis() + "_" + hash + ".png";
+        return new File(baseDir, filename).toPath();
+    }
+
+    /** Calcule un hash SHA-256 tronqué à 8 caractères pour nommer le fichier. */
+    private String computeShortHash(byte[] data) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(data);
+            // Java 17+: HexFormat; sinon utiliser un fallback manuel
+            return HexFormat.of().formatHex(hashBytes).substring(0, 8);
+        } catch (Exception e) {
+            return Long.toHexString(System.nanoTime()).substring(0, 8);
+        }
+    }
+
+    // =========================================================================
+    // MÉTHODES EXISTANTES (inchangées)
+    // =========================================================================
 
     public PieceFournie uploadPiece(long demandeId, long pieceRefId, FileUpload fichier) throws SQLException {
         if (fichier == null || fichier.getContent() == null || fichier.getContent().length == 0) {
@@ -197,7 +389,7 @@ public class ScanService {
             + "pf.id AS piece_fournie_id, pf.nom_fichier, pf.taille_bytes, pf.mime_type, pf.uploaded_at "
             + "FROM demande_piece dp "
             + "JOIN piece_justificative_ref p ON p.id = dp.piece_id "
-            + "LEFT JOIN piece_fournie pf ON pf.demande_id = dp.demande_id AND pf.piece_ref_id = p.id "
+            + "LEFT JOIN piece_fournie pf ON pf.demande_id = dp.demande_id AND pf.piece_ref_id = dp.piece_id "
             + "WHERE dp.demande_id = ? AND dp.cochee = TRUE "
             + "ORDER BY p.id";
 

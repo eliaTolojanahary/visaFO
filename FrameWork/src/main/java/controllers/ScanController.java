@@ -29,7 +29,7 @@ public class ScanController {
     @GetMapping
     public ModelView scanPage(@RequestParam("id") long demandeId, Map<String, Object> queryParams) {
         ModelView mv = new ModelView("/scanDemande.jsp");
-        mv.addData("demandeId", demandeId); 
+        mv.addData("demandeId", demandeId);
 
         try {
             Map<String, Object> demande = scanService.getDemandeScanInfo(demandeId);
@@ -89,6 +89,55 @@ public class ScanController {
         result.put("pieceRefId", pieceRefId);
         result.put("fileName", pieceFournie != null ? pieceFournie.getNom_fichier() : "");
         result.put("next", "/demande/" + demandeId + "/piece/" + pieceRefId + "/download");
+        return result;
+    }
+
+    /**
+     * POST /api/demandes/{demandeId}/dossiers/{dossierId}/signature
+     *
+     * Corps JSON attendu : { "dataUrl": "data:image/png;base64,..." }
+     *
+     * Réponses :
+     *   200 – { success: true, id, nomFichier, uploadedAt, demandeComplete }
+     *   400 – { success: false, error: "..." }   (base64 invalide, taille dépassée)
+     *   404 – { success: false, error: "..." }   (demande/dossier absent)
+     *   423 – { success: false, error: "..." }   (demande verrouillée)
+     */
+    @MethodeAnnotation("/{demandeId}/dossiers/{dossierId}/signature")
+    @PostMapping
+    @Api
+    public Map<String, Object> uploadSignature(
+        @RequestParam("demandeId") long demandeId,
+        @RequestParam("dossierId") long dossierId,
+        @RequestParam("dataUrl") String dataUrl
+    ) throws SQLException {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            PieceFournie pieceFournie = scanService.sauvegarderSignatureCanvas(dataUrl, demandeId, dossierId);
+            boolean demandeComplete = scanService.isDemandeComplete(demandeId);
+
+            result.put("success", true);
+            result.put("id", pieceFournie != null ? pieceFournie.getId() : null);
+            result.put("nomFichier", pieceFournie != null ? pieceFournie.getNom_fichier() : "");
+            result.put("uploadedAt", pieceFournie != null && pieceFournie.getUploaded_at() != null
+                ? pieceFournie.getUploaded_at().toString() : "");
+            result.put("demandeComplete", demandeComplete);
+            // pieceRefId réel pour que le JS puisse identifier la bonne card
+            result.put("pieceRefId", pieceFournie != null && pieceFournie.getPiece_ref() != null
+                ? pieceFournie.getPiece_ref().getId() : null);
+        } catch (IllegalArgumentException e) {
+            result.put("success", false);
+            result.put("error", e.getMessage());
+            result.put("httpStatus", 400);
+        } catch (DemandeVerrouilleeException e) {
+            result.put("success", false);
+            result.put("error", e.getMessage());
+            result.put("httpStatus", 423);
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("error", "Erreur interne: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            result.put("httpStatus", 500);
+        }
         return result;
     }
 
