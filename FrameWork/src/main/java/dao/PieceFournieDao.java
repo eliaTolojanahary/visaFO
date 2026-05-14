@@ -5,6 +5,7 @@ import java.util.List;
 import models.PieceFournie;
 
 public interface PieceFournieDao {
+    PieceFournie update(PieceFournie piece) throws SQLException;
     PieceFournie create(PieceFournie piece) throws SQLException;
     PieceFournie findByDemandeAndPieceRef(long demandeId, long pieceRefId) throws SQLException;
     List<PieceFournie> findAllByDemande(long demandeId) throws SQLException;
