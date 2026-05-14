@@ -257,7 +257,48 @@
                 <% } %>
             </div>
         </div>
+            <!-- SECTION: Capture Photo d'Identité à la Webcam (Sprint 5) -->
+            <% if (!isCreationMode && !isLocked) { %>
+            <div class="form-section" id="photo-identite-block">
+                <h2>Capture Photo d'Identité (Webcam)</h2>
         
+                <input type="hidden" id="photoWebcamDemandeId" value="<%= demandeIdValue %>">
+                <input type="hidden" id="photoWebcamDossierId" value="<%= request.getAttribute("dossierId") != null ? String.valueOf(request.getAttribute("dossierId")) : "" %>">
+        
+                <div class="camera-controls" style="margin-bottom: 15px;">
+                    <button type="button" id="startCameraBtn" class="btn-primary btn-sm">
+                        Démarrer la caméra
+                    </button>
+                    <button type="button" id="stopCameraBtn" class="btn-alt btn-sm" style="display:none;">
+                        Arrêter la caméra
+                    </button>
+                </div>
+        
+                <div class="camera-container" style="display:none;">
+                    <video id="cameraVideo" width="480" height="360" autoplay playsinline style="border: 2px solid #ddd; border-radius: 4px;"></video>
+                </div>
+        
+                <div class="photo-capture-area" style="margin-top: 15px;">
+                    <div class="capture-controls">
+                        <button type="button" id="capturePhotoBtn" class="btn-secondary btn-sm" style="display:none;">Capturer photo</button>
+                        <button type="button" id="retakeCameraBtn" class="btn-alt btn-sm" style="display:none;">Reprendre photo</button>
+                    </div>
+                    <div class="photo-preview-area" style="margin-top: 10px;">
+                        <img id="photoPreview" style="max-width: 300px; max-height: 300px; border: 2px solid #ddd; border-radius: 4px; display:none;">
+                    </div>
+                </div>
+        
+                <div class="photo-upload-area" style="margin-top: 15px;">
+                    <button type="button" id="uploadPhotoBtn" class="btn-success btn-sm" style="display:none;">Uploader cette photo</button>
+                </div>
+        
+                <div id="photoUploadStatus" style="margin-top: 10px; padding: 10px; border-radius: 4px; display:none;"></div>
+            </div>
+            <% } %>
+        
+            <% if (!isCreationMode) { %>
+            <div class="form-section">
+                <h2>Finaliser le Scan</h2>
         <% if (!isLocked) { %>
         <form id="verrouillerForm"
               action="<%= ctx %>/demande/<%= demandeIdValue %>/verrouiller"

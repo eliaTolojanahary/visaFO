@@ -11,6 +11,8 @@ public class PieceFournie {
     private long taille_bytes;
     private String mime_type;
     private Timestamp uploaded_at;
+    private boolean cochee;
+    private long piece_ref_id;
 
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
@@ -35,4 +37,10 @@ public class PieceFournie {
 
     public Timestamp getUploaded_at() { return uploaded_at; }
     public void setUploaded_at(Timestamp uploaded_at) { this.uploaded_at = uploaded_at; }
+
+    public boolean isCochee() { return cochee; }
+    public void setCochee(boolean cochee) { this.cochee = cochee; }
+
+    public long getPiece_ref_id() { return piece_ref_id; }
+    public void setPiece_ref_id(long piece_ref_id) { this.piece_ref_id = piece_ref_id; }
 }

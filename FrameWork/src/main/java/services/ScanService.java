@@ -402,4 +402,77 @@ public class ScanService {
             // best effort
         }
     }
+
+    /**
+     * Sauvegarde une photo d'identité capturée à la webcam.
+     * Photo d'identité = piece_ref_id=99, cochee=TRUE automatiquement.
+     *
+     * @param file Fichier image uploadé
+     * @param demandeId ID de la demande
+     * @param dossierId ID du dossier
+     * @return PieceFournie créée
+     * @throws SQLException En cas d'erreur BD
+     * @throws IllegalArgumentException Si validation échoue
+     */
+    public PieceFournie sauvegarderPhotoIdentite(FileUpload file, long demandeId, long dossierId) throws SQLException {
+        // Validation basique
+        if (file == null || file.getContent() == null || file.getContent().length == 0) {
+            throw new IllegalArgumentException("Aucun fichier reçu pour l'upload photo.");
+        }
+
+        // Vérifier que la demande existe
+        Demande demande = demandeDao.findById(demandeId);
+        if (demande == null) {
+            throw new IllegalArgumentException("Demande introuvable: " + demandeId);
+        }
+        if (demande.isVerrouille()) {
+            throw new DemandeVerrouilleeException("Le dossier est verrouillé: aucune modification n'est autorisée.");
+        }
+
+        // Valider format: JPG/PNG seulement (pas PDF pour les photos)
+        String contentType = normalizeContentType(file.getContentType());
+        if (!contentType.equals("image/jpeg") && !contentType.equals("image/png")) {
+            throw new IllegalArgumentException("Format non autorisé pour la photo (JPG ou PNG seulement).");
+        }
+
+        // Valider taille: 5MB max pour photo
+        long maxPhotoSize = 5L * 1024L * 1024L;
+        long taille = file.getSize() > 0 ? file.getSize() : file.getContent().length;
+        if (taille > maxPhotoSize) {
+            throw new IllegalArgumentException("Fichier photo trop volumineux (max 5 Mo).");
+        }
+
+        // Créer répertoire /uploads/pieces/photos/{dossierId}/
+        File photosDir = new File(System.getProperty("user.dir"), "upload" + File.separator + "pieces" + File.separator + "photos" + File.separator + dossierId);
+        if (!photosDir.exists() && !photosDir.mkdirs()) {
+            throw new SQLException("Impossible de créer le répertoire photos.");
+        }
+
+        // Générer nom unique: {dossierId}_photo_{timestamp}_{hash}.{ext}
+        String ext = contentType.equals("image/jpeg") ? ".jpg" : ".png";
+        String hash = String.valueOf(System.nanoTime()).substring(0, 8);
+        String filename = dossierId + "_photo_" + System.currentTimeMillis() + "_" + hash + ext;
+        Path targetPath = new File(photosDir, filename).toPath();
+
+        // Sauvegarder fichier sur disque
+        writeFile(targetPath, file.getContent());
+
+        // Créer objet PieceFournie avec piece_ref_id=99 (Photo d'identité)
+        PieceFournie pieceFournie = new PieceFournie();
+        pieceFournie.setDemande_id(demandeId);
+        pieceFournie.setPiece_ref_id(99L); // ID standard pour photo d'identité
+        pieceFournie.setChemin_fichier(targetPath.toAbsolutePath().toString());
+        pieceFournie.setNom_fichier(extractSafeName(file.getFilename() != null ? file.getFilename() : filename));
+        pieceFournie.setTaille_bytes(taille);
+        pieceFournie.setMime_type(contentType);
+        pieceFournie.setCochee(true); // Marquée comme cochée automatiquement
+
+        try {
+            PieceFournie saved = pieceFournieDao.create(pieceFournie);
+            return saved;
+        } catch (SQLException e) {
+            deleteFileQuietly(targetPath.toString());
+            throw e;
+        }
+    }
 }
