@@ -12,6 +12,30 @@ import models.PieceJustificative;
 import util.DatabaseConnection;
 
 public class PieceFournieRepository implements PieceFournieDao {
+    @Override 
+    public PieceFournie update(PieceFournie piece) throws SQLException {
+        String sql = "UPDATE piece_fournie SET chemin_fichier = ?, nom_fichier = ?, taille_bytes = ?, mime_type = ?, uploaded_at = NOW() "
+            + "WHERE demande_id = ? AND piece_ref_id = ? "
+            + "RETURNING id, demande_id, piece_ref_id, chemin_fichier, nom_fichier, taille_bytes, mime_type, uploaded_at";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, piece.getChemin_fichier());
+            stmt.setString(2, piece.getNom_fichier());
+            stmt.setLong(3, piece.getTaille_bytes());
+            stmt.setString(4, piece.getMime_type());
+            stmt.setLong(5, piece.getDemande_id());
+            stmt.setLong(6, piece.getPiece_ref().getId());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapPieceFournie(rs);
+                }
+            }
+        }
+
+        throw new SQLException("Mise à jour de la pièce fournie échouée.");
+    }
 
     @Override
     public PieceFournie create(PieceFournie piece) throws SQLException {

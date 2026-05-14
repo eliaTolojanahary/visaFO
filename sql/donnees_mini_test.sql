@@ -52,3 +52,11 @@ INSERT INTO piece_justificative_ref (libelle, id_type_titre) VALUES
 ('Carte fiscale', 2),
 ('Autorisation d''emploi delivree a Madagascar', 3),
 ('Attestation d''emploi delivree par l''employeur (original)', 3);
+
+-- Update sprint 5 
+  
+INSERT INTO piece_justificative_ref (libelle, id_type_titre) 
+VALUES ('Photo d''identite (webcam)', NULL);
+
+INSERT INTO piece_justificative_ref (libelle, id_type_titre) 
+VALUES ('Signature numerique', NULL); 
