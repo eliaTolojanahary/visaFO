@@ -64,7 +64,9 @@ INSERT INTO piece_justificative_ref (libelle, id_type_titre) VALUES
 ('Extrait d''inscription au registre du commerce', 2),
 ('Carte fiscale', 2),
 ('Autorisation d''emploi delivree a Madagascar', 3),
-('Attestation d''emploi delivree par l''employeur (original)', 3);
+('Attestation d''emploi delivree par l''employeur (original)', 3),
+('Photo d''identite (webcam)', NULL),
+('Signature numerique', NULL);
 
 -- Type de document (document physique à remettre)
 INSERT INTO type_document (libelle) VALUES
