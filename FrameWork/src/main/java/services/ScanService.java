@@ -40,7 +40,7 @@ public class ScanService {
     private static final String BASE64_PNG_PREFIX = "data:image/png;base64,";
     private static final String LIBELLE_SIGNATURE = "Signature numerique";
     private static final Set<String> ALLOWED_MIME_TYPES = new HashSet<>();
-
+    private static final String LIBELLE_PHOTO_IDENTITE = "Photo d'identite (webcam)";
     static {
         ALLOWED_MIME_TYPES.add("image/jpeg");
         ALLOWED_MIME_TYPES.add("image/png");
@@ -601,73 +601,109 @@ public class ScanService {
             // best effort
         }
     }
-
     /**
      * Sauvegarde une photo d'identité capturée à la webcam.
      * Photo d'identité = piece_ref_id=99, cochee=TRUE automatiquement.
      *
+     * Structure identique à sauvegarderSignatureCanvas() pour cohérence.
+     *
      * @param file Fichier image uploadé
      * @param demandeId ID de la demande
-     * @param dossierId ID du dossier
+     * @param dossierId ID du dossier (si 0 ou null, résolu automatiquement)
      * @return PieceFournie créée
      * @throws SQLException En cas d'erreur BD
      * @throws IllegalArgumentException Si validation échoue
+     * @throws DemandeVerrouilleeException Si la demande est verrouillée
      */
-    public PieceFournie sauvegarderPhotoIdentite(FileUpload file, long demandeId, long dossierId) throws SQLException {
-        // Validation basique
+    public PieceFournie sauvegarderPhotoIdentite(FileUpload file, Long demandeId, Long dossierId)
+            throws SQLException {
+
+        // 1. Validation basique du fichier
         if (file == null || file.getContent() == null || file.getContent().length == 0) {
             throw new IllegalArgumentException("Aucun fichier reçu pour l'upload photo.");
         }
 
-        // Vérifier que la demande existe
+        // 2. Vérifier l'existence et l'état de la demande
         Demande demande = demandeDao.findById(demandeId);
         if (demande == null) {
-            throw new IllegalArgumentException("Demande introuvable: " + demandeId);
+            throw new IllegalArgumentException("Demande introuvable : " + demandeId);
         }
         if (demande.isVerrouille()) {
-            throw new DemandeVerrouilleeException("Le dossier est verrouillé: aucune modification n'est autorisée.");
+            throw new DemandeVerrouilleeException(
+                "Le dossier est verrouille : aucune modification n'est autorisee.");
         }
 
-        // Valider format: JPG/PNG seulement (pas PDF pour les photos)
+        // 3. Résoudre dossierId si non fourni (0 ou null)
+        long resolvedDossierId = (dossierId != null && dossierId > 0)
+            ? dossierId
+            : findDossierIdByDemande(demandeId);
+
+        // 4. Valider format : JPG/PNG seulement (pas PDF pour les photos)
         String contentType = normalizeContentType(file.getContentType());
         if (!contentType.equals("image/jpeg") && !contentType.equals("image/png")) {
             throw new IllegalArgumentException("Format non autorisé pour la photo (JPG ou PNG seulement).");
         }
 
-        // Valider taille: 5MB max pour photo
+        // 5. Valider taille : 5MB max pour photo
         long maxPhotoSize = 5L * 1024L * 1024L;
         long taille = file.getSize() > 0 ? file.getSize() : file.getContent().length;
         if (taille > maxPhotoSize) {
             throw new IllegalArgumentException("Fichier photo trop volumineux (max 5 Mo).");
         }
 
-        // Créer répertoire /uploads/pieces/photos/{dossierId}/
-        File photosDir = new File(System.getProperty("user.dir"), "upload" + File.separator + "pieces" + File.separator + "photos" + File.separator + dossierId);
+        // 6. Résoudre l'id réel de "Photo d'identité" directement en SQL
+        long pieceRefId = findPieceRefIdByLibelle(LIBELLE_PHOTO_IDENTITE);
+        if (pieceRefId < 0) {
+            throw new IllegalArgumentException(
+                "La reference de piece 'Photo d'identite' est introuvable en base. "
+                + "Verifiez que sprint5.sql a bien ete execute.");
+        }
+
+        // 7. Créer répertoire /uploads/pieces/photos/{dossierId}/
+        File photosDir = new File(System.getProperty("user.dir"),
+            "upload" + File.separator + "pieces" + File.separator + "photos" + File.separator + resolvedDossierId);
         if (!photosDir.exists() && !photosDir.mkdirs()) {
             throw new SQLException("Impossible de créer le répertoire photos.");
         }
 
-        // Générer nom unique: {dossierId}_photo_{timestamp}_{hash}.{ext}
+        // 8. Générer nom unique : {dossierId}_photo_{timestamp}_{hash}.{ext}
         String ext = contentType.equals("image/jpeg") ? ".jpg" : ".png";
         String hash = String.valueOf(System.nanoTime()).substring(0, 8);
-        String filename = dossierId + "_photo_" + System.currentTimeMillis() + "_" + hash + ext;
+        String filename = resolvedDossierId + "_photo_" + System.currentTimeMillis() + "_" + hash + ext;
         Path targetPath = new File(photosDir, filename).toPath();
 
-        // Sauvegarder fichier sur disque
+        // 9. Sauvegarder fichier sur disque
         writeFile(targetPath, file.getContent());
 
-        // Créer objet PieceFournie avec piece_ref_id=99 (Photo d'identité)
+        // 10. Gestion de l'enregistrement existant (si photo déjà présente)
+        PieceFournie existante = pieceFournieDao.findByDemandeAndPieceRef(demandeId, pieceRefId);
+        boolean hasExistingRecord = false;
+        if (existante != null) {
+            deleteFileQuietly(existante.getChemin_fichier());
+            hasExistingRecord = true;
+        }
+
+        // 11. Construire l'objet PieceFournie
+        PieceJustificative pieceRef = pieceJustificativeDao.findById(pieceRefId);
         PieceFournie pieceFournie = new PieceFournie();
         pieceFournie.setDemande_id(demandeId);
-        pieceFournie.setPiece_ref_id(99L); // ID standard pour photo d'identité
+        pieceFournie.setPiece_ref(pieceRef);
         pieceFournie.setChemin_fichier(targetPath.toAbsolutePath().toString());
-        pieceFournie.setNom_fichier(extractSafeName(file.getFilename() != null ? file.getFilename() : filename));
+        pieceFournie.setNom_fichier(extractSafeName(
+            file.getFilename() != null ? file.getFilename() : filename));
         pieceFournie.setTaille_bytes(taille);
         pieceFournie.setMime_type(contentType);
         pieceFournie.setCochee(true); // Marquée comme cochée automatiquement
 
+        // 12. Persister en base de données
         try {
-            PieceFournie saved = pieceFournieDao.create(pieceFournie);
+            PieceFournie saved;
+            if (hasExistingRecord) {
+                saved = pieceFournieDao.update(pieceFournie);
+            } else {
+                saved = pieceFournieDao.create(pieceFournie);
+            }
+            refreshScanStatusIfComplete(demandeId);
             return saved;
         } catch (SQLException e) {
             deleteFileQuietly(targetPath.toString());

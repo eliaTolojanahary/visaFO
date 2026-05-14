@@ -9,7 +9,24 @@ import models.Dossier;
 import util.DatabaseConnection;
 
 public class DossierRepository implements DossierDao {
-
+    /**
+     * Trouve le dossier_id lié à une demande via dossier_demande.
+     * Retourne demandeId comme fallback si aucun dossier n'est trouvé.
+     */
+    @Override
+    public long findDossierIdByDemande(long demandeId) throws SQLException {
+        String sql = "SELECT dossier_id FROM dossier_demande WHERE demande_id = ? LIMIT 1";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, demandeId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("dossier_id");
+                }
+            }
+        }
+        return demandeId; // fallback
+    }
     @Override
     public Dossier create(Dossier dossier) throws SQLException {
         String sql = "INSERT INTO dossier (previous_demande_ref, new_demande_ref, mention, visa_approuve_confirme, created_at, updated_at) "

@@ -1,12 +1,12 @@
 package services;
 
+import dao.DossierDao;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import dao.DossierDao;
 import models.Demande;
 import models.Demandeur;
 import models.Dossier;
@@ -21,6 +21,9 @@ public class DossierService {
 
     private final DossierDao dossierDao;
 
+    public long getDossieridByDemande(long demandeId) throws SQLException {
+        return dossierDao.findDossierIdByDemande(demandeId);
+    }
     public DossierService() {
         this.dossierDao = new DossierRepository();
     }

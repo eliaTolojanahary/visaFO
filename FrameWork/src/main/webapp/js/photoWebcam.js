@@ -221,11 +221,36 @@
         updateCameraUI('uploading');
         showInfo('Upload en cours...');
 
-        const demandeId = document.getElementById('photoWebcamDemandeId')?.value;
-        const dossierId = document.getElementById('photoWebcamDossierId')?.value;
+        // Essayer d'abord les inputs cachés
+        let demandeId = document.getElementById('photoWebcamDemandeId')?.value;
+        let dossierId = document.getElementById('photoWebcamDossierId')?.value;
+
+        // Fallback : récupérer depuis les data-* du bloc
+        if (!demandeId || !dossierId) {
+            const photoBlock = document.getElementById('photo-identite-block');
+            if (photoBlock) {
+                demandeId = demandeId || photoBlock.dataset.demandeId;
+                dossierId = dossierId || photoBlock.dataset.dossierId;
+                logDebug('Fallback data-*:', { demandeId, dossierId });
+            }
+        }
+
+        // DEBUG: Afficher ce qu'on a trouvé
+        logDebug('IDs trouvés:', { 
+            demandeId, 
+            dossierId,
+            inputDemande: document.getElementById('photoWebcamDemandeId')?.value,
+            inputDossier: document.getElementById('photoWebcamDossierId')?.value,
+            blockExists: !!document.getElementById('photo-identite-block')
+        });
 
         if (!demandeId || !dossierId) {
-            showError('Identifiants de demande/dossier manquants.');
+            showError('Identifiants de demande/dossier manquants. Vérifiez la console.');
+            logError('Missing IDs:', {
+                demandeId: demandeId || 'UNDEFINED',
+                dossierId: dossierId || 'UNDEFINED',
+                photoBlock: document.getElementById('photo-identite-block') ? 'exists' : 'NOT FOUND'
+            });
             state.isUploading = false;
             updateCameraUI('captured');
             return;
@@ -237,7 +262,7 @@
         formData.append('demandeId', demandeId);
         formData.append('dossierId', dossierId);
 
-        const url = `/demande/${demandeId}/dossiers/${dossierId}/photo-identite`;
+        const url = `/visa/demande/${demandeId}/dossiers/${dossierId}/photo-identite`;
 
         performUpload(url, formData, 0);
     }

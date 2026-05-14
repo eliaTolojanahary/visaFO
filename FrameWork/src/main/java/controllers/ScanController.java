@@ -12,10 +12,10 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import modelview.ModelView;
 import models.PieceFournie;
+import modelview.ModelView;
 import services.DemandeVerrouilleeException;
+import services.DossierService;
 import services.ScanService;
 import util.DownloadFileResponse;
 import util.FileUpload;
@@ -24,12 +24,20 @@ import util.FileUpload;
 public class ScanController {
 
     private final ScanService scanService = new ScanService();
+    private final DossierService dossierService = new DossierService();
 
+    
     @MethodeAnnotation("/{id}/scan")
     @GetMapping
     public ModelView scanPage(@RequestParam("id") long demandeId, Map<String, Object> queryParams) {
         ModelView mv = new ModelView("/scanDemande.jsp");
         mv.addData("demandeId", demandeId);
+        try {
+            mv.addData("dossierId", dossierService.getDossieridByDemande(demandeId));
+        } catch (SQLException e) {
+            mv.addData("error", "Erreur lors du chargement du dossier: " + e.getMessage());
+            return mv;
+        }
 
         try {
             Map<String, Object> demande = scanService.getDemandeScanInfo(demandeId);
