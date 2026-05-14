@@ -13,16 +13,11 @@ if "%DB%"=="" (
     exit /b 1
 )
 
-echo [1/3] Creation/reset du schema...
+echo [1/2] Creation/reset du schema...
 psql -v ON_ERROR_STOP=1 -U %User% -d postgres -f sql/table.sql
 if %ERRORLEVEL% neq 0 ( echo ERREUR etape 1 & exit /b 1 )
 
-echo [2/3] Insertion des donnees de test...
-psql -v ON_ERROR_STOP=1 -U %User% -d %DB% -f sql/donnees_mini_test.sql
-if %ERRORLEVEL% neq 0 ( echo ERREUR etape 4 & exit /b 1 )
-
-
-echo [2/3] Insertion des donnees de test...
+echo [2/2] Insertion des donnees de test...
 psql -v ON_ERROR_STOP=1 -U %User% -d %DB% -f sql/donnees_test.sql
 if %ERRORLEVEL% neq 0 ( echo ERREUR etape 4 & exit /b 1 )
 
