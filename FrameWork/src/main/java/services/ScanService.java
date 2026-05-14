@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 import models.Demande;
 import models.PieceFournie;
 import models.PieceJustificative;
@@ -39,7 +38,7 @@ public class ScanService {
     private static final long MAX_FILE_SIZE = 10L * 1024L * 1024L;
     private static final long MAX_SIGNATURE_SIZE = 1L * 1024L * 1024L;
     private static final String BASE64_PNG_PREFIX = "data:image/png;base64,";
-    private static final String LIBELLE_SIGNATURE = "Signature num\u00e9rique";
+    private static final String LIBELLE_SIGNATURE = "Signature numerique";
     private static final Set<String> ALLOWED_MIME_TYPES = new HashSet<>();
 
     static {
@@ -124,8 +123,10 @@ public class ScanService {
 
         // 5. Suppression de l'ancienne signature si elle existe déjà
         PieceFournie existante = pieceFournieDao.findByDemandeAndPieceRef(demandeId, pieceRefId);
+        boolean hasExistingRecord = false;
         if (existante != null) {
             deleteFileQuietly(existante.getChemin_fichier());
+            hasExistingRecord = true;
         }
 
         // 6. Construction du chemin et écriture sur disque
@@ -143,7 +144,13 @@ public class ScanService {
         pieceFournie.setMime_type("image/png");
 
         try {
-            PieceFournie saved = pieceFournieDao.create(pieceFournie);
+            PieceFournie saved;
+            if (hasExistingRecord) {
+                saved = pieceFournieDao.update(pieceFournie);
+            }
+            else{
+                saved = pieceFournieDao.create(pieceFournie);
+            }
             refreshScanStatusIfComplete(demandeId);
             return saved;
         } catch (SQLException e) {
