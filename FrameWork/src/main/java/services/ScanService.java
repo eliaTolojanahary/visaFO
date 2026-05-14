@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 import models.Demande;
 import models.PieceFournie;
 import models.PieceJustificative;
@@ -39,7 +38,7 @@ public class ScanService {
     private static final long MAX_FILE_SIZE = 10L * 1024L * 1024L;
     private static final long MAX_SIGNATURE_SIZE = 1L * 1024L * 1024L;
     private static final String BASE64_PNG_PREFIX = "data:image/png;base64,";
-    private static final String LIBELLE_SIGNATURE = "Signature num\u00e9rique";
+    private static final String LIBELLE_SIGNATURE = "Signature numerique";
     private static final Set<String> ALLOWED_MIME_TYPES = new HashSet<>();
 
     static {
