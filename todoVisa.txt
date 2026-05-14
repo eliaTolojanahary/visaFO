@@ -644,12 +644,12 @@ Un dossier/demande est "SCAN_TERMINE" quand **TOUTES les pièces obligatoires po
 
 * [ ] Dans `ScanService.java` (existant dans `FrameWork/src/main/java/services/`)
 
-  * [ ] Ajouter méthode : `PieceFournie sauvegarderPhotoIdentite(MultipartFile file, Long demandeId, Long dossierId)`
+  * [X] Ajouter méthode : `PieceFournie sauvegarderPhotoIdentite(MultipartFile file, Long demandeId, Long dossierId)`
 
-    * [ ] Valider : extension JPG/PNG seulement
-    * [ ] Valider : taille ≤ 5MB
-    * [ ] Créer répertoire `/uploads/pieces/photos/{dossierId}/` si n'existe pas
-    * [ ] Générer nom unique : `{dossierId}_photo_{timestamp}_{hash}.{ext}`
+    * [X] Valider : extension JPG/PNG seulement
+    * [X] Valider : taille ≤ 5MB
+    * [X] Créer répertoire `/uploads/pieces/photos/{dossierId}/` si n'existe pas
+    * [X] Générer nom unique : `{dossierId}_photo_{timestamp}_{hash}.{ext}`
     * [ ] Sauvegarder fichier sur disque
     * [ ] **Créer objet `PieceFournie`** : `demande_id=demandeId`, `piece_ref_id=99 (Photo identité)`, `chemin_fichier`, `nom_fichier`, `taille_bytes`, `mime_type`, `uploaded_at=NOW`, `cochee=TRUE`
     * [ ] Sauvegarder dans BD via repository
@@ -663,7 +663,7 @@ Un dossier/demande est "SCAN_TERMINE" quand **TOUTES les pièces obligatoires po
 
   * [ ] Ajouter endpoint : `POST /api/demandes/{demandeId}/dossiers/{dossierId}/photo-identite`
 
-    * [ ] Paramètres : `@PathVariable Long demandeId`, `@PathVariable Long dossierId`, `@RequestParam MultipartFile file`
+    * [X] Paramètres : `@PathVariable Long demandeId`, `@PathVariable Long dossierId`, `@RequestParam MultipartFile file`
     * [ ] Appeler `ScanService.sauvegarderPhotoIdentite(file, demandeId, dossierId)`
     * [ ] Retourner JSON : `{ id, nomFichier, uploadedAt, success: true }`
     * [ ] Gérer erreurs : 400 (format/taille invalide), 404 (demande/dossier absent), 500 (erreur serveur)
