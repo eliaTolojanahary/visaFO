@@ -239,3 +239,7 @@ CREATE TABLE IF NOT EXISTS historique_statut (
 -- Créer les index
 CREATE INDEX idx_historique_statut_date ON historique_statut(date_changement);
 CREATE INDEX idx_historique_statut_demande ON historique_statut(demande_id);
+
+-- Update sprint 5
+  ALTER TABLE dossier ADD COLUMN IF NOT EXISTS scan_termine BOOLEAN DEFAULT FALSE;
+  ALTER TABLE dossier ADD COLUMN IF NOT EXISTS date_scan_complete TIMESTAMP;
