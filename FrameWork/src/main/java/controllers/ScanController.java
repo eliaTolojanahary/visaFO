@@ -12,10 +12,10 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import modelview.ModelView;
 import models.PieceFournie;
+import modelview.ModelView;
 import services.DemandeVerrouilleeException;
+import services.DossierService;
 import services.ScanService;
 import util.DownloadFileResponse;
 import util.FileUpload;
@@ -24,12 +24,20 @@ import util.FileUpload;
 public class ScanController {
 
     private final ScanService scanService = new ScanService();
+    private final DossierService dossierService = new DossierService();
 
+    
     @MethodeAnnotation("/{id}/scan")
     @GetMapping
     public ModelView scanPage(@RequestParam("id") long demandeId, Map<String, Object> queryParams) {
         ModelView mv = new ModelView("/scanDemande.jsp");
         mv.addData("demandeId", demandeId);
+        try {
+            mv.addData("dossierId", dossierService.getDossieridByDemande(demandeId));
+        } catch (SQLException e) {
+            mv.addData("error", "Erreur lors du chargement du dossier: " + e.getMessage());
+            return mv;
+        }
 
         try {
             Map<String, Object> demande = scanService.getDemandeScanInfo(demandeId);
@@ -165,6 +173,59 @@ public class ScanController {
     ) throws SQLException {
         return scanService.downloadPiece(demandeId, pieceRefId);
     }
+@MethodeAnnotation("/{demandeId}/dossiers/{dossierId}/photo-identite")
+@PostMapping
+@Api
+public Map<String, Object> uploadPhotoIdentite(
+    @RequestParam("demandeId") long demandeId,
+    @RequestParam("dossierId") long dossierId,
+    @RequestParam("file") FileUpload file
+) throws SQLException {
+
+    Map<String, Object> result = new HashMap<>();
+
+    try {
+        PieceFournie pieceFournie = scanService.sauvegarderPhotoIdentite(
+            file,
+            demandeId,
+            dossierId
+        );
+
+        result.put("status", "success");
+        result.put("success", true);
+        result.put("message", "Photo d'identité uploadée avec succès.");
+        result.put("id", pieceFournie.getId());
+        result.put("nomFichier", pieceFournie.getNom_fichier());
+        result.put(
+            "uploadedAt",
+            pieceFournie.getUploaded_at() != null
+                ? pieceFournie.getUploaded_at().toString()
+                : ""
+        );
+        result.put("demandeId", demandeId);
+        result.put("dossierId", dossierId);
+
+    } catch (DemandeVerrouilleeException e) {
+
+        result.put("status", "error");
+        result.put("success", false);
+        result.put(
+            "message",
+            "Le dossier est verrouillé. Aucune modification n'est possible."
+        );
+        result.put("code", 403);
+
+    } catch (IllegalArgumentException e) {
+
+        result.put("status", "error");
+        result.put("success", false);
+        result.put("message", e.getMessage());
+        result.put("code", 400);
+    }
+
+    return result;
+}
+
 
     private String buildScanRedirectSuccess(long demandeId, String message) {
         String encoded = URLEncoder.encode(message, StandardCharsets.UTF_8);

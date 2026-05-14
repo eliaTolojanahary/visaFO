@@ -251,12 +251,15 @@
         </div>
     </div>
 
-    <div class="progress-container">
-        <div class="progress-label">
-            Progression: <span id="scannedCount">0</span> / <span id="totalCount">0</span> pieces
-        </div>
-        <div class="progress-bar-track">
-            <div class="progress-bar-fill" id="progressBarFill" style="width:0%"></div>
+    <div class="completion-status">
+        <div class="progress-container">
+            <div class="progress-label">
+                Progression: <span id="scannedCount">0</span> / <span id="totalCount">0</span> pieces
+            </div>
+            </br>
+            <div class="progress-bar-track">
+                <div class="progress-bar-fill" id="progressBarFill" style="width:0%"></div>
+            </div>
         </div>
     </div>
 
@@ -416,18 +419,60 @@
                 <% } %>
             </div>
         </div>
+            <!-- SECTION: Capture Photo d'Identité à la Webcam (Sprint 5) -->
+            <% if (!isCreationMode && !isLocked) { %>
+            <div class="form-section" id="photo-identite-block"
+                data-demande-id="<%= demandeIdValue %>"
+                data-dossier-id="<%= dossierIdValue %>">
+
+                <h2>Capture Photo d'Identité (Webcam)</h2>
         
-        <% if (!isLocked) { %>
-        <form id="verrouillerForm"
-              action="<%= ctx %>/demande/<%= demandeIdValue %>/verrouiller"
-              method="post"
-              style="display: inline;">
-            <button type="submit" class="btn-primary" id="finalizeBtn" <%= !demandeComplete ? "disabled" : "" %>>
-                Scan Termine - Verrouiller le Dossier
-            </button>
-        </form>
-        <% } %>
-    </div>
+                <div class="camera-controls" style="margin-bottom: 15px;">
+                    <button type="button" id="startCameraBtn" class="btn-primary btn-sm">
+                        Démarrer la caméra
+                    </button>
+                    <button type="button" id="stopCameraBtn" class="btn-alt btn-sm" style="display:none;">
+                        Arrêter la caméra
+                    </button>
+                </div>
+        
+                <div class="camera-container" style="display:none;">
+                    <video id="cameraVideo" width="480" height="360" autoplay playsinline style="border: 2px solid #ddd; border-radius: 4px;"></video>
+                </div>
+        
+                <div class="photo-capture-area" style="margin-top: 15px;">
+                    <div class="capture-controls">
+                        <button type="button" id="capturePhotoBtn" class="btn-secondary btn-sm" style="display:none;">Capturer photo</button>
+                        <button type="button" id="retakeCameraBtn" class="btn-alt btn-sm" style="display:none;">Reprendre photo</button>
+                    </div>
+                    <div class="photo-preview-area" style="margin-top: 10px;">
+                        <img id="photoPreview" style="max-width: 300px; max-height: 300px; border: 2px solid #ddd; border-radius: 4px; display:none;">
+                    </div>
+                </div>
+        
+                <div class="photo-upload-area" style="margin-top: 15px;">
+                    <button type="button" id="uploadPhotoBtn" class="btn-success btn-sm" style="display:none;">Uploader cette photo</button>
+                </div>
+        
+                <div id="photoUploadStatus" style="margin-top: 10px; padding: 10px; border-radius: 4px; display:none;"></div>
+            </div>
+            <% } %>
+        
+            <% if (!isCreationMode) { %>
+            <div class="form-section">
+                <h2>Finaliser le Scan</h2>
+                <% if (!isLocked) { %>
+                    <form id="verrouillerForm"
+                        action="<%= ctx %>/demande/<%= demandeIdValue %>/verrouiller"
+                        method="post"
+                        style="display: inline;">
+                        <button type="submit" class="btn-primary" id="finalizeBtn" <%= !demandeComplete ? "disabled" : "" %>>
+                            Scan Termine - Verrouiller le Dossier
+                        </button>
+                    </form>
+                <% } %>
+                </div>
+            <% } %>
 
     <div class="form-actions scan-actions">
         <a href="<%= ctx %>/dashboard" class="btn-alt">Retour au Dashboard</a>
@@ -439,9 +484,9 @@
 <% if (!isCreationMode) { %>
 <script src="<%= ctx %>/js/scanDemande.js"></script>
 <script src="<%= ctx %>/js/signatureCanvas.js"></script>
+<script src="<%= ctx %>/js/photoWebcam.js"></script>
 <% } %>
-</body>
-</html>
+
 
 <% } else { %>
 <!-- FRAGMENT MODE: No HTML wrapper, just the form section -->
@@ -513,3 +558,6 @@
     <% } %>
 </div>
 <% } %>
+
+</body>
+</html>
