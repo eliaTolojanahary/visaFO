@@ -123,8 +123,10 @@ public class ScanService {
 
         // 5. Suppression de l'ancienne signature si elle existe déjà
         PieceFournie existante = pieceFournieDao.findByDemandeAndPieceRef(demandeId, pieceRefId);
+        boolean hasExistingRecord = false;
         if (existante != null) {
             deleteFileQuietly(existante.getChemin_fichier());
+            hasExistingRecord = true;
         }
 
         // 6. Construction du chemin et écriture sur disque
@@ -142,7 +144,13 @@ public class ScanService {
         pieceFournie.setMime_type("image/png");
 
         try {
-            PieceFournie saved = pieceFournieDao.create(pieceFournie);
+            PieceFournie saved;
+            if (hasExistingRecord) {
+                saved = pieceFournieDao.update(pieceFournie);
+            }
+            else{
+                saved = pieceFournieDao.create(pieceFournie);
+            }
             refreshScanStatusIfComplete(demandeId);
             return saved;
         } catch (SQLException e) {
