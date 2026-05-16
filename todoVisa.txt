@@ -823,3 +823,115 @@ Un dossier/demande est "SCAN_TERMINE" quand **TOUTES les pièces obligatoires po
   * [ ] Fonction `finaliserScan(dossierId, demandeId)` : appel POST `/api/dossiers/{dossierId}/demandes/{demandeId}/finaliser-scan`
   * [ ] Fonction `redirigerVersFiche(dossierId)` : redirige vers `/fiche-demande?dossierId={dossierId}` après finalisation
   * [ ] Gestion erreurs : afficher message utilisateur, retry possible
+
+------------
+Sprint 6 - Export PDF, statut PHOTO PRISE et SCAN TERMINE
+
+Contexte
+
+- Le dossier est déjà créé dans le code existant et la gestion photo/signature est implémentée dans `FrameWork/src/main/webapp/scanDemande.jsp` et `FrameWork/src/main/java/controllers/ScanController.java`.
+- Le dossier doit passer par l’état PHOTO PRISE lorsque la photo et la signature sont complétées.
+- Après l’upload de toutes les pièces justificatives attendues, le dossier doit passer en statut SCAN TERMINE.
+- Une fois SCAN TERMINE atteint, le dossier est verrouillé et aucune modification ne doit être possible.
+
+Objectifs
+
+* Implémenter le flux métier complet : PHOTO PRISE → SCAN TERMINE.
+* Verrouiller définitivement le dossier après SCAN TERMINE.
+* Ajouter une fiche de demande dans `FrameWork/src/main/webapp/` avec actions photo, aperçu pièces et attestation PDF.
+* Générer un PDF d’attestation uniquement quand le dossier est SCAN TERMINE.
+
+Règles métier
+
+* PHOTO PRISE : photo prise + signature réalisée + champ obligatoire coché.
+* SCAN TERMINE : toutes les pièces justificatives attendues ont été uploadées.
+* Après SCAN TERMINE : aucune modification possible sur demande, demandeur, passeport ou pièces.
+* Le PDF doit être consultable en lecture seule depuis l’application.
+
+1. Base de données - Mioty (TL)
+   Branche : sprint/6/feature/pdf-export
+
+* Ajouter les statuts si nécessaires dans `statut_demande` : PHOTO PRISE, SCAN TERMINE.
+* Vérifier que `demande.verrouille` existe déjà dans la table `demande`.
+* Ajouter un champ `photo_prise BOOLEAN DEFAULT FALSE` ou un équivalent de traçage dans la table `demande` si nécessaire.
+* Ajouter un champ `scan_termine_at TIMESTAMP` si besoin pour l’historique.
+* Prévoir un script de migration `sql/alter_sprint6.sql` et l’intégrer dans `start.bat`.
+
+2. Back-end - Elia 
+   Branche : sprint/6/feature/fiche-demande
+
+* Mettre à jour le service de statut dans `FrameWork/src/main/java/services/ScanService.java` :
+  - passer en PHOTO PRISE quand la photo et la signature sont validées.
+  - vérifier le checkbox obligatoire avant ce passage.
+  - après upload de toutes les pièces attendues, appeler `verrouillerDemande(demandeId)` pour passer en SCAN TERMINE.
+* `ScanService.verrouillerDemande(long demandeId)` existe déjà ; vérifier qu’il met bien `verrouille = TRUE` et `statut = SCAN TERMINE`.
+* Protéger les mises à jour en cas de dossier verrouillé dans :
+  - `FrameWork/src/main/java/services/DemandeService.java`
+  - `FrameWork/src/main/java/services/ScanService.java`
+  - `FrameWork/src/main/java/services/DossierService.java` si nécessaire
+* Contrôler les exceptions de type `DemandeVerrouilleeException` dans :
+  - `FrameWork/src/main/java/controllers/DemandeController.java`
+  - `FrameWork/src/main/java/controllers/ScanController.java`
+* Enrichir les routes du projet existant plutôt que d’ajouter des routes API spring génériques :
+  - GET `/demande/{id}/scan` déjà présent
+  - POST `/demande/{demandeId}/verrouiller` déjà présent
+  - ajouter éventuellement GET `/demande/{id}/fiche` dans `ScanController` ou `DemandeController`
+  - ajouter GET `/demande/{id}/attestation` pour afficher le PDF d’attestation si besoin
+* Assurer l’accès conditionnel au PDF dans le contrôleur : uniquement si `statut == SCAN TERMINE`.
+
+3. Front-end - Jemima 
+   Branche : sprint/6/feature/pdf-attestation
+
+* Créer ou réutiliser une page JSP du front-office dans `FrameWork/src/main/webapp/`, par exemple `ficheDemande.jsp`.
+* Page cible : `/demande/{id}/fiche` ou `/demande/{id}/attestation`.
+
+Page : ficheDemande.jsp
+
+* En-tête dossier : référence, statut, date création, nom du demandeur.
+* Boutons :
+  - Prendre photo
+  - Aperçu des pièces justificatives
+  - PDF d’attestation "Dossier pris en compte"
+* Aperçu des pièces :
+  - afficher les pièces attendues et leur statut uploadé
+  - rendre le PDF en lecture seule sans bouton de téléchargement direct
+* PDF d’attestation :
+  - photo du demandeur
+  - référence de dossier
+  - QR code existant ou généré si disponible
+  - date de création / obtention
+  - informations personnelles du demandeur
+* Bloquer l’interface après SCAN TERMINE :
+  - désactiver les champs et boutons de modification
+  - afficher un message clair de verrouillage
+
+ Génération PDF - Jemima
+
+* Générer une attestation de réception de dossier dans Java, via service ou utilitaire.
+* Inclure : photo, référence, QR code, date et informations du demandeur.
+* Le PDF doit être consultable uniquement si le dossier est en statut SCAN TERMINE.
+* Le rendu reste lecture seule depuis l’application.
+
+5. Flux utilisateur
+
+* Après la prise de photo et la signature : le dossier passe en PHOTO PRISE.
+* Après upload de toutes les pièces attendues : le dossier passe en SCAN TERMINE.
+* Après SCAN TERMINE : verrouillage définitif et accès limité au PDF d’attestation.
+
+6. Vérifications
+
+* Vérifier que PHOTO PRISE ne peut pas s’activer si la photo ou la signature manque.
+* Vérifier que SCAN TERMINE ne s’active que lorsque toutes les pièces attendues sont uploadées.
+* Vérifier qu’aucune modification n’est possible après SCAN TERMINE.
+
+Répartition des rôles
+
+* Mioty (TL) : coordination, migrations, statuts et verrouillage.
+* Elia (dev1) : fiche de demande, UI, actions et logique de statut.
+* Jemima (dev2) : génération PDF d’attestation, rendu lecture seule, validation de l’accès uniquement pour SCAN TERMINE.
+
+Notes
+
+* Le PDF est une attestation de réception du dossier.
+* Le statut SCAN TERMINE doit être considéré comme irréversible.
+* Documenter le nouveau flux pour l’équipe.
