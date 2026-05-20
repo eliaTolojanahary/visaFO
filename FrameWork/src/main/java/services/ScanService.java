@@ -30,6 +30,7 @@ import models.Demande;
 import models.DossierDemande;
 import models.PieceFournie;
 import models.PieceJustificative;
+import models.StatutDemande;
 import repo.DemandeRepository;
 import repo.DossierDemandeRepository;
 import repo.PieceFournieRepository;
@@ -92,6 +93,7 @@ public class ScanService {
             dossierDemande.setDateScanComplete(new Timestamp(System.currentTimeMillis()));
 
             verrouillerDemande(demandeId);
+            enregistrerHistoriqueStatut(demandeId, "SCAN_TERMINE");
             return true;
         } catch (SQLException e) {
             System.err.println("Erreur lors de la verification du scan complet: " + e.getMessage());
@@ -114,27 +116,35 @@ public class ScanService {
             return false;
         }
 
+        List<Long> selectedPieceIds = demandeDao.getSelectedPieceIdsByDemandeId(demandeId);
+        if (selectedPieceIds == null) {
+            return false;
+        }
+
         // 2. Vérifier photo d'identité (piece_ref_id=99)
         long photoRefId = findPieceRefIdByLibelle(LIBELLE_PHOTO_IDENTITE);
-        if (photoRefId < 0) {
-            return false; // Photo d'identité non trouvée en base
-        }
-        if (!isPieceFournieeCochee(demandeId, photoRefId)) {
+        if (photoRefId < 0 || !isPieceValidePourDemande(demandeId, selectedPieceIds, photoRefId)) {
             return false;
         }
 
         // 3. Vérifier signature (piece_ref_id=100)
         long signatureRefId = findPieceRefIdByLibelle(LIBELLE_SIGNATURE);
-        if (signatureRefId < 0) {
-            return false; // Signature non trouvée en base
-        }
-        if (!isPieceFournieeCochee(demandeId, signatureRefId)) {
+        if (signatureRefId < 0 || !isPieceValidePourDemande(demandeId, selectedPieceIds, signatureRefId)) {
             return false;
         }
 
-        // 4. Vérifier toutes les autres pièces obligatoires
+        // 4. Vérifier toutes les autres pièces obligatoires pour ce type de titre
+        List<PieceJustificative> piecesObligatoires = pieceJustificativeDao.findByTypeTitreId(
+            demande.getType_titre() != null ? demande.getType_titre().getId() : null);
+
+        for (PieceJustificative piece : piecesObligatoires) {
+            if (!isPieceValidePourDemande(demandeId, selectedPieceIds, piece.getId())) {
+                return false;
+            }
+        }
+
         // 5. Si on arrive ici, toutes les pièces sont présentes et cochées
-        return isDemandeComplete(demandeId);
+        return true;
     }
 
     /**
@@ -145,9 +155,14 @@ public class ScanService {
      * @return true si la pièce existe et est uploadée, false sinon
      * @throws SQLException en cas d'erreur base de données
      */
-    private boolean isPieceFournieeCochee(long demandeId, long pieceRefId) throws SQLException {
-        String sql = "SELECT 1 FROM piece_fournie pf "
-                   + "WHERE pf.demande_id = ? AND pf.piece_ref_id = ? LIMIT 1";
+    private boolean isPieceValidePourDemande(long demandeId, List<Long> selectedPieceIds, long pieceRefId) throws SQLException {
+        if (!selectedPieceIds.contains(pieceRefId)) {
+            return false;
+        }
+
+        String sql = "SELECT 1 FROM demande_piece dp "
+            + "LEFT JOIN piece_fournie pf ON pf.demande_id = dp.demande_id AND pf.piece_ref_id = dp.piece_id "
+            + "WHERE dp.demande_id = ? AND dp.piece_id = ? AND dp.cochee = TRUE AND pf.id IS NOT NULL LIMIT 1";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -158,6 +173,44 @@ public class ScanService {
                 return rs.next();
             }
         }
+    }
+
+    private void enregistrerHistoriqueStatut(long demandeId, String nouveauStatutLibelle) throws SQLException {
+        Demande demande = demandeDao.findById(demandeId);
+        if (demande == null || demande.getStatut() == null) {
+            return;
+        }
+
+        StatutDemande nouveauStatut = findStatutDemandeByLibelle(nouveauStatutLibelle);
+        if (nouveauStatut == null) {
+            return;
+        }
+
+        String sql = "INSERT INTO historique_statut (date_changement, demande_id, statut_id, ancien_statut_id) VALUES (NOW(), ?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, demandeId);
+            stmt.setLong(2, nouveauStatut.getId());
+            stmt.setLong(3, demande.getStatut().getId());
+            stmt.executeUpdate();
+        }
+    }
+
+    private StatutDemande findStatutDemandeByLibelle(String libelle) throws SQLException {
+        String sql = "SELECT id, libelle FROM statut_demande WHERE libelle = ? LIMIT 1";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, libelle);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    StatutDemande statut = new StatutDemande();
+                    statut.setId(rs.getLong("id"));
+                    statut.setLibelle(rs.getString("libelle"));
+                    return statut;
+                }
+            }
+        }
+        return null;
     }
 
     // =========================================================================
