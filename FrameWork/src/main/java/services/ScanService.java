@@ -44,9 +44,9 @@ public class ScanService {
     private static final long MAX_FILE_SIZE = 10L * 1024L * 1024L;
     private static final long MAX_SIGNATURE_SIZE = 1L * 1024L * 1024L;
     private static final String BASE64_PNG_PREFIX = "data:image/png;base64,";
+    private static final String LIBELLE_PHOTO_IDENTITE = "Photo d'identite (webcam)";
     private static final String LIBELLE_SIGNATURE = "Signature numerique";
     private static final Set<String> ALLOWED_MIME_TYPES = new HashSet<>();
-    private static final String LIBELLE_PHOTO_IDENTITE = "Photo d'identite (webcam)";
     static {
         ALLOWED_MIME_TYPES.add("image/jpeg");
         ALLOWED_MIME_TYPES.add("image/png");
@@ -671,6 +671,18 @@ public class ScanService {
                 return data;
             }
         }
+    }
+
+    public List<PieceFournie> getPiecesFourniesByDemande(long demandeId) throws SQLException {
+        return pieceFournieDao.findAllByDemande(demandeId);
+    }
+
+    public long getPhotoIdentiteRefId() throws SQLException {
+        return findPieceRefIdByLibelle(LIBELLE_PHOTO_IDENTITE);
+    }
+
+    public long getSignatureNumeriqueRefId() throws SQLException {
+        return findPieceRefIdByLibelle(LIBELLE_SIGNATURE);
     }
 
     private boolean isPieceAttendue(long demandeId, long pieceRefId) throws SQLException {

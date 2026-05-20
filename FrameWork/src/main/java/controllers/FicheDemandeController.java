@@ -27,7 +27,7 @@ public class FicheDemandeController {
     private final ScanService scanService = new ScanService();
     private final QrCodeService qrCodeService = new QrCodeService();
     private final ReferenceVisaRepository referenceVisaRepository = new ReferenceVisaRepository();
-
+    
     @MethodeAnnotation("/{id}/fiche")
     @GetMapping
     public ModelView ficheDemande(@RequestParam("id") long demandeId) {
@@ -36,6 +36,7 @@ public class FicheDemandeController {
         try {
             Map<String, Object> demandeData = demandeService.getFormDataByDemandeId(demandeId);
             Map<String, Object> scanInfo = scanService.getDemandeScanInfo(demandeId);
+
             if (demandeData == null || scanInfo == null) {
                 mv.addData("error", "Demande introuvable.");
                 return mv;
@@ -63,12 +64,15 @@ public class FicheDemandeController {
             }
 
             Map<String, Object> demande = buildDemandeModel(demandeId, dossierId, demandeData, scanInfo, dossierDemande);
-            List<Map<String, Object>> piecesFournies = buildPiecesFournies(scanService.getListePiecesAttendues(demandeId));
+            List<PieceFournie> piecesFourniesBrutes = scanService.getPiecesFourniesByDemande(demandeId);
+            List<Map<String, Object>> piecesFournies = buildPiecesFournies(piecesFourniesBrutes);
+            long photoRefId = scanService.getPhotoIdentiteRefId();
+            long signatureRefId = scanService.getSignatureNumeriqueRefId();
 
             mv.addData("demande", demande);
             mv.addData("piecesFournies", piecesFournies);
-            mv.addData("cheminPhotoWebcam", findPiecePathByLabel(piecesFournies, "Photo d'identite (webcam)"));
-            mv.addData("cheminSignature", findPiecePathByLabel(piecesFournies, "Signature numerique"));
+            mv.addData("cheminPhotoWebcam", findPiecePathByRefId(piecesFournies, photoRefId));
+            mv.addData("cheminSignature", findPiecePathByRefId(piecesFournies, signatureRefId));
             mv.addData("demandeComplete", scanService.verifierScanComplet(demandeId));
             mv.addData("qrCodeWebUrl", refDemande != null && !refDemande.trim().isEmpty()
                 ? qrCodeService.getQrCodeWebUrl(refDemande)
@@ -162,42 +166,44 @@ public class FicheDemandeController {
         return demande;
     }
 
-    private List<Map<String, Object>> buildPiecesFournies(List<Map<String, Object>> piecesAttendues) {
+    private List<Map<String, Object>> buildPiecesFournies(List<PieceFournie> piecesAttendues) {
         List<Map<String, Object>> pieces = new ArrayList<>();
         if (piecesAttendues == null) {
             return pieces;
         }
 
-        for (Map<String, Object> row : piecesAttendues) {
+        for (PieceFournie pieceFournie : piecesAttendues) {
+            if (pieceFournie == null || pieceFournie.getPiece_ref() == null) {
+                continue;
+            }
+
             Map<String, Object> piece = new HashMap<>();
             Map<String, Object> pieceRef = new HashMap<>();
-            pieceRef.put("id", row.get("pieceRefId"));
-            pieceRef.put("libelle", row.get("pieceLibelle"));
+            pieceRef.put("id", pieceFournie.getPiece_ref().getId());
+            pieceRef.put("libelle", pieceFournie.getPiece_ref().getLibelle());
             piece.put("pieceRef", pieceRef);
 
-            Object pieceFournie = row.get("pieceFournie");
-            boolean scanned = pieceFournie != null;
-            PieceFournie pieceFournieValue = scanned ? (PieceFournie) pieceFournie : null;
-            piece.put("id", pieceFournieValue != null ? pieceFournieValue.getId() : row.get("pieceRefId"));
-            piece.put("nomFichier", pieceFournieValue != null ? pieceFournieValue.getNom_fichier() : "");
-            piece.put("cheminFichier", pieceFournieValue != null ? pieceFournieValue.getChemin_fichier() : "");
-            piece.put("cochee", scanned);
-            piece.put("statut", scanned ? "SCANNÉE" : "MANQUANTE");
+            piece.put("id", pieceFournie.getId());
+            piece.put("nomFichier", pieceFournie.getNom_fichier());
+            piece.put("cheminFichier", pieceFournie.getChemin_fichier());
+            piece.put("cochee", true);
+            piece.put("statut", "SCANNÉE");
             pieces.add(piece);
         }
 
         return pieces;
     }
 
-    private String findPiecePathByLabel(List<Map<String, Object>> pieces, String label) {
-        if (pieces == null || label == null) {
+    private String findPiecePathByRefId(List<Map<String, Object>> pieces, long refId) {
+        if (pieces == null) {
             return null;
         }
         for (Map<String, Object> piece : pieces) {
             Object pieceRefObj = piece.get("pieceRef");
             if (pieceRefObj instanceof Map) {
-                Object libelle = ((Map<?, ?>) pieceRefObj).get("libelle");
-                if (label.equalsIgnoreCase(String.valueOf(libelle))) {
+                Object id = ((Map<?, ?>) pieceRefObj).get("id");
+                Long pieceRefId = toLong(id);
+                if (pieceRefId != null && pieceRefId == refId) {
                     return stringValue(piece.get("cheminFichier"));
                 }
             }
