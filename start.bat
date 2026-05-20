@@ -18,12 +18,12 @@ psql -v ON_ERROR_STOP=1 -U %User% -d postgres -f sql/table.sql
 if %ERRORLEVEL% neq 0 ( echo ERREUR etape 1 & exit /b 1 )
 
 echo [2/3] Insertion des donnees de test...
-psql -v ON_ERROR_STOP=1 -U %User% -d %DB% -f sql/donnees_mini_test.sql
+psql -v ON_ERROR_STOP=1 -U %User% -d %DB% -f sql/donnees_test.sql
 if %ERRORLEVEL% neq 0 ( echo ERREUR etape 4 & exit /b 1 )
 
 
 echo [2/3] Insertion des donnees de test...
-psql -v ON_ERROR_STOP=1 -U %User% -d %DB% -f sql/donnees_test.sql
+psql -v ON_ERROR_STOP=1 -U %User% -d %DB% -f sql\alter_sprint6.sql
 if %ERRORLEVEL% neq 0 ( echo ERREUR etape 4 & exit /b 1 )
 
 echo Initialisation terminee avec succes.
