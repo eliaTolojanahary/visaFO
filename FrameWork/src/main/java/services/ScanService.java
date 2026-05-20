@@ -56,6 +56,71 @@ public class ScanService {
         this.pieceFournieDao = new PieceFournieRepository();
         this.pieceJustificativeDao = new PieceJustificativeRepository();
     }
+    
+    /**
+     * Vérifier si une demande a toutes les pièces scannées attendues.
+     * Inclut la photo d'identité, la signature et toutes les pièces obligatoires.
+     * 
+     * @param demandeId ID de la demande
+     * @return true si toutes les pièces attendues sont uploadées, false sinon
+     * @throws SQLException en cas d'erreur base de données
+     */
+    public boolean verifierScanComplet(Long demandeId) throws SQLException {
+        // 1. Récupérer la demande et son type_titre
+        Demande demande = demandeDao.findById(demandeId);
+        if (demande == null) {
+            return false;
+        }
+
+        // 2. Vérifier photo d'identité (piece_ref_id=99)
+        long photoRefId = findPieceRefIdByLibelle(LIBELLE_PHOTO_IDENTITE);
+        if (photoRefId < 0) {
+            return false; // Photo d'identité non trouvée en base
+        }
+        if (!isPieceFournieeCochee(demandeId, photoRefId)) {
+            return false;
+        }
+
+        // 3. Vérifier signature (piece_ref_id=100)
+        long signatureRefId = findPieceRefIdByLibelle(LIBELLE_SIGNATURE);
+        if (signatureRefId < 0) {
+            return false; // Signature non trouvée en base
+        }
+        if (!isPieceFournieeCochee(demandeId, signatureRefId)) {
+            return false;
+        }
+
+        // 4. Vérifier toutes les autres pièces obligatoires
+        if(!isDemandeComplete(demandeId)){
+            return false;
+        }
+        
+        // 5. Si on arrive ici, toutes les pièces sont présentes et cochées
+        return true;
+    }
+
+    /**
+     * Vérifie qu'une pièce fournie existe et est cochée pour une demande.
+     * 
+     * @param demandeId ID de la demande
+     * @param pieceRefId ID de la référence de pièce
+     * @return true si la pièce existe et est uploadée, false sinon
+     * @throws SQLException en cas d'erreur base de données
+     */
+    private boolean isPieceFournieeCochee(long demandeId, long pieceRefId) throws SQLException {
+        String sql = "SELECT 1 FROM piece_fournie pf "
+                   + "WHERE pf.demande_id = ? AND pf.piece_ref_id = ? LIMIT 1";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, demandeId);
+            stmt.setLong(2, pieceRefId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
 
     // =========================================================================
     // SIGNATURE CANVAS
