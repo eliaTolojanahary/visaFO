@@ -26,6 +26,7 @@ import java.util.Set;
 import models.Demande;
 import models.PieceFournie;
 import models.PieceJustificative;
+import models.StatutDemande;
 import repo.DemandeRepository;
 import repo.PieceFournieRepository;
 import repo.PieceJustificativeRepository;
@@ -39,6 +40,8 @@ public class ScanService {
     private static final long MAX_SIGNATURE_SIZE = 1L * 1024L * 1024L;
     private static final String BASE64_PNG_PREFIX = "data:image/png;base64,";
     private static final String LIBELLE_SIGNATURE = "Signature numerique";
+    private static final String STATUT_PHOTO_PRISE = "PHOTO PRISE";
+    private static final String STATUT_SCAN_TERMINE = "SCAN TERMINE";
     private static final Set<String> ALLOWED_MIME_TYPES = new HashSet<>();
     private static final String LIBELLE_PHOTO_IDENTITE = "Photo d'identite (webcam)";
     static {
@@ -130,7 +133,7 @@ public class ScanService {
         }
 
         // 6. Construction du chemin et écriture sur disque
-        Path targetPath = buildSignaturePath(resolvedDossierId, demandeId, pngBytes);
+        Path targetPath = buildSignaturePath(resolvedDossierId, pngBytes);
         writeFile(targetPath, pngBytes);
 
         // 7. Construction de PieceFournie avec pieceRefId résolu dynamiquement
@@ -160,19 +163,157 @@ public class ScanService {
     }
 
     /**
-     * Met à jour le statut du dossier si toutes les pièces sont présentes.
+     * Met à jour le statut métier après un upload.
+     * PHOTO PRISE dès que la photo et la signature sont présentes.
+     * SCAN TERMINE dès que toutes les pièces attendues sont présentes.
      * Appel silencieux : les erreurs sont loggées mais ne remontent pas.
      */
     private void refreshScanStatusIfComplete(long demandeId) {
         try {
-            if (isDemandeComplete(demandeId)) {
-                // On peut déclencher ici toute logique métier supplémentaire
-                // (ex: notification, mise à jour de statut intermédiaire).
-                // Pour l'instant on se contente de la vérification passive.
-            }
+            refreshWorkflowStatus(demandeId);
         } catch (SQLException ignored) {
             // best effort
         }
+    }
+
+    private void refreshWorkflowStatus(long demandeId) throws SQLException {
+        Demande demande = demandeDao.findById(demandeId);
+        if (demande == null || demande.isVerrouille()) {
+            return;
+        }
+
+        if (hasPhotoAndSignature(demandeId)) {
+            updateDemandeStatut(demandeId, STATUT_PHOTO_PRISE);
+        }
+
+        if (isDemandeComplete(demandeId)) {
+            verrouillerDemande(demandeId);
+        }
+    }
+
+    private boolean hasPhotoAndSignature(long demandeId) throws SQLException {
+        long photoRefId = findPieceRefIdByLibelle(LIBELLE_PHOTO_IDENTITE);
+        long signatureRefId = findPieceRefIdByLibelle(LIBELLE_SIGNATURE);
+
+        if (photoRefId < 0 || signatureRefId < 0) {
+            return false;
+        }
+
+        return pieceFournieDao.findByDemandeAndPieceRef(demandeId, photoRefId) != null
+            && pieceFournieDao.findByDemandeAndPieceRef(demandeId, signatureRefId) != null;
+    }
+
+    private void updateDemandeStatut(long demandeId, String statutLibelle) throws SQLException {
+        long statutId = findStatutIdByLibelle(statutLibelle);
+        if (statutId < 0) {
+            throw new SQLException("Statut introuvable: " + statutLibelle);
+        }
+
+        String sql = "UPDATE demande SET statut_id = ?, updated_at = NOW() WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, statutId);
+            stmt.setLong(2, demandeId);
+            stmt.executeUpdate();
+        }
+    }
+
+    private long findStatutIdByLibelle(String libelle) throws SQLException {
+        String sql = "SELECT id FROM statut_demande WHERE LOWER(libelle) = LOWER(?) LIMIT 1";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, libelle);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("id");
+                }
+            }
+        }
+        return -1L;
+    }
+
+    public Map<String, Object> getScanStatus(long demandeId) throws SQLException {
+        Demande demande = demandeDao.findById(demandeId);
+        if (demande == null) {
+            return null;
+        }
+
+        List<Map<String, Object>> pieces = new ArrayList<>(getListePiecesAttendues(demandeId));
+        boolean photoUploaded = appendSpecialPieceStatus(pieces, demandeId, LIBELLE_PHOTO_IDENTITE);
+        boolean signatureUploaded = appendSpecialPieceStatus(pieces, demandeId, LIBELLE_SIGNATURE);
+
+        Map<String, Object> status = new HashMap<>();
+        status.put("demandeId", demandeId);
+        status.put("pieces", pieces);
+        status.put("photoUploaded", photoUploaded);
+        status.put("signatureUploaded", signatureUploaded);
+        status.put("photoId", safePieceRefId(LIBELLE_PHOTO_IDENTITE));
+        status.put("signatureId", safePieceRefId(LIBELLE_SIGNATURE));
+        status.put("scanComplet", isDemandeComplete(demandeId));
+        status.put("locked", demande.isVerrouille());
+        status.put("statut", getStatutLibelle(demande));
+        status.put("reference", demande.getRef_demande());
+        return status;
+    }
+
+    public Map<String, Object> getFicheDemandeData(long demandeId) throws SQLException {
+        Map<String, Object> demande = demandeDao.getDemandeMapById(demandeId);
+        if (demande == null) {
+            return null;
+        }
+
+        Map<String, Object> scanStatus = getScanStatus(demandeId);
+        if (scanStatus != null) {
+            demande.putAll(scanStatus);
+            demande.put("pieces", scanStatus.get("pieces"));
+            demande.put("scanComplet", scanStatus.get("scanComplet"));
+            demande.put("photoUploaded", scanStatus.get("photoUploaded"));
+            demande.put("signatureUploaded", scanStatus.get("signatureUploaded"));
+            demande.put("locked", scanStatus.get("locked"));
+        }
+        return demande;
+    }
+
+    private boolean appendSpecialPieceStatus(List<Map<String, Object>> pieces, long demandeId, String libelle)
+            throws SQLException {
+        long pieceRefId = safePieceRefId(libelle);
+        if (pieceRefId < 0) {
+            return false;
+        }
+
+        PieceFournie pieceFournie = pieceFournieDao.findByDemandeAndPieceRef(demandeId, pieceRefId);
+        Map<String, Object> item = new HashMap<>();
+        item.put("pieceRefId", pieceRefId);
+        item.put("pieceLibelle", libelle);
+        item.put("scanStatut", pieceFournie != null ? "SCANNÉ" : "EN_ATTENTE");
+        item.put("fileName", pieceFournie != null ? pieceFournie.getNom_fichier() : "");
+        item.put("fileSizeKo", pieceFournie != null ? pieceFournie.getTaille_bytes() / 1024 : 0L);
+        item.put("uploadedAt", pieceFournie != null && pieceFournie.getUploaded_at() != null
+            ? pieceFournie.getUploaded_at().toString() : "");
+        item.put("pieceFournie", pieceFournie);
+        item.put("special", true);
+        pieces.add(item);
+        return pieceFournie != null;
+    }
+
+    private long safePieceRefId(String libelle) throws SQLException {
+        return findPieceRefIdByLibelle(libelle);
+    }
+
+    public long getPieceRefIdByLibelle(String libelle) throws SQLException {
+        return findPieceRefIdByLibelle(libelle);
+    }
+
+    public PieceFournie getPieceFournie(long demandeId, long pieceRefId) throws SQLException {
+        return pieceFournieDao.findByDemandeAndPieceRef(demandeId, pieceRefId);
+    }
+
+    private String getStatutLibelle(Demande demande) {
+        if (demande == null || demande.getStatut() == null) {
+            return "";
+        }
+        StatutDemande statut = demande.getStatut();
+        return statut.getLibelle() == null ? "" : statut.getLibelle();
     }
 
 
@@ -216,7 +357,7 @@ public class ScanService {
      * Construit le chemin cible pour la signature :
      * {@code <base>/uploads/pieces/signatures/<dossierId>/<dossierId>_sig_<ts>_<hash>.png}
      */
-    private Path buildSignaturePath(long dossierId, Long demandeId, byte[] content) throws SQLException {
+    private Path buildSignaturePath(long dossierId, byte[] content) throws SQLException {
         String configured = System.getProperty("visa.scan.upload.dir");
         File baseDir;
         if (configured != null && !configured.trim().isEmpty()) {
@@ -242,7 +383,7 @@ public class ScanService {
             byte[] hashBytes = digest.digest(data);
             // Java 17+: HexFormat; sinon utiliser un fallback manuel
             return HexFormat.of().formatHex(hashBytes).substring(0, 8);
-        } catch (Exception e) {
+        } catch (java.security.NoSuchAlgorithmException e) {
             return Long.toHexString(System.nanoTime()).substring(0, 8);
         }
     }
@@ -307,6 +448,10 @@ public class ScanService {
     }
 
     public boolean isDemandeComplete(long demandeId) throws SQLException {
+        if (!hasPhotoAndSignature(demandeId)) {
+            return false;
+        }
+
         String sql = "SELECT COUNT(*) AS expected_count, "
             + "COUNT(pf.id) AS uploaded_count "
             + "FROM demande_piece dp "
@@ -327,7 +472,7 @@ public class ScanService {
             }
         }
 
-        return true;
+        return false;
     }
 
     public void verrouillerDemande(long demandeId) throws SQLException {
@@ -343,15 +488,18 @@ public class ScanService {
             throw new IllegalStateException("Impossible de verrouiller: toutes les pieces attendues ne sont pas scannees.");
         }
 
+        long statutId = findStatutIdByLibelle(STATUT_SCAN_TERMINE);
+        if (statutId < 0) {
+            throw new SQLException("Statut introuvable: " + STATUT_SCAN_TERMINE);
+        }
+
         String updateSql = "UPDATE demande "
-            + "SET verrouille = TRUE, "
-            + "statut_id = (SELECT id FROM statut_demande WHERE UPPER(libelle) = UPPER(?) LIMIT 1), "
-            + "updated_at = NOW() "
+            + "SET verrouille = TRUE, statut_id = ?, updated_at = NOW() "
             + "WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(updateSql)) {
-            stmt.setString(1, "Scan termine");
+            stmt.setLong(1, statutId);
             stmt.setLong(2, demandeId);
             int updated = stmt.executeUpdate();
             if (updated == 0) {

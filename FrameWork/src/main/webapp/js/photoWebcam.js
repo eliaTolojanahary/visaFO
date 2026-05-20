@@ -451,7 +451,11 @@
         const demandeId = document.getElementById('photoWebcamDemandeId')?.value;
         if (!demandeId) return;
 
-        fetch(`/api/demandes/${demandeId}/scan-status`)
+        const appRoot = window.location.pathname.split('/')[1] || '';
+        const basePath = appRoot ? '/' + appRoot : '';
+        const url = basePath + '/demande/' + demandeId + '/scan-status';
+
+        fetch(url)
             .then(response => response.json())
             .then(data => {
                 logDebug('Statut du scan rafraîchi:', data);
