@@ -33,6 +33,17 @@
         uploadRetries: 0
     };
 
+    function getAppRoot() {
+        var root = '';
+        if (typeof window.APP_ROOT === 'string' && window.APP_ROOT.trim().length > 0) {
+            root = window.APP_ROOT.trim();
+        } else {
+            var segments = window.location.pathname.split('/');
+            root = segments.length > 1 ? segments[1] : '';
+        }
+        return root.replace(/^\/+/g, '').replace(/\/+$/g, '');
+    }
+
     /**
      * Initialisation du module
      */
@@ -93,6 +104,10 @@
             .then(stream => {
                 state.videoStream = stream;
                 const videoElement = document.getElementById('cameraVideo');
+                const cameraContainer = document.querySelector('.camera-container');
+                if (cameraContainer) {
+                    cameraContainer.style.display = 'block';
+                }
                 if (videoElement) {
                     videoElement.srcObject = stream;
                     videoElement.style.display = 'block';
@@ -119,8 +134,12 @@
             state.videoStream = null;
         }
         const videoElement = document.getElementById('cameraVideo');
+        const cameraContainer = document.querySelector('.camera-container');
         if (videoElement) {
             videoElement.style.display = 'none';
+        }
+        if (cameraContainer) {
+            cameraContainer.style.display = 'none';
         }
         updateCameraUI('idle');
         logDebug('Webcam arrêtée');
@@ -186,6 +205,10 @@
             URL.revokeObjectURL(state.capturedPhoto.url);
         }
         state.capturedPhoto = null;
+        const previewElement = document.getElementById('photoPreview');
+        if (previewElement) {
+            previewElement.style.display = 'none';
+        }
         updateCameraUI('streaming');
         logDebug('Réinitialisation pour nouvelle capture');
     }
@@ -262,7 +285,9 @@
         formData.append('demandeId', demandeId);
         formData.append('dossierId', dossierId);
 
-        const url = `/visa/demande/${demandeId}/dossiers/${dossierId}/photo-identite`;
+        const appRoot = getAppRoot();
+        const basePath = appRoot ? '/' + appRoot : '';
+        const url = basePath + `/demande/${demandeId}/dossiers/${dossierId}/photo-identite`;
 
         performUpload(url, formData, 0);
     }
@@ -323,6 +348,16 @@
 
         showSuccess('Photo d\'identité uploadée avec succès!');
         updateCameraUI('success');
+        markPhotoPieceCardScanned(response.nomFichier || 'photo_identite.jpg', response.pieceRefId);
+
+        // Notifier les autres modules de l'état du scan
+        document.dispatchEvent(new CustomEvent('scan:pieceUploaded', {
+            detail: {
+                demandeComplete: response.demandeComplete,
+                photoUploaded: response.photoUploaded,
+                signatureUploaded: response.signatureUploaded
+            }
+        }));
 
         // Rafraîchir le résumé du scan après 1 seconde
         setTimeout(() => {
@@ -335,6 +370,76 @@
             handleStopCamera();
             updateCameraUI('idle');
         }, 3000);
+    }
+
+    /**
+     * Marquer la carte de photo d'identité comme scannée dans l'interface
+     */
+    function markPhotoPieceCardScanned(fileName, pieceRefId) {
+        var card = null;
+
+        if (pieceRefId) {
+            card = document.getElementById('piece-' + pieceRefId);
+        }
+
+        if (!card) {
+            var cards = document.querySelectorAll('.piece-card');
+            for (var i = 0; i < cards.length; i++) {
+                var label = cards[i].querySelector('.piece-card__label');
+                if (!label || !label.textContent) continue;
+                var text = label.textContent.toLowerCase();
+                if (text.indexOf('photo') !== -1 && text.indexOf('identit') !== -1) {
+                    card = cards[i];
+                    break;
+                }
+            }
+        }
+
+        if (!card) {
+            return;
+        }
+
+        card.classList.add('piece-card--done');
+
+        var checkbox = card.querySelector('.js-piece-checkbox');
+        if (checkbox) {
+            checkbox.checked = true;
+            checkbox.dataset.serverScanned = '1';
+        }
+
+        var dot = card.querySelector('.piece-card__status-dot');
+        if (dot) {
+            dot.classList.remove('dot--gray');
+            dot.classList.add('dot--green');
+        }
+
+        var meta = card.querySelector('.piece-card__file-meta');
+        if (meta) {
+            meta.classList.remove('piece-card__file-meta--empty');
+            meta.innerHTML = '';
+
+            var nameSpan = document.createElement('span');
+            nameSpan.className = 'piece-card__filename';
+            nameSpan.textContent = String(fileName);
+
+            var badge = document.createElement('span');
+            badge.className = 'badge badge-green badge-sm';
+            badge.textContent = 'Scanned';
+
+            meta.appendChild(nameSpan);
+            meta.appendChild(badge);
+        }
+
+        var chosen = card.querySelector('.piece-card__file-chosen');
+        if (chosen) {
+            chosen.textContent = fileName;
+        }
+
+        var uploadBtn = card.querySelector('.js-upload-btn');
+        if (uploadBtn) {
+            uploadBtn.textContent = 'Uploadé';
+            uploadBtn.disabled = true;
+        }
     }
 
     /**
@@ -398,6 +503,8 @@
         const retakeBtn = document.getElementById('retakeCameraBtn');
         const uploadBtn = document.getElementById('uploadPhotoBtn');
         const statusDiv = document.getElementById('photoUploadStatus');
+        const cameraContainer = document.querySelector('.camera-container');
+        const previewElement = document.getElementById('photoPreview');
 
         // Réinitialiser tous les boutons
         [startBtn, stopBtn, captureBtn, retakeBtn, uploadBtn].forEach(btn => {
@@ -411,7 +518,12 @@
                 if (captureBtn) captureBtn.style.display = 'none';
                 if (retakeBtn) retakeBtn.style.display = 'none';
                 if (uploadBtn) uploadBtn.style.display = 'none';
-                if (statusDiv) statusDiv.innerHTML = '';
+                if (cameraContainer) cameraContainer.style.display = 'none';
+                if (previewElement) previewElement.style.display = 'none';
+                if (statusDiv) {
+                    statusDiv.innerHTML = '';
+                    statusDiv.style.display = 'none';
+                }
                 break;
             case 'streaming':
                 if (startBtn) startBtn.style.display = 'none';
@@ -419,7 +531,12 @@
                 if (captureBtn) captureBtn.style.display = 'inline-block';
                 if (retakeBtn) retakeBtn.style.display = 'none';
                 if (uploadBtn) uploadBtn.style.display = 'none';
-                if (statusDiv) statusDiv.innerHTML = '';
+                if (cameraContainer) cameraContainer.style.display = 'block';
+                if (previewElement) previewElement.style.display = 'none';
+                if (statusDiv) {
+                    statusDiv.innerHTML = '';
+                    statusDiv.style.display = 'none';
+                }
                 break;
             case 'captured':
                 if (startBtn) startBtn.style.display = 'none';
@@ -428,12 +545,16 @@
                 if (captureBtn) captureBtn.style.display = 'inline-block';
                 if (retakeBtn) retakeBtn.style.display = 'inline-block';
                 if (uploadBtn) uploadBtn.style.display = 'inline-block';
+                if (cameraContainer) cameraContainer.style.display = 'block';
                 break;
             case 'uploading':
                 [startBtn, stopBtn, captureBtn, retakeBtn, uploadBtn].forEach(btn => {
                     if (btn) btn.disabled = true;
                 });
-                if (statusDiv) statusDiv.innerHTML = '<span class="info">Upload en cours...</span>';
+                if (statusDiv) {
+                    statusDiv.innerHTML = '<span class="info">Upload en cours...</span>';
+                    statusDiv.style.display = 'block';
+                }
                 break;
             case 'success':
                 if (statusDiv) statusDiv.innerHTML = '<span class="success">✓ Photo uploadée avec succès</span>';
@@ -451,11 +572,11 @@
         const demandeId = document.getElementById('photoWebcamDemandeId')?.value;
         if (!demandeId) return;
 
-        const appRoot = window.location.pathname.split('/')[1] || '';
+        const appRoot = getAppRoot();
         const basePath = appRoot ? '/' + appRoot : '';
-        const url = basePath + '/demande/' + demandeId + '/scan-status';
+        const url = basePath + '/demande/' + demandeId + '/scan-status?demandeId=' + encodeURIComponent(demandeId);
 
-        fetch(url)
+        fetch(url, { cache: 'no-store' })
             .then(response => response.json())
             .then(data => {
                 logDebug('Statut du scan rafraîchi:', data);
@@ -477,6 +598,7 @@
         if (statusDiv) {
             statusDiv.innerHTML = '<span class="success">✓ ' + msg + '</span>';
             statusDiv.style.color = 'green';
+            statusDiv.style.display = 'block';
         }
         logDebug('Succès:', msg);
     }
@@ -489,6 +611,7 @@
         if (statusDiv) {
             statusDiv.innerHTML = '<span class="error">✗ ' + msg + '</span>';
             statusDiv.style.color = 'red';
+            statusDiv.style.display = 'block';
         }
         logError('Erreur:', msg);
     }
@@ -501,6 +624,7 @@
         if (statusDiv) {
             statusDiv.innerHTML = '<span class="info">ℹ ' + msg + '</span>';
             statusDiv.style.color = 'blue';
+            statusDiv.style.display = 'block';
         }
         logDebug('Info:', msg);
     }

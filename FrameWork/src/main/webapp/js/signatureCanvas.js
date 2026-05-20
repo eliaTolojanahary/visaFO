@@ -153,8 +153,9 @@
             setStatus('loading', 'Enregistrement…');
             btnUpload.disabled = true;
 
-            var appRoot = window.location.pathname.split('/')[1] || '';
-            var url = '/' + appRoot + '/demande/' + demandeId + '/dossiers/' + (dossierId || '0') + '/signature';
+            var rawRoot = typeof window.APP_ROOT === 'string' ? window.APP_ROOT.trim() : '';
+            var appRoot = rawRoot.replace(/^\/+/g, '').replace(/\/+$/g, '') || window.location.pathname.split('/')[1] || '';
+            var url = (appRoot ? '/' + appRoot : '') + '/demande/' + demandeId + '/dossiers/' + (dossierId || '0') + '/signature';
 
             fetch(url, {
                 method: 'POST',

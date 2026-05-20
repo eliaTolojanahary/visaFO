@@ -12,7 +12,7 @@
 
     Map<String, Object> demande = (Map<String, Object>) request.getAttribute("demande");
     if (demande == null) {
-        demande = new java.util.HashMap<>();
+        demande = new java.util.HashMap<String, Object>();
     }
 
     String reference = request.getAttribute("reference") != null ? String.valueOf(request.getAttribute("reference"))

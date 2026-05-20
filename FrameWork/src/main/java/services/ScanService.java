@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.sql.Connection;
+import java.text.Normalizer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,11 +40,11 @@ public class ScanService {
     private static final long MAX_FILE_SIZE = 10L * 1024L * 1024L;
     private static final long MAX_SIGNATURE_SIZE = 1L * 1024L * 1024L;
     private static final String BASE64_PNG_PREFIX = "data:image/png;base64,";
-    private static final String LIBELLE_SIGNATURE = "Signature numerique";
+    private static final String LIBELLE_SIGNATURE = "Signature numérique";
     private static final String STATUT_PHOTO_PRISE = "PHOTO PRISE";
     private static final String STATUT_SCAN_TERMINE = "SCAN TERMINE";
     private static final Set<String> ALLOWED_MIME_TYPES = new HashSet<>();
-    private static final String LIBELLE_PHOTO_IDENTITE = "Photo d'identite (webcam)";
+    private static final String LIBELLE_PHOTO_IDENTITE = "Photo d'identité (webcam)";
     static {
         ALLOWED_MIME_TYPES.add("image/jpeg");
         ALLOWED_MIME_TYPES.add("image/png");
@@ -120,7 +121,7 @@ public class ScanService {
         long pieceRefId = findPieceRefIdByLibelle(LIBELLE_SIGNATURE);
         if (pieceRefId < 0) {
             throw new IllegalArgumentException(
-                "La reference de piece 'Signature numerique' est introuvable en base. "
+                "La reference de piece 'Signature numérique' est introuvable en base. "
                 + "Verifiez que sprint5.sql a bien ete execute.");
         }
 
@@ -340,17 +341,30 @@ public class ScanService {
      * ou -1 si introuvable. Pas de dépendance au model PieceJustificative.
      */
     private long findPieceRefIdByLibelle(String libelle) throws SQLException {
-        String sql = "SELECT id FROM piece_justificative_ref WHERE LOWER(libelle) = LOWER(?) LIMIT 1";
+        String sql = "SELECT id, libelle FROM piece_justificative_ref";
+        String normalizedTarget = normalizeLabel(libelle);
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, libelle);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                String dbLibelle = rs.getString("libelle");
+                if (normalizeLabel(dbLibelle).equals(normalizedTarget)) {
                     return rs.getLong("id");
                 }
             }
         }
         return -1L;
+    }
+
+    private String normalizeLabel(String input) {
+        if (input == null) {
+            return "";
+        }
+        String normalized = Normalizer.normalize(input, Normalizer.Form.NFKD);
+        normalized = normalized.replaceAll("\\p{M}", "");
+        normalized = normalized.replace('’', '\'');
+        normalized = normalized.replaceAll("[^\\p{Alnum}\\s'()\\-]", "");
+        return normalized.replaceAll("\\s+", " ").trim().toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -659,7 +673,22 @@ public class ScanService {
                 data.put("statutLibelle", rs.getString("statut_libelle"));
                 data.put("nom", rs.getString("nom"));
                 data.put("prenom", rs.getString("prenom"));
-                data.put("piecesScannees", pieceFournieDao.findAllByDemande(demandeId));
+                // Convertir PieceFournie en Map pour la JSP suiviDossier.jsp
+                List<models.PieceFournie> pfList = pieceFournieDao.findAllByDemande(demandeId);
+                List<Map<String, Object>> piecesScanneesMaps = new ArrayList<>();
+                if (pfList != null) {
+                    for (models.PieceFournie pf : pfList) {
+                        Map<String, Object> pfMap = new HashMap<>();
+                        pfMap.put("pieceLibelle", pf.getPiece_ref() != null ? pf.getPiece_ref().getLibelle() : "Document");
+                        pfMap.put("nomFichier", pf.getNom_fichier());
+                        pfMap.put("tailleFichier", pf.getTaille_bytes() / 1024);
+                        pfMap.put("dateUpload", pf.getUploaded_at() != null ? pf.getUploaded_at().toString() : null);
+                        pfMap.put("pieceRefId", pf.getPiece_ref() != null ? pf.getPiece_ref().getId() : null);
+                        pfMap.put("demandeId", pf.getDemande_id());
+                        piecesScanneesMaps.add(pfMap);
+                    }
+                }
+                data.put("piecesScannees", piecesScanneesMaps);
                 return data;
             }
         }

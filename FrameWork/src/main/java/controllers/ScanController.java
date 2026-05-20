@@ -218,6 +218,8 @@ public Map<String, Object> uploadPhotoIdentite(
         result.put("signatureUploaded", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("signatureUploaded")));
         result.put("demandeComplete", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("scanComplet")));
         result.put("locked", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("locked")));
+        result.put("pieceRefId", pieceFournie != null && pieceFournie.getPiece_ref() != null
+            ? pieceFournie.getPiece_ref().getId() : null);
 
     } catch (DemandeVerrouilleeException e) {
 

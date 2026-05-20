@@ -6,8 +6,14 @@
     'use strict';
 
     function getAppRoot() {
-        var segments = window.location.pathname.split('/');
-        return segments.length > 1 ? segments[1] : '';
+        var root = '';
+        if (typeof window.APP_ROOT === 'string' && window.APP_ROOT.trim().length > 0) {
+            root = window.APP_ROOT.trim();
+        } else {
+            var segments = window.location.pathname.split('/');
+            root = segments.length > 1 ? segments[1] : '';
+        }
+        return root.replace(/^\/+/g, '').replace(/\/+$/g, '');
     }
 
     function getSummarySection() {
@@ -144,9 +150,9 @@
 
         var appRoot = getAppRoot();
         var basePath = appRoot ? '/' + appRoot : '';
-        var url = basePath + '/demande/' + demandeId + '/scan-status';
+        var url = basePath + '/demande/' + demandeId + '/scan-status?demandeId=' + encodeURIComponent(demandeId);
 
-        fetch(url)
+        fetch(url, { cache: 'no-store' })
             .then(function (response) {
                 if (!response.ok) {
                     throw new Error('HTTP ' + response.status);

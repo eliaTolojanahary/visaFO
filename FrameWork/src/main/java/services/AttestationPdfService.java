@@ -25,7 +25,7 @@ import util.DownloadFileResponse;
 public class AttestationPdfService {
 
     private static final Charset PDF_TEXT_CHARSET = Charset.forName("windows-1252");
-    private static final String PHOTO_LIBELLE = "Photo d'identite (webcam)";
+    private static final String PHOTO_LIBELLE = "Photo d'identité (webcam)";
     private static final String STATUT_SCAN_TERMINE = "SCAN TERMINE";
 
     private final ScanService scanService = new ScanService();

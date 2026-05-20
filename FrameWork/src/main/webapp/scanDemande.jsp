@@ -34,7 +34,7 @@
     
     // Demande information
     Map<String, Object> demande = (Map<String, Object>) request.getAttribute("demande");
-    if (demande == null) demande = new HashMap<>();
+    if (demande == null) demande = new HashMap<String, Object>();
     
     // Extract or fallback demande properties
     Long demandeId = null;
@@ -85,9 +85,9 @@
     } else if (pieces != null && !pieces.isEmpty()) {
         scanPieces = pieces;
     } else if (isCreationMode && piecesCommunes != null && !piecesCommunes.isEmpty()) {
-        scanPieces = new ArrayList<>();
+        scanPieces = new ArrayList<Map<String, Object>>();
         for (PieceJustificative p : piecesCommunes) {
-            Map<String, Object> pieceMap = new HashMap<>();
+            Map<String, Object> pieceMap = new HashMap<String, Object>();
             pieceMap.put("id", p.getId());
             pieceMap.put("libelle", p.getLibelle());
             pieceMap.put("scanStatut", "EN_ATTENTE");
@@ -118,6 +118,9 @@
     Boolean isLocked = (Boolean) request.getAttribute("isLocked");
     if (isLocked == null) isLocked = (Boolean) request.getAttribute("verrouille");
     if (isLocked == null) isLocked = false;
+    
+    boolean photoUploaded = Boolean.TRUE.equals(request.getAttribute("photoUploaded"));
+    boolean signatureUploaded = Boolean.TRUE.equals(request.getAttribute("signatureUploaded"));
     
     String flashMessage = (String) request.getAttribute("flashMessage");
     if (flashMessage == null) flashMessage = (String) request.getAttribute("successMessage");
@@ -447,6 +450,9 @@
                 data-demande-id="<%= demandeIdValue %>"
                 data-dossier-id="<%= dossierIdValue %>">
 
+                <input type="hidden" id="photoWebcamDemandeId" value="<%= demandeIdValue %>">
+                <input type="hidden" id="photoWebcamDossierId" value="<%= dossierIdValue %>">
+
                 <h2>Capture Photo d'Identité (Webcam)</h2>
         
                 <div class="camera-controls" style="margin-bottom: 15px;">
@@ -504,6 +510,7 @@
 </div>
 
 <% if (!isCreationMode) { %>
+<script>window.APP_ROOT = '<%= ctx %>';</script>
 <script src="<%= ctx %>/js/scanDemande.js"></script>
 <script src="<%= ctx %>/js/scanSummary.js"></script>
 <script src="<%= ctx %>/js/signatureCanvas.js"></script>
