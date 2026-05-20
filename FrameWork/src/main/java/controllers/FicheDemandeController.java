@@ -5,7 +5,6 @@ import annotation.GetMapping;
 import annotation.MethodeAnnotation;
 import annotation.RequestParam;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,15 +63,14 @@ public class FicheDemandeController {
             }
 
             Map<String, Object> demande = buildDemandeModel(demandeId, dossierId, demandeData, scanInfo, dossierDemande);
-            List<PieceFournie> piecesFourniesBrutes = scanService.getPiecesFourniesByDemande(demandeId);
-            List<Map<String, Object>> piecesFournies = buildPiecesFournies(piecesFourniesBrutes);
+            List<PieceFournie> piecesFournies = scanService.getPiecesFourniesByDemande(demandeId);
             long photoRefId = scanService.getPhotoIdentiteRefId();
             long signatureRefId = scanService.getSignatureNumeriqueRefId();
 
             mv.addData("demande", demande);
             mv.addData("piecesFournies", piecesFournies);
-            mv.addData("cheminPhotoWebcam", findPiecePathByRefId(piecesFournies, photoRefId));
-            mv.addData("cheminSignature", findPiecePathByRefId(piecesFournies, signatureRefId));
+            mv.addData("photoIdentiteRefId", photoRefId);
+            mv.addData("signatureNumeriqueRefId", signatureRefId);
             mv.addData("demandeComplete", scanService.verifierScanComplet(demandeId));
             mv.addData("qrCodeWebUrl", refDemande != null && !refDemande.trim().isEmpty()
                 ? qrCodeService.getQrCodeWebUrl(refDemande)
@@ -164,51 +162,6 @@ public class FicheDemandeController {
         demande.put("typeDocument", typeDocument);
 
         return demande;
-    }
-
-    private List<Map<String, Object>> buildPiecesFournies(List<PieceFournie> piecesAttendues) {
-        List<Map<String, Object>> pieces = new ArrayList<>();
-        if (piecesAttendues == null) {
-            return pieces;
-        }
-
-        for (PieceFournie pieceFournie : piecesAttendues) {
-            if (pieceFournie == null || pieceFournie.getPiece_ref() == null) {
-                continue;
-            }
-
-            Map<String, Object> piece = new HashMap<>();
-            Map<String, Object> pieceRef = new HashMap<>();
-            pieceRef.put("id", pieceFournie.getPiece_ref().getId());
-            pieceRef.put("libelle", pieceFournie.getPiece_ref().getLibelle());
-            piece.put("pieceRef", pieceRef);
-
-            piece.put("id", pieceFournie.getId());
-            piece.put("nomFichier", pieceFournie.getNom_fichier());
-            piece.put("cheminFichier", pieceFournie.getChemin_fichier());
-            piece.put("cochee", true);
-            piece.put("statut", "SCANNÉE");
-            pieces.add(piece);
-        }
-
-        return pieces;
-    }
-
-    private String findPiecePathByRefId(List<Map<String, Object>> pieces, long refId) {
-        if (pieces == null) {
-            return null;
-        }
-        for (Map<String, Object> piece : pieces) {
-            Object pieceRefObj = piece.get("pieceRef");
-            if (pieceRefObj instanceof Map) {
-                Object id = ((Map<?, ?>) pieceRefObj).get("id");
-                Long pieceRefId = toLong(id);
-                if (pieceRefId != null && pieceRefId == refId) {
-                    return stringValue(piece.get("cheminFichier"));
-                }
-            }
-        }
-        return null;
     }
 
     private String lookupSituationLibelle(Object idRaw) throws SQLException {

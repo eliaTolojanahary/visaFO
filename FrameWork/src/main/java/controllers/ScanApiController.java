@@ -43,8 +43,8 @@ public class ScanApiController {
             response.put("success", true);
             response.put("scanComplet", scanService.verifierScanComplet(demandeId));
             response.put("pieces", pieces);
-            response.put("photoId", findPieceIdByLabel(pieces, "Photo d'identite (webcam)"));
-            response.put("signatureId", findPieceIdByLabel(pieces, "Signature numerique"));
+            response.put("photoId", scanService.getPhotoIdentiteRefId());
+            response.put("signatureId", scanService.getSignatureNumeriqueRefId());
             response.put("httpStatus", 200);
             return response;
         } catch (SQLException e) {
@@ -123,25 +123,6 @@ public class ScanApiController {
         }
 
         return pieces;
-    }
-
-    private Long findPieceIdByLabel(List<Map<String, Object>> pieces, String label) {
-        if (pieces == null || label == null) {
-            return null;
-        }
-
-        for (Map<String, Object> piece : pieces) {
-            Object nom = piece.get("nom");
-            if (label.equalsIgnoreCase(String.valueOf(nom))) {
-                Object id = piece.get("id");
-                try {
-                    return id == null ? null : Long.valueOf(id.toString());
-                } catch (NumberFormatException e) {
-                    return null;
-                }
-            }
-        }
-        return null;
     }
 
     private Map<String, Object> buildDossierResponse(DossierDemande dossierDemande) {

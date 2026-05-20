@@ -2,18 +2,39 @@
 <%@ page import="java.util.List" %>
 
 <%@ page import="java.util.Map" %>
+<%@ page import="models.PieceFournie" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <% String ctx = request.getContextPath(); %>
 <%
 Map<String, Object> demande = (Map<String, Object>) request.getAttribute("demande");
-List<Map<String, Object>> piecesFournies = (List<Map<String, Object>>) request.getAttribute("piecesFournies");
-String cheminPhotoWebcam = (String) request.getAttribute("cheminPhotoWebcam");
-String cheminSignature = (String) request.getAttribute("cheminSignature");
+List<PieceFournie> piecesFournies = (List<PieceFournie>) request.getAttribute("piecesFournies");
+Long photoIdentiteRefId = request.getAttribute("photoIdentiteRefId") != null ? Long.valueOf(String.valueOf(request.getAttribute("photoIdentiteRefId"))) : null;
+Long signatureNumeriqueRefId = request.getAttribute("signatureNumeriqueRefId") != null ? Long.valueOf(String.valueOf(request.getAttribute("signatureNumeriqueRefId"))) : null;
+long demandeId = request.getAttribute("demandeId") != null ? (Long) request.getAttribute("demandeId") : 0L;
+String cheminPhotoWebcam = null;
+String cheminSignature = null;
+if (piecesFournies != null) {
+    for (PieceFournie piece : piecesFournies) {
+        if (piece == null || piece.getPiece_ref() == null) {
+            continue;
+        }
+        Long currentRefId = piece.getPiece_ref().getId();
+        if (photoIdentiteRefId != null && photoIdentiteRefId.equals(currentRefId)) {
+            cheminPhotoWebcam = ctx + "/demande/" + demandeId + "/piece/" + currentRefId + "/download";
+        }
+        if (signatureNumeriqueRefId != null && signatureNumeriqueRefId.equals(currentRefId)) {
+            cheminSignature = ctx + "/demande/" + demandeId + "/piece/" + currentRefId + "/download";
+        }
+    }
+}
+request.setAttribute("cheminPhotoWebcam", cheminPhotoWebcam);
+request.setAttribute("cheminSignature", cheminSignature);
 String qrCodeWebUrl = (String) request.getAttribute("qrCodeWebUrl");
 boolean demandeComplete = Boolean.TRUE.equals(request.getAttribute("demandeComplete"));
 long dossierId = request.getAttribute("dossierId") != null ? (Long) request.getAttribute("dossierId") : 0L;
-long demandeId = request.getAttribute("demandeId") != null ? (Long) request.getAttribute("demandeId") : 0L;%>
+%>
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -143,7 +164,7 @@ long demandeId = request.getAttribute("demandeId") != null ? (Long) request.getA
                 <strong>PHOTO IDENTITÉ</strong><br><br>
                 <c:choose>
                     <c:when test="${not empty cheminPhotoWebcam}">
-                        <img src="${pageContext.request.contextPath}/${cheminPhotoWebcam}" alt="Photo de ${demande.demandeur.nom}">
+                        <img src="<%= cheminPhotoWebcam %>" alt="Photo de ${demande.demandeur.nom}">
                     </c:when>
                     <c:otherwise>
                         <div class="placeholder-photo">[Aucune capture]</div>
@@ -225,12 +246,12 @@ long demandeId = request.getAttribute("demandeId") != null ? (Long) request.getA
         <c:choose>
             <c:when test="${not empty piecesFournies}">
                 <c:forEach var="piece" items="${piecesFournies}">
+                        <c:if test="${not empty piece.nom_fichier and piece.piece_ref.id ne photoIdentiteRefId and piece.piece_ref.id ne signatureNumeriqueRefId}">
                     <li>
-                        ☑ <strong>${piece.pieceRef.libelle}</strong>
-                        <c:if test="${not empty piece.nomFichier}">
-                            <br><small style="color: gray;">(Fichier : <a href="${pageContext.request.contextPath}/${piece.cheminFichier}" target="_blank">${piece.nomFichier}</a>)</small>
-                        </c:if>
+                        <strong>${piece.piece_ref.libelle}</strong>
+                            <br><small style="color: gray;">(Fichier : <a href="${pageContext.request.contextPath}/${piece.chemin_fichier}" target="_blank">${piece.nom_fichier}</a>)</small>
                     </li>
+                        </c:if>
                 </c:forEach>
             </c:when>
             <c:otherwise>
@@ -246,7 +267,7 @@ long demandeId = request.getAttribute("demandeId") != null ? (Long) request.getA
                 <strong>Signature du Demandeur</strong><br>
                 <small style="color: #666;">Je certifie l'exactitude des informations fournies.</small><br><br>
                 <c:if test="${not empty cheminSignature}">
-                    <img src="${pageContext.request.contextPath}/${cheminSignature}" alt="Signature" class="signature-img">
+                    <img src="<%= cheminSignature %>" alt="Signature" class="signature-img">
                 </c:if>
             </td>
             <td style="width: 50%; vertical-align: top;">
