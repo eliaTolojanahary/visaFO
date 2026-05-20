@@ -18,6 +18,13 @@
     var ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
     var MAX_BYTES      = 10 * 1024 * 1024; // 10 Mo
 
+    window.scanWorkflowState = window.scanWorkflowState || {
+        photoUploaded: false,
+        signatureUploaded: false,
+        locked: false,
+        scanComplet: false
+    };
+
     function forEachNode(nodeList, cb) {
         Array.prototype.forEach.call(nodeList || [], cb);
     }
@@ -78,6 +85,12 @@
         console.log('[updateProgress] Calcul progression...');
         var totalCheckboxes = document.querySelectorAll('.js-piece-checkbox').length;
         var checkedCount = document.querySelectorAll('.js-piece-checkbox:checked').length;
+        var workflow = window.scanWorkflowState || {};
+        var photoReady = !!workflow.photoUploaded;
+        var signatureReady = !!workflow.signatureUploaded;
+        var locked = !!workflow.locked;
+        var canFinalize = checkedCount >= totalCheckboxes && photoReady && signatureReady && !locked;
+        workflow.canFinalize = canFinalize;
         
         console.log('[updateProgress] ' + checkedCount + ' / ' + totalCheckboxes + ' pi├¿ces coch├®es');
         
@@ -98,8 +111,32 @@
         // Activer/d├®sactiver le bouton Finaliser
         var finalizeBtn = document.getElementById('finalizeBtn');
         if (finalizeBtn) {
-            finalizeBtn.disabled = (checkedCount < totalCheckboxes);
+            finalizeBtn.disabled = !canFinalize;
             console.log('[updateProgress] Bouton finaliser : ' + (finalizeBtn.disabled ? 'D├ëSACTIV├ë' : 'ACTIF'));
+        }
+
+        var photoState = document.getElementById('scanPhotoState');
+        if (photoState) {
+            photoState.textContent = photoReady ? 'OK' : 'En attente';
+        }
+
+        var signatureState = document.getElementById('scanSignatureState');
+        if (signatureState) {
+            signatureState.textContent = signatureReady ? 'OK' : 'En attente';
+        }
+
+        var completionMessage = document.getElementById('completionMessage');
+        if (completionMessage) {
+            if (locked) {
+                completionMessage.className = 'completion-message complete';
+                completionMessage.innerHTML = '<span class="icon">🔒</span> Dossier verrouille - plus aucune modification possible.';
+            } else if (canFinalize) {
+                completionMessage.className = 'completion-message complete';
+                completionMessage.innerHTML = '<span class="icon">✓</span> Toutes les pieces attendues ont ete scannees. Vous pouvez maintenant verrouiller le dossier.';
+            } else {
+                completionMessage.className = 'completion-message incomplete';
+                completionMessage.innerHTML = 'Des pieces manquent encore. Le bouton sera active quand toutes les pieces et la photo/signature seront presentes.';
+            }
         }
     };
 
@@ -287,7 +324,16 @@
         bindFileInputs();
         bindUploadForms();
         bindVerrouillerForm();
+        window.updateProgress();
         console.log('[JS DOMContentLoaded] Initialisation termin├®e');
+    });
+
+    window.addEventListener('scanStatusUpdated', function () {
+        window.updateProgress();
+    });
+
+    document.addEventListener('scan:pieceUploaded', function () {
+        window.updateProgress();
     });
 
 })();

@@ -16,23 +16,27 @@ public class QrCodeService {
     private static final int QR_HEIGHT = 300;
     private static final String DEFAULT_FRONTEND_BASE_URL = "http://localhost:5173";
 
-    public String genererQrCode(String numDemande) throws Exception {
+    public String genererQrCode(String numDemande) {
         if (numDemande == null || numDemande.trim().isEmpty()) {
             throw new IllegalArgumentException("numDemande est obligatoire.");
         }
 
-        String url = buildFrontendUrl(numDemande.trim());
-        BitMatrix matrix = new MultiFormatWriter().encode(
-            url, BarcodeFormat.QR_CODE, QR_WIDTH, QR_HEIGHT
-        );
+        try {
+            String url = buildFrontendUrl(numDemande.trim());
+            BitMatrix matrix = new MultiFormatWriter().encode(
+                url, BarcodeFormat.QR_CODE, QR_WIDTH, QR_HEIGHT
+            );
 
-        Path outputDir = resolveOutputDirectory();
-        Files.createDirectories(outputDir);
+            Path outputDir = resolveOutputDirectory();
+            Files.createDirectories(outputDir);
 
-        Path outputPath = outputDir.resolve(numDemande.trim() + ".png");
-        MatrixToImageWriter.writeToPath(matrix, "PNG", outputPath);
+            Path outputPath = outputDir.resolve(numDemande.trim() + ".png");
+            MatrixToImageWriter.writeToPath(matrix, "PNG", outputPath);
 
-        return outputPath.toString();
+            return outputPath.toString();
+        } catch (Exception e) {
+            throw new IllegalStateException("Impossible de generer le QR code.", e);
+        }
     }
 
     public String getQrCodeWebUrl(String numDemande) {

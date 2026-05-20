@@ -410,14 +410,36 @@
     <% if (!isCreationMode) { %>
     <div class="form-section">
         <h2>Finaliser le Scan</h2>
-        <div class="completion-status">
-            <div class="completion-message <%= demandeComplete ? "complete" : "incomplete" %>" id="completionMessage">
-                <% if (demandeComplete) { %>
-                <span class="icon">✓</span> Toutes les pieces attendues ont ete scannees. Vous pouvez maintenant verrouiller le dossier.
-                <% } else { %>
-                 Des pieces manquent encore. Le bouton sera active quand toutes les pieces seront scannees.
-                <% } %>
+        <div class="scan-summary-box" id="scanSummarySection"
+             data-demande-id="<%= demandeIdValue %>"
+             data-dossier-id="<%= dossierIdValue %>">
+            <div class="completion-status">
+                <div class="completion-message <%= demandeComplete ? "complete" : "incomplete" %>" id="completionMessage">
+                    <% if (demandeComplete) { %>
+                    <span class="icon">✓</span> Toutes les pieces attendues ont ete scannees. Vous pouvez maintenant verrouiller le dossier.
+                    <% } else if (isLocked) { %>
+                    <span class="icon">🔒</span> Dossier verrouille - plus aucune modification possible.
+                    <% } else { %>
+                     Des pieces manquent encore. Le bouton sera active quand toutes les pieces et la photo/signature seront presentes.
+                    <% } %>
+                </div>
             </div>
+
+            <div class="scan-summary-grid">
+                <div class="scan-summary-item">
+                    <span class="scan-summary-label">Photo d'identite</span>
+                    <strong id="scanPhotoState"><%= Boolean.TRUE.equals(photoUploaded) ? "OK" : "En attente" %></strong>
+                </div>
+                <div class="scan-summary-item">
+                    <span class="scan-summary-label">Signature</span>
+                    <strong id="scanSignatureState"><%= Boolean.TRUE.equals(signatureUploaded) ? "OK" : "En attente" %></strong>
+                </div>
+            </div>
+
+            <div class="scan-summary-pieces" id="scanPiecesSummary"></div>
+        </div>
+        <div class="completion-status">
+            <div class="hint-text">Le résumé ci-dessus combine les pièces normales, la photo d'identité et la signature.</div>
         </div>
             <!-- SECTION: Capture Photo d'Identité à la Webcam (Sprint 5) -->
             <% if (!isCreationMode && !isLocked) { %>
@@ -483,6 +505,7 @@
 
 <% if (!isCreationMode) { %>
 <script src="<%= ctx %>/js/scanDemande.js"></script>
+<script src="<%= ctx %>/js/scanSummary.js"></script>
 <script src="<%= ctx %>/js/signatureCanvas.js"></script>
 <script src="<%= ctx %>/js/photoWebcam.js"></script>
 <% } %>
