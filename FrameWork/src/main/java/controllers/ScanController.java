@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import models.PieceFournie;
 import modelview.ModelView;
+import services.AttestationPdfService;
 import services.DemandeVerrouilleeException;
 import services.DossierService;
 import services.ScanService;
@@ -25,6 +26,7 @@ public class ScanController {
 
     private final ScanService scanService = new ScanService();
     private final DossierService dossierService = new DossierService();
+    private final AttestationPdfService attestationPdfService = new AttestationPdfService();
 
     
     @MethodeAnnotation("/{id}/scan")
@@ -48,6 +50,7 @@ public class ScanController {
 
             List<Map<String, Object>> listePiecesAttendues = scanService.getListePiecesAttendues(demandeId);
             boolean demandeComplete = scanService.isDemandeComplete(demandeId);
+            Map<String, Object> scanStatus = scanService.getScanStatus(demandeId);
 
             mv.addData("demande", demande);
             mv.addData("reference", demande.get("refDemande") != null ? String.valueOf(demande.get("refDemande")) : "");
@@ -56,6 +59,9 @@ public class ScanController {
             mv.addData("nomComplet", (nom + " " + prenom).trim());
             mv.addData("listePiecesAttendues", listePiecesAttendues);
             mv.addData("demandeComplete", demandeComplete);
+            mv.addData("scanStatus", scanStatus);
+            mv.addData("photoUploaded", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("photoUploaded")));
+            mv.addData("signatureUploaded", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("signatureUploaded")));
 
             String success = queryParams != null && queryParams.get("success") != null
                 ? String.valueOf(queryParams.get("success"))
@@ -122,14 +128,17 @@ public class ScanController {
         Map<String, Object> result = new HashMap<>();
         try {
             PieceFournie pieceFournie = scanService.sauvegarderSignatureCanvas(dataUrl, demandeId, dossierId);
-            boolean demandeComplete = scanService.isDemandeComplete(demandeId);
+            Map<String, Object> scanStatus = scanService.getScanStatus(demandeId);
 
             result.put("success", true);
             result.put("id", pieceFournie != null ? pieceFournie.getId() : null);
             result.put("nomFichier", pieceFournie != null ? pieceFournie.getNom_fichier() : "");
             result.put("uploadedAt", pieceFournie != null && pieceFournie.getUploaded_at() != null
                 ? pieceFournie.getUploaded_at().toString() : "");
-            result.put("demandeComplete", demandeComplete);
+            result.put("demandeComplete", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("scanComplet")));
+            result.put("photoUploaded", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("photoUploaded")));
+            result.put("signatureUploaded", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("signatureUploaded")));
+            result.put("locked", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("locked")));
             // pieceRefId réel pour que le JS puisse identifier la bonne card
             result.put("pieceRefId", pieceFournie != null && pieceFournie.getPiece_ref() != null
                 ? pieceFournie.getPiece_ref().getId() : null);
@@ -141,9 +150,9 @@ public class ScanController {
             result.put("success", false);
             result.put("error", e.getMessage());
             result.put("httpStatus", 423);
-        } catch (Exception e) {
+        } catch (SQLException e) {
             result.put("success", false);
-            result.put("error", "Erreur interne: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+                result.put("error", "Erreur interne: " + e.getMessage());
             result.put("httpStatus", 500);
         }
         return result;
@@ -190,6 +199,7 @@ public Map<String, Object> uploadPhotoIdentite(
             demandeId,
             dossierId
         );
+        Map<String, Object> scanStatus = scanService.getScanStatus(demandeId);
 
         result.put("status", "success");
         result.put("success", true);
@@ -204,6 +214,12 @@ public Map<String, Object> uploadPhotoIdentite(
         );
         result.put("demandeId", demandeId);
         result.put("dossierId", dossierId);
+        result.put("photoUploaded", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("photoUploaded")));
+        result.put("signatureUploaded", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("signatureUploaded")));
+        result.put("demandeComplete", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("scanComplet")));
+        result.put("locked", scanStatus != null && Boolean.TRUE.equals(scanStatus.get("locked")));
+        result.put("pieceRefId", pieceFournie != null && pieceFournie.getPiece_ref() != null
+            ? pieceFournie.getPiece_ref().getId() : null);
 
     } catch (DemandeVerrouilleeException e) {
 
@@ -226,6 +242,58 @@ public Map<String, Object> uploadPhotoIdentite(
     return result;
 }
 
+    @MethodeAnnotation("/{id}/fiche")
+    @GetMapping
+    public ModelView ficheDemande(@RequestParam("id") long demandeId) {
+        ModelView mv = new ModelView("/ficheDemande.jsp");
+
+        try {
+            Map<String, Object> fiche = scanService.getFicheDemandeData(demandeId);
+            if (fiche == null) {
+                mv.addData("error", "Demande introuvable.");
+                return mv;
+            }
+
+            mv.addData("demandeId", demandeId);
+            mv.addData("dossierId", dossierService.getDossieridByDemande(demandeId));
+            mv.addData("demande", fiche);
+            mv.addData("reference", fiche.get("ref_demande"));
+            mv.addData("nomComplet", buildNomComplet(fiche));
+            mv.addData("listePiecesAttendues", fiche.get("pieces"));
+            mv.addData("demandeComplete", Boolean.TRUE.equals(fiche.get("scanComplet")));
+            mv.addData("photoUploaded", Boolean.TRUE.equals(fiche.get("photoUploaded")));
+            mv.addData("signatureUploaded", Boolean.TRUE.equals(fiche.get("signatureUploaded")));
+            mv.addData("attestationDisponible", Boolean.TRUE.equals(fiche.get("locked")));
+        } catch (SQLException e) {
+            mv.addData("error", "Erreur lors du chargement de la fiche: " + e.getMessage());
+        }
+
+        return mv;
+    }
+
+    @MethodeAnnotation("/{id}/attestation")
+    @GetMapping
+    public DownloadFileResponse attestationPdf(@RequestParam("id") long demandeId) throws SQLException {
+        return attestationPdfService.genererAttestation(demandeId);
+    }
+
+    @MethodeAnnotation("/{demandeId}/scan-status")
+    @GetMapping
+    @Api
+    public Map<String, Object> scanStatus(@RequestParam("demandeId") long demandeId) throws SQLException {
+        Map<String, Object> status = scanService.getScanStatus(demandeId);
+        Map<String, Object> result = new HashMap<>();
+        if (status == null) {
+            result.put("success", false);
+            result.put("error", "Demande introuvable.");
+            return result;
+        }
+
+        result.putAll(status);
+        result.put("success", true);
+        return result;
+    }
+
 
     private String buildScanRedirectSuccess(long demandeId, String message) {
         String encoded = URLEncoder.encode(message, StandardCharsets.UTF_8);
@@ -236,5 +304,11 @@ public Map<String, Object> uploadPhotoIdentite(
         String safeError = error == null ? "Operation impossible." : error;
         String encoded = URLEncoder.encode(safeError, StandardCharsets.UTF_8);
         return "redirect:/demande/" + demandeId + "/scan?error=" + encoded;
+    }
+
+    private String buildNomComplet(Map<String, Object> fiche) {
+        String nom = fiche.get("nom") != null ? String.valueOf(fiche.get("nom")) : "";
+        String prenom = fiche.get("prenom") != null ? String.valueOf(fiche.get("prenom")) : "";
+        return (nom + " " + prenom).trim();
     }
 }

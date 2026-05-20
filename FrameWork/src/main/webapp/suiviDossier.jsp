@@ -17,16 +17,31 @@
     </header>
 
     <%
-        Map<String, Object> demande = (Map<String, Object>) request.getAttribute("demande");
+        // SuiviController met les données dans "suivi", pas "demande"
+        @SuppressWarnings("unchecked")
+        Map<String, Object> suivi = (Map<String, Object>) request.getAttribute("suivi");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> demande = suivi != null ? suivi : (Map<String, Object>) request.getAttribute("demande");
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> piecesScannees = (List<Map<String, Object>>) request.getAttribute("piecesScannees");
+        if (piecesScannees == null && demande != null && demande.get("piecesScannees") instanceof List) {
+            piecesScannees = (List<Map<String, Object>>) demande.get("piecesScannees");
+        }
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> listePiecesAttendues = (List<Map<String, Object>>) request.getAttribute("listePiecesAttendues");
-        String statutLibelle = (String) request.getAttribute("statutLibelle");
+        String statutLibelle = demande != null && demande.get("statutLibelle") != null
+            ? String.valueOf(demande.get("statutLibelle"))
+            : (String) request.getAttribute("statutLibelle");
         Boolean isLocked = (Boolean) request.getAttribute("isLocked");
-        String refDemande = demande != null && demande.get("ref_demande") != null ? String.valueOf(demande.get("ref_demande")) : "";
-        
+        if (isLocked == null && demande != null) {
+            Object v = demande.get("verrouille");
+            isLocked = Boolean.TRUE.equals(v);
+        }
         if (isLocked == null) isLocked = false;
+        // demandeId pour les liens
+        String demandeIdStr = demande != null && demande.get("demandeId") != null
+            ? String.valueOf(demande.get("demandeId"))
+            : (demande != null && demande.get("demande_id") != null ? String.valueOf(demande.get("demande_id")) : "");
     %>
 
     <%-- ===== BLOC DOSSIER VERROUILLÉ ===== --%>
@@ -118,7 +133,7 @@
                             <% } %>
                         </div>
                         <div class="document-actions">
-                            <a href="<%= ctx %>/demande/<%= demande.get("demande_id") %>/piece/<%= piece.get("piece_ref_id") %>/download" class="btn-download">Télécharger</a>
+                            <a href="<%= ctx %>/demande/<%= demandeIdStr %>/piece/<%= piece.get("pieceRefId") %>/download" class="btn-download">Télécharger</a>
                         </div>
                     </li>
                 <% } %>
@@ -131,7 +146,7 @@
         
         <% if (!isLocked) { %>
             <div class="scan-actions">
-                <a href="<%= ctx %>/demande/<%= demande != null && demande.get("demande_id") != null ? demande.get("demande_id") : "#" %>/scan" class="btn-primary">
+                <a href="<%= ctx %>/demande/<%= !demandeIdStr.isEmpty() ? demandeIdStr : "#" %>/scan" class="btn-primary">
                     Ajouter un scan
                 </a>
             </div>

@@ -11,7 +11,7 @@
     String ctx = request.getContextPath();
     @SuppressWarnings("unchecked")
     Map<String, Object> formData = (Map<String, Object>) request.getAttribute("formData");
-    if (formData == null) formData = new java.util.HashMap<>();
+    if (formData == null) formData = new java.util.HashMap<String, Object>();
 
     boolean editMode = Boolean.TRUE.equals(request.getAttribute("editMode"));
     String formAction = editMode ? (ctx + "/form/update") : (ctx + "/form/save");
@@ -20,7 +20,7 @@
 
     @SuppressWarnings("unchecked")
     List<Long> selectedPieceIds = (List<Long>) request.getAttribute("selectedPieceIds");
-    if (selectedPieceIds == null) selectedPieceIds = new ArrayList<>();
+    if (selectedPieceIds == null) selectedPieceIds = new ArrayList<Long>();
 
     String selectedTypeDemande = formData.get("typeDemande") != null ? String.valueOf(formData.get("typeDemande")) : "";
     String selectedSituationFamille = formData.get("situationFamilleId") != null ? String.valueOf(formData.get("situationFamilleId")) : "";
@@ -30,19 +30,19 @@
     // [NEW] Récupérer les pièces pour l'affichage initial
     @SuppressWarnings("unchecked")
     List<Map<String, Object>> listePiecesAttendues = (List<Map<String, Object>>) request.getAttribute("listePiecesAttendues");
-    if (listePiecesAttendues == null) listePiecesAttendues = new ArrayList<>();
+    if (listePiecesAttendues == null) listePiecesAttendues = new ArrayList<Map<String, Object>>();
     
     @SuppressWarnings("unchecked")
     List<PieceJustificative> piecesCommunes = (List<PieceJustificative>) request.getAttribute("piecesCommunes");
-    if (piecesCommunes == null) piecesCommunes = new ArrayList<>();
+    if (piecesCommunes == null) piecesCommunes = new ArrayList<PieceJustificative>();
     
     @SuppressWarnings("unchecked")
     List<PieceJustificative> piecesInvestisseur = (List<PieceJustificative>) request.getAttribute("piecesInvestisseur");
-    if (piecesInvestisseur == null) piecesInvestisseur = new ArrayList<>();
+    if (piecesInvestisseur == null) piecesInvestisseur = new ArrayList<PieceJustificative>();
     
     @SuppressWarnings("unchecked")
     List<PieceJustificative> piecesTravailleur = (List<PieceJustificative>) request.getAttribute("piecesTravailleur");
-    if (piecesTravailleur == null) piecesTravailleur = new ArrayList<>();
+    if (piecesTravailleur == null) piecesTravailleur = new ArrayList<PieceJustificative>();
 %>
 <!DOCTYPE html>
 <html>

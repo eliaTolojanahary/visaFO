@@ -34,7 +34,7 @@
     
     // Demande information
     Map<String, Object> demande = (Map<String, Object>) request.getAttribute("demande");
-    if (demande == null) demande = new HashMap<>();
+    if (demande == null) demande = new HashMap<String, Object>();
     
     // Extract or fallback demande properties
     Long demandeId = null;
@@ -85,9 +85,9 @@
     } else if (pieces != null && !pieces.isEmpty()) {
         scanPieces = pieces;
     } else if (isCreationMode && piecesCommunes != null && !piecesCommunes.isEmpty()) {
-        scanPieces = new ArrayList<>();
+        scanPieces = new ArrayList<Map<String, Object>>();
         for (PieceJustificative p : piecesCommunes) {
-            Map<String, Object> pieceMap = new HashMap<>();
+            Map<String, Object> pieceMap = new HashMap<String, Object>();
             pieceMap.put("id", p.getId());
             pieceMap.put("libelle", p.getLibelle());
             pieceMap.put("scanStatut", "EN_ATTENTE");
@@ -118,6 +118,9 @@
     Boolean isLocked = (Boolean) request.getAttribute("isLocked");
     if (isLocked == null) isLocked = (Boolean) request.getAttribute("verrouille");
     if (isLocked == null) isLocked = false;
+    
+    boolean photoUploaded = Boolean.TRUE.equals(request.getAttribute("photoUploaded"));
+    boolean signatureUploaded = Boolean.TRUE.equals(request.getAttribute("signatureUploaded"));
     
     String flashMessage = (String) request.getAttribute("flashMessage");
     if (flashMessage == null) flashMessage = (String) request.getAttribute("successMessage");
@@ -410,20 +413,45 @@
     <% if (!isCreationMode) { %>
     <div class="form-section">
         <h2>Finaliser le Scan</h2>
-        <div class="completion-status">
-            <div class="completion-message <%= demandeComplete ? "complete" : "incomplete" %>" id="completionMessage">
-                <% if (demandeComplete) { %>
-                <span class="icon">✓</span> Toutes les pieces attendues ont ete scannees. Vous pouvez maintenant verrouiller le dossier.
-                <% } else { %>
-                 Des pieces manquent encore. Le bouton sera active quand toutes les pieces seront scannees.
-                <% } %>
+        <div class="scan-summary-box" id="scanSummarySection"
+             data-demande-id="<%= demandeIdValue %>"
+             data-dossier-id="<%= dossierIdValue %>">
+            <div class="completion-status">
+                <div class="completion-message <%= demandeComplete ? "complete" : "incomplete" %>" id="completionMessage">
+                    <% if (demandeComplete) { %>
+                    <span class="icon">✓</span> Toutes les pieces attendues ont ete scannees. Vous pouvez maintenant verrouiller le dossier.
+                    <% } else if (isLocked) { %>
+                    <span class="icon">🔒</span> Dossier verrouille - plus aucune modification possible.
+                    <% } else { %>
+                     Des pieces manquent encore. Le bouton sera active quand toutes les pieces et la photo/signature seront presentes.
+                    <% } %>
+                </div>
             </div>
+
+            <div class="scan-summary-grid">
+                <div class="scan-summary-item">
+                    <span class="scan-summary-label">Photo d'identite</span>
+                    <strong id="scanPhotoState"><%= Boolean.TRUE.equals(photoUploaded) ? "OK" : "En attente" %></strong>
+                </div>
+                <div class="scan-summary-item">
+                    <span class="scan-summary-label">Signature</span>
+                    <strong id="scanSignatureState"><%= Boolean.TRUE.equals(signatureUploaded) ? "OK" : "En attente" %></strong>
+                </div>
+            </div>
+
+            <div class="scan-summary-pieces" id="scanPiecesSummary"></div>
+        </div>
+        <div class="completion-status">
+            <div class="hint-text">Le résumé ci-dessus combine les pièces normales, la photo d'identité et la signature.</div>
         </div>
             <!-- SECTION: Capture Photo d'Identité à la Webcam (Sprint 5) -->
             <% if (!isCreationMode && !isLocked) { %>
             <div class="form-section" id="photo-identite-block"
                 data-demande-id="<%= demandeIdValue %>"
                 data-dossier-id="<%= dossierIdValue %>">
+
+                <input type="hidden" id="photoWebcamDemandeId" value="<%= demandeIdValue %>">
+                <input type="hidden" id="photoWebcamDossierId" value="<%= dossierIdValue %>">
 
                 <h2>Capture Photo d'Identité (Webcam)</h2>
         
@@ -482,7 +510,9 @@
 </div>
 
 <% if (!isCreationMode) { %>
+<script>window.APP_ROOT = '<%= ctx %>';</script>
 <script src="<%= ctx %>/js/scanDemande.js"></script>
+<script src="<%= ctx %>/js/scanSummary.js"></script>
 <script src="<%= ctx %>/js/signatureCanvas.js"></script>
 <script src="<%= ctx %>/js/photoWebcam.js"></script>
 <% } %>
