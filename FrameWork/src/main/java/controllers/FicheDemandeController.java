@@ -17,6 +17,9 @@ import modelview.ModelView;
 import repo.ReferenceVisaRepository;
 import services.DemandeService;
 import services.QrCodeService;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import util.AppConfig;
 import services.ScanService;
 
 @ClasseAnnotation("/demande")
@@ -54,11 +57,24 @@ public class FicheDemandeController {
             }
 
             String refDemande = stringValue(scanInfo.get("refDemande"));
+            // Use API endpoint to serve QR on-demand. The backoffice API will generate the image
+            // dynamically if it doesn't exist yet. Build a relative API URL so JSP can prefix
+            // it with the application's context path.
             if (refDemande != null && !refDemande.trim().isEmpty()) {
                 try {
-                    qrCodeService.genererQrCode(refDemande);
-                } catch (Exception ignored) {
-                    // best effort
+                    String encoded = URLEncoder.encode(refDemande.trim(), StandardCharsets.UTF_8.toString());
+                    // Read backoffice base from config (e.g., http://localhost:8080)
+                    String backBase = AppConfig.getInstance().get("BACKOFFICE_BASE_URL", "http://localhost:8080");
+                    if (backBase.endsWith("/")) backBase = backBase.substring(0, backBase.length() - 1);
+                    String apiUrl = backBase + "/visa/api/qrcode?numDemande=" + encoded;
+                    mv.addData("qrCodeWebUrl", apiUrl);
+                    // also prepare a fallback static URL (served from backoffice webapps/ROOT/qrcodes)
+                    String fallback = backBase + "/visa/qrcodes/" + URLEncoder.encode(refDemande.trim(), StandardCharsets.UTF_8.toString()) + ".png";
+                    mv.addData("qrCodeFallbackWebUrl", fallback);
+                } catch (Exception e) {
+                    // fallback to existing static path behaviour if encoding fails
+                    mv.addData("qrCodeWebUrl", qrCodeService.getQrCodeWebUrl(refDemande));
+                    mv.addData("qrCodeFallbackWebUrl", qrCodeService.getQrCodeWebUrl(refDemande));
                 }
             }
 
@@ -72,9 +88,10 @@ public class FicheDemandeController {
             mv.addData("photoIdentiteRefId", photoRefId);
             mv.addData("signatureNumeriqueRefId", signatureRefId);
             mv.addData("demandeComplete", scanService.verifierScanComplet(demandeId));
-            mv.addData("qrCodeWebUrl", refDemande != null && !refDemande.trim().isEmpty()
-                ? qrCodeService.getQrCodeWebUrl(refDemande)
-                : null);
+            // qrCodeWebUrl already set above when refDemande was present; ensure attribute exists
+            if (!mv.getData().containsKey("qrCodeWebUrl")) {
+                mv.addData("qrCodeWebUrl", null);
+            }
             mv.addData("dossierId", dossierId);
             mv.addData("demandeId", demandeId);
         } catch (SQLException e) {

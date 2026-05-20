@@ -44,6 +44,23 @@ public class QrCodeService {
         return "/qrcodes/" + numDemande.trim() + ".png";
     }
 
+    /**
+     * Ensure the QR image exists on disk and return the web URL. If missing, try to generate it.
+     */
+    public String getOrGenerateQrCodeWebUrl(String numDemande) {
+        if (numDemande == null || numDemande.isBlank()) return null;
+        String trimmed = numDemande.trim();
+        Path outputPath = resolveOutputDirectory().resolve(trimmed + ".png");
+        try {
+            if (!Files.exists(outputPath)) {
+                genererQrCode(trimmed);
+            }
+        } catch (Exception ignored) {
+            // best-effort: if generation fails, still return the expected web URL
+        }
+        return getQrCodeWebUrl(trimmed);
+    }
+
     private String buildFrontendUrl(String numDemande) {
         String baseUrl = config.get("VUE_APP_URL", DEFAULT_FRONTEND_BASE_URL);
         if (baseUrl.endsWith("/")) baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
