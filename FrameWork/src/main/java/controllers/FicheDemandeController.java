@@ -15,7 +15,6 @@ import models.PieceFournie;
 import models.SituationFamille;
 import models.TypeDocument;
 import modelview.ModelView;
-import repo.DossierDemandeRepository;
 import repo.ReferenceVisaRepository;
 import services.DemandeService;
 import services.QrCodeService;
@@ -27,7 +26,6 @@ public class FicheDemandeController {
     private final DemandeService demandeService = new DemandeService();
     private final ScanService scanService = new ScanService();
     private final QrCodeService qrCodeService = new QrCodeService();
-    private final DossierDemandeRepository dossierDemandeRepository = new DossierDemandeRepository();
     private final ReferenceVisaRepository referenceVisaRepository = new ReferenceVisaRepository();
 
     @MethodeAnnotation("/{id}/fiche")
@@ -46,9 +44,14 @@ public class FicheDemandeController {
             long dossierId = demandeService.findById(demandeId) != null
                 ? dossierServiceId(demandeId)
                 : 0L;
-            DossierDemande dossierDemande = dossierId > 0
-                ? dossierDemandeRepository.findDossierDemande(dossierId, demandeId)
-                : null;
+            DossierDemande dossierDemande = null;
+            if (dossierId > 0) {
+                try {
+                    dossierDemande = loadDossierDemandeSafely(dossierId, demandeId);
+                } catch (SQLException ignored) {
+                    dossierDemande = null;
+                }
+            }
 
             String refDemande = stringValue(scanInfo.get("refDemande"));
             if (refDemande != null && !refDemande.trim().isEmpty()) {
@@ -83,6 +86,22 @@ public class FicheDemandeController {
         return demandeService.findById(demandeId) != null
             ? new services.DossierService().getDossieridByDemande(demandeId)
             : 0L;
+    }
+
+    private DossierDemande loadDossierDemandeSafely(long dossierId, long demandeId) throws SQLException {
+        try {
+            return new repo.DossierDemandeRepository().findDossierDemande(dossierId, demandeId);
+        } catch (SQLException e) {
+            if (isMissingScanColumnsError(e)) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
+    private boolean isMissingScanColumnsError(SQLException exception) {
+        String message = exception.getMessage();
+        return message != null && message.toLowerCase().contains("scan_termine");
     }
 
     private Map<String, Object> buildDemandeModel(long demandeId, long dossierId, Map<String, Object> demandeData,

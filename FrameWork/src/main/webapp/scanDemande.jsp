@@ -476,6 +476,9 @@
 
     <div class="form-actions scan-actions">
         <a href="<%= ctx %>/dashboard" class="btn-alt">Retour au Dashboard</a>
+        <% if (!demandeIdValue.isEmpty()) { %>
+            <a href="<%= ctx %>/demande/<%= demandeIdValue %>/fiche" class="btn-secondary">Voir la fiche</a>
+        <% } %>
     </div>
     <% } %>
 

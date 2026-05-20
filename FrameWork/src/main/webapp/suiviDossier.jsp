@@ -134,6 +134,9 @@
                 <a href="<%= ctx %>/demande/<%= demande != null && demande.get("demande_id") != null ? demande.get("demande_id") : "#" %>/scan" class="btn-primary">
                     Ajouter un scan
                 </a>
+                <a href="<%= ctx %>/demande/<%= demande != null && demande.get("demande_id") != null ? demande.get("demande_id") : "#" %>/fiche" class="btn-secondary" style="margin-left:10px;">
+                    Voir la fiche
+                </a>
             </div>
         <% } %>
     </div>

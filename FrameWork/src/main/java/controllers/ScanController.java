@@ -90,13 +90,31 @@ public class ScanController {
         @RequestParam("fichier") FileUpload fichier
     ) throws SQLException {
         Map<String, Object> result = new HashMap<>();
-        PieceFournie pieceFournie = scanService.uploadPiece(demandeId, pieceRefId, fichier);
-        result.put("status", "success");
-        result.put("message", "Fichier scanne enregistre avec succes.");
-        result.put("demandeId", demandeId);
-        result.put("pieceRefId", pieceRefId);
-        result.put("fileName", pieceFournie != null ? pieceFournie.getNom_fichier() : "");
-        result.put("next", "/demande/" + demandeId + "/piece/" + pieceRefId + "/download");
+        try {
+            PieceFournie pieceFournie = scanService.uploadPiece(demandeId, pieceRefId, fichier);
+            result.put("status", "success");
+            result.put("success", true);
+            result.put("message", "Fichier scanne enregistre avec succes.");
+            result.put("demandeId", demandeId);
+            result.put("pieceRefId", pieceRefId);
+            result.put("fileName", pieceFournie != null ? pieceFournie.getNom_fichier() : "");
+            result.put("next", "/demande/" + demandeId + "/piece/" + pieceRefId + "/download");
+        } catch (IllegalArgumentException e) {
+            result.put("status", "error");
+            result.put("success", false);
+            result.put("message", e.getMessage());
+            result.put("httpStatus", 400);
+        } catch (DemandeVerrouilleeException e) {
+            result.put("status", "error");
+            result.put("success", false);
+            result.put("message", e.getMessage());
+            result.put("httpStatus", 423);
+        } catch (SQLException e) {
+            result.put("status", "error");
+            result.put("success", false);
+            result.put("message", "Erreur serveur lors de l'upload de la piece: " + e.getMessage());
+            result.put("httpStatus", 500);
+        }
         return result;
     }
 
@@ -141,9 +159,9 @@ public class ScanController {
             result.put("success", false);
             result.put("error", e.getMessage());
             result.put("httpStatus", 423);
-        } catch (Exception e) {
+        } catch (SQLException e) {
             result.put("success", false);
-            result.put("error", "Erreur interne: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            result.put("error", "Erreur interne: " + e.getMessage());
             result.put("httpStatus", 500);
         }
         return result;

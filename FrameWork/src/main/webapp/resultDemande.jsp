@@ -255,7 +255,8 @@
                             <input type="hidden" name="demande_id" value="<%= latestDemandeIdStr %>">
                             <button type="submit" class="btn-secondary">Modifier</button>
                         </form>
-                        <a href="<%= ctx %>/demande/<%= latestDemandeIdStr %>/scan" class="btn-primary">&#128196; Scanner les pieces</a>
+                        <a href="<%= ctx %>/demande/<%= latestDemandeIdStr %>/fiche" class="btn-secondary">Détail</a>
+                        <a href="<%= ctx %>/demande/<%= latestDemandeIdStr %>/scan" class="btn-primary"> Scanner les pieces</a>
                     <% } else if (latestVerrouille) { %>
                         <span class="badge badge-purple" style="padding:6px 12px;">&#128274; Dossier verrouille</span>
                     <% } %>
@@ -375,10 +376,16 @@
                                                 <button type="submit" class="btn-secondary">Modifier</button>
                                             </form>
                                             <% if (!demandeId.isEmpty()) { %>
-                                                <a href="<%= ctx %>/demande/<%= demandeId %>/scan" class="btn-primary">&#128196; Scanner</a>
+                                                <a href="<%= ctx %>/demande/<%= demandeId %>/fiche" class="btn-secondary">Détail</a>
+                                            <% } %>
+                                            <% if (!demandeId.isEmpty()) { %>
+                                                <a href="<%= ctx %>/demande/<%= demandeId %>/scan" class="btn-primary"> Scanner</a>
                                             <% } %>
                                         <% } else { %>
                                             <span class="badge badge-purple">&#128274; Verrouille</span>
+                                            <% if (!demandeId.isEmpty()) { %>
+                                                <a href="<%= ctx %>/demande/<%= demandeId %>/fiche" class="btn-secondary">Détail</a>
+                                            <% } %>
                                         <% } %>
                                         <% if (!refDemande.isEmpty()) { %>
                                             <a href="<%= ctx %>/suivi?ref=<%= encodedRefDemande %>" class="btn-secondary">Suivi</a>

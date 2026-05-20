@@ -1,14 +1,26 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.List" %>
+
+<%@ page import="java.util.Map" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
-
+<% String ctx = request.getContextPath(); %>
+<%
+Map<String, Object> demande = (Map<String, Object>) request.getAttribute("demande");
+List<Map<String, Object>> piecesFournies = (List<Map<String, Object>>) request.getAttribute("piecesFournies");
+String cheminPhotoWebcam = (String) request.getAttribute("cheminPhotoWebcam");
+String cheminSignature = (String) request.getAttribute("cheminSignature");
+String qrCodeWebUrl = (String) request.getAttribute("qrCodeWebUrl");
+boolean demandeComplete = Boolean.TRUE.equals(request.getAttribute("demandeComplete"));
+long dossierId = request.getAttribute("dossierId") != null ? (Long) request.getAttribute("dossierId") : 0L;
+long demandeId = request.getAttribute("demandeId") != null ? (Long) request.getAttribute("demandeId") : 0L;%>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fiche de Demande de Visa - ${demande.refDemande}</title>
-    
+    <link rel="stylesheet" href="<%= ctx %>/css/style.css">    
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -106,6 +118,12 @@
 <div class="container">
     <h1>Fiche de Demande de Visa</h1>
 
+    <c:if test="${not empty error}">
+        <div class="admin-block" style="border-color:#c0392b; background:#fff4f4; color:#922b21;">
+            ${error}
+        </div>
+    </c:if>
+
     <div class="admin-block">
         <strong>Référence Unique :</strong> ${demande.refDemande != null ? demande.refDemande : 'N/A'} <br>
         <strong>Statut :</strong> <span class="badge">${demande.statut.libelle}</span> <br>
@@ -115,30 +133,6 @@
             <input type="checkbox" disabled <c:if test="${demande.dossier.scanTermine}">checked</c:if> >
         </span>
     </div>
-
-    <h2>0. QR Code de Suivi</h2>
-    <table>
-        <tr>
-            <th>Suivi du dossier</th>
-            <td>
-                <c:choose>
-                    <c:when test="${not empty qrCodeWebUrl}">
-                        <img src="${pageContext.request.contextPath}${qrCodeWebUrl}" alt="QR code de suivi" style="max-width: 180px; height: auto;">
-                        <div style="margin-top: 8px; color: #666; font-size: 12px;">Scannez ce code pour suivre le dossier.</div>
-                    </c:when>
-                    <c:otherwise>
-                        <em>QR code indisponible pour le moment.</em>
-                    </c:otherwise>
-                </c:choose>
-            </td>
-        </tr>
-    </table>
-
-    <c:if test="${demande.dossier.scanTermine}">
-        <div class="admin-block" style="border-color: #27ae60; background: #f4fbf5;">
-            <strong>Dossier verrouillé :</strong> aucune modification n'est possible après le scan terminé.
-        </div>
-    </c:if>
 
     <h2>1. Informations du Demandeur</h2>
     <table>
@@ -167,7 +161,7 @@
         </tr>
         <tr>
             <th>Date de naissance</th>
-            <td><fmt:formatDate value="${demande.demandeur.dateNaissance}" pattern="dd/MM/yyyy" /></td>
+            <td>${not empty demande.demandeur.dateNaissance ? demande.demandeur.dateNaissance : '-'}</td>
         </tr>
         <tr>
             <th>Situation familiale</th>
@@ -201,9 +195,9 @@
         </tr>
         <tr>
             <th>Date de délivrance</th>
-            <td><fmt:formatDate value="${demande.passeport.dateDelivrance}" pattern="dd/MM/yyyy" /></td>
+            <td>${not empty demande.passeport.dateDelivrance ? demande.passeport.dateDelivrance : '-'}</td>
             <th>Date d'expiration</th>
-            <td><fmt:formatDate value="${demande.passeport.dateExpiration}" pattern="dd/MM/yyyy" /></td>
+            <td>${not empty demande.passeport.dateExpiration ? demande.passeport.dateExpiration : '-'}</td>
         </tr>
     </table>
 
@@ -220,8 +214,8 @@
             <td>${demande.visaLieuEntree}</td>
             <th>Période du visa</th>
             <td>
-                Du <fmt:formatDate value="${demande.visaDateEntree}" pattern="dd/MM/yyyy" /> 
-                au <fmt:formatDate value="${demande.visaDateExpiration}" pattern="dd/MM/yyyy" />
+                Du ${not empty demande.visaDateEntree ? demande.visaDateEntree : '-'} 
+                au ${not empty demande.visaDateExpiration ? demande.visaDateExpiration : '-'}
             </td>
         </tr>
     </table>
