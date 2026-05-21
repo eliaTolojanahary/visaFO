@@ -262,6 +262,9 @@
                     <% if (!latestReference.isEmpty()) { %>
                         <a href="<%= ctx %>/suivi?ref=<%= encodedLatestReference %>" class="btn-secondary">Suivi dossier</a>
                     <% } %>
+                    <% if (!latestDemandeIdStr.isEmpty()) { %>
+                        <a href="<%= ctx %>/demande/<%= latestDemandeIdStr %>/fiche" class="btn-track">&#128196; Fiche demande</a>
+                    <% } %>
                 </div>
             <% } else { %>
                 <p>Aucune demande trouvée pour le moment.</p>
@@ -382,6 +385,9 @@
                                         <% } %>
                                         <% if (!refDemande.isEmpty()) { %>
                                             <a href="<%= ctx %>/suivi?ref=<%= encodedRefDemande %>" class="btn-secondary">Suivi</a>
+                                        <% } %>
+                                        <% if (!demandeId.isEmpty()) { %>
+                                            <a href="<%= ctx %>/demande/<%= demandeId %>/fiche" class="btn-track">Fiche</a>
                                         <% } %>
                                     </div>
                                 </td>
