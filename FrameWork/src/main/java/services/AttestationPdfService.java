@@ -27,6 +27,7 @@ public class AttestationPdfService {
     private static final Charset PDF_TEXT_CHARSET = Charset.forName("windows-1252");
     private static final String PHOTO_LIBELLE = "Photo d'identité (webcam)";
     private static final String STATUT_SCAN_TERMINE = "SCAN TERMINE";
+    private static final String SIGNATURE_LIBELLE = "Signature numerique";
 
     private final ScanService scanService = new ScanService();
     private final QrCodeService qrCodeService = new QrCodeService();
@@ -57,6 +58,7 @@ public class AttestationPdfService {
 
         PdfImage photoImage = loadPhotoImage(fiche);
         PdfImage qrImage = loadQrImage(reference);
+        PdfImage signatureImage = loadSignatureImage(fiche);
 
         byte[] pdf = buildPdf(
             reference,
@@ -67,7 +69,8 @@ public class AttestationPdfService {
             typeTitre,
             statut,
             photoImage,
-            qrImage
+            qrImage,
+            signatureImage
         );
 
         String filename = buildFilename(reference);
@@ -140,59 +143,122 @@ public class AttestationPdfService {
         }
     }
 
-    private byte[] buildPdf(String reference, String nomComplet, String createdAt, String numeroPasseport,
-            String typeDemande, String typeTitre, String statut, PdfImage photoImage, PdfImage qrImage) throws SQLException {
-        StringBuilder content = new StringBuilder();
-        content.append(textLine(40, 800, "Attestation de reception du dossier", 18));
-        content.append(textLine(40, 770, "Reference dossier: " + safe(reference), 11));
-        content.append(textLine(40, 750, "Statut: " + safe(statut), 11));
-        content.append(textLine(40, 730, "Date creation / obtention: " + safe(createdAt), 11));
-        content.append(textLine(40, 710, "Demandeur: " + safe(nomComplet), 11));
-        content.append(textLine(40, 690, "Numero passeport: " + safe(numeroPasseport), 11));
-        content.append(textLine(40, 670, "Type demande: " + safe(typeDemande), 11));
-        content.append(textLine(40, 650, "Type document: " + safe(typeTitre), 11));
-        content.append(textLine(40, 620, "Lecture seule depuis l'application.", 11));
-        content.append(textLine(40, 590, "Le dossier est consultable uniquement apres SCAN TERMINE.", 11));
+    private PdfImage loadSignatureImage(Map<String, Object> fiche) {
+        try {
+            long demandeId = longValue(fiche.get("demandeId"), longValue(fiche.get("demande_id"), -1L));
+            if (demandeId < 0) return null;
 
-        if (photoImage != null) {
-            content.append("q 180 0 0 220 355 560 cm /Im1 Do Q\n");
-        }
-        if (qrImage != null) {
-            content.append("q 150 0 0 150 390 360 cm /Im2 Do Q\n");
-        }
+            long pieceRefId = scanService.getPieceRefIdByLibelle(SIGNATURE_LIBELLE);
+            if (pieceRefId < 0) return null;
 
-        return buildSinglePagePdf(content.toString(), photoImage, qrImage);
+            PieceFournie piece = scanService.getPieceFournie(demandeId, pieceRefId);
+            if (piece == null || piece.getChemin_fichier() == null) return null;
+
+            Path path = Paths.get(piece.getChemin_fichier());
+            if (!Files.exists(path)) return null;
+
+            BufferedImage image = ImageIO.read(path.toFile());
+            if (image == null) return null;
+            return toPdfImage(image);
+        } catch (IOException | SQLException | RuntimeException ignored) {
+            return null;
+        }
     }
 
-    private byte[] buildSinglePagePdf(String content, PdfImage photoImage, PdfImage qrImage) throws SQLException {
+    private byte[] buildPdf(String reference, String nomComplet, String createdAt, String numeroPasseport,
+            String typeDemande, String typeTitre, String statut, PdfImage photoImage, PdfImage qrImage,
+            PdfImage signatureImage) throws SQLException {
+        StringBuilder content = new StringBuilder();
+
+        // ── En-tête ───────────────────────────────────────────────────────
+        content.append(textLine(40, 810, "REPUBLIQUE DE MADAGASCAR", 9));
+        content.append(textLine(40, 798, "Ministere de l'Interieur et de la Decentralisation", 9));
+        content.append(hLine(40, 790, 515));
+        content.append(textLine(150, 772, "ATTESTATION DE RECEPTION DE DOSSIER", 16));
+        content.append(hLine(40, 762, 515));
+
+        // ── Informations demande ──────────────────────────────────────────
+        content.append(textLine(40, 742, "Reference dossier : " + safe(reference), 11));
+        content.append(textLine(40, 724, "Statut             : " + safe(statut), 11));
+        content.append(textLine(40, 706, "Date de depot      : " + safe(createdAt), 11));
+        content.append(textLine(40, 688, "Demandeur          : " + safe(nomComplet), 11));
+        content.append(textLine(40, 670, "Numero passeport   : " + safe(numeroPasseport), 11));
+        content.append(textLine(40, 652, "Type de demande    : " + safe(typeDemande), 11));
+        content.append(textLine(40, 634, "Type de document   : " + safe(typeTitre), 11));
+
+        // ── Photo (haut droite) ───────────────────────────────────────────
+        if (photoImage != null) {
+            content.append("q 120 0 0 150 430 610 cm /Im1 Do Q\n");
+        }
+
+        // ── Message remerciement ──────────────────────────────────────────
+        content.append(hLine(40, 610, 515));
+        content.append(textLine(40, 594, "Nous accusons reception de votre dossier de demande de visa.", 10));
+        content.append(textLine(40, 578, "Votre dossier a ete enregistre et sera traite dans les meilleurs delais.", 10));
+        content.append(textLine(40, 562, "Vous serez contacte(e) pour la suite de la procedure.", 10));
+        content.append(textLine(40, 546, "Nous vous remercions de votre confiance et vous prions d'agreer", 10));
+        content.append(textLine(40, 530, "nos salutations distinguees.", 10));
+        content.append(hLine(40, 518, 515));
+
+        // ── QR Code (milieu droite) ───────────────────────────────────────
+        if (qrImage != null) {
+            content.append("q 110 0 0 110 400 380 cm /Im2 Do Q\n");
+            content.append(textLine(400, 372, "Scanner pour suivre", 8));
+            content.append(textLine(408, 362, "votre dossier", 8));
+        }
+
+        // ── Bloc signature numérique (bas gauche) ─────────────────────────
+        if (signatureImage != null) {
+            content.append(textLine(40, 490, "Signature du demandeur :", 9));
+            content.append("q 160 0 0 70 40 400 cm /Im3 Do Q\n");
+        } else {
+            content.append(textLine(40, 490, "Signature du demandeur :", 9));
+            content.append(textLine(40, 470, "[ Non fournie ]", 9));
+        }
+
+        // ── Pied de page ──────────────────────────────────────────────────
+        content.append(hLine(40, 120, 515));
+        content.append(textLine(40, 108, "Ce document est genere automatiquement et ne requiert pas de signature manuscrite.", 8));
+        content.append(textLine(40,  94, "Document officiel - Ne pas reproduire sans autorisation.", 8));
+        content.append(textLine(40,  78, "Ministere de l'Interieur et de la Decentralisation - Systeme de gestion des visas", 8));
+
+        return buildSinglePagePdf(content.toString(), photoImage, qrImage, signatureImage);
+    }
+
+    private byte[] buildSinglePagePdf(String content, PdfImage photoImage, PdfImage qrImage,
+            PdfImage signatureImage) throws SQLException {
         try {
             List<byte[]> objects = new ArrayList<>();
             objects.add(asciiObject("<< /Type /Catalog /Pages 2 0 R >>"));
             objects.add(asciiObject("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"));
 
+            // Objet 6 = font, objet 7+ = images
+            // On numérote: 1=Catalog,2=Pages,3=Page,4=Font,5=ContentStream,6+=images
+            StringBuilder xobjects = new StringBuilder();
+            int objIndex = 6;
+            int im1Ref = -1, im2Ref = -1, im3Ref = -1;
+            if (photoImage != null)    { im1Ref = objIndex++; }
+            if (qrImage != null)       { im2Ref = objIndex++; }
+            if (signatureImage != null){ im3Ref = objIndex++; }
+
             StringBuilder resources = new StringBuilder();
             resources.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >>");
-            if (photoImage != null || qrImage != null) {
+            if (im1Ref >= 0 || im2Ref >= 0 || im3Ref >= 0) {
                 resources.append(" /XObject <<");
-                if (photoImage != null) {
-                    resources.append(" /Im1 6 0 R");
-                }
-                if (qrImage != null) {
-                    resources.append(photoImage != null ? " /Im2 7 0 R" : " /Im2 6 0 R");
-                }
+                if (im1Ref >= 0) resources.append(" /Im1 ").append(im1Ref).append(" 0 R");
+                if (im2Ref >= 0) resources.append(" /Im2 ").append(im2Ref).append(" 0 R");
+                if (im3Ref >= 0) resources.append(" /Im3 ").append(im3Ref).append(" 0 R");
                 resources.append(" >>");
             }
             resources.append(" >> /Contents 5 0 R >>");
+
             objects.add(asciiObject(resources.toString()));
             objects.add(asciiObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"));
             objects.add(streamObject(content.getBytes(PDF_TEXT_CHARSET), null));
 
-            if (photoImage != null) {
-                objects.add(streamObject(photoImage.data, imageDictionary(photoImage.width, photoImage.height)));
-            }
-            if (qrImage != null) {
-                objects.add(streamObject(qrImage.data, imageDictionary(qrImage.width, qrImage.height)));
-            }
+            if (photoImage != null)    objects.add(streamObject(photoImage.data,    imageDictionary(photoImage.width,    photoImage.height)));
+            if (qrImage != null)       objects.add(streamObject(qrImage.data,       imageDictionary(qrImage.width,       qrImage.height)));
+            if (signatureImage != null)objects.add(streamObject(signatureImage.data, imageDictionary(signatureImage.width, signatureImage.height)));
 
             return writePdf(objects);
         } catch (IOException e) {
@@ -304,6 +370,11 @@ public class AttestationPdfService {
 
     private String textLine(int x, int y, String text, int size) {
         return "BT /F1 " + size + " Tf " + x + " " + y + " Td (" + escape(text) + ") Tj ET\n";
+    }
+
+    /** Dessine une ligne horizontale fine en PDF (opérateur re + f) */
+    private String hLine(int x, int y, int x2) {
+        return x + " " + y + " m " + x2 + " " + y + " l 0.3 w S\n";
     }
 
     private String escape(String text) {
