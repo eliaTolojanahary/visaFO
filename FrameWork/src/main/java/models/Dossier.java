@@ -8,6 +8,8 @@ public class Dossier {
     private String new_demande_ref;
     private String mention;
     private boolean visa_approuve_confirme;
+    private boolean scan_termine;
+    private Timestamp date_scan_complete;
     private Timestamp created_at;
     private Timestamp updated_at;
 
@@ -25,6 +27,12 @@ public class Dossier {
 
     public boolean isVisa_approuve_confirme() { return visa_approuve_confirme; }
     public void setVisa_approuve_confirme(boolean visa_approuve_confirme) { this.visa_approuve_confirme = visa_approuve_confirme; }
+    
+    public boolean isScan_termine() { return this.scan_termine; }
+    public void setScan_termine(boolean Scan_termine) { this.scan_termine = Scan_termine; }
+
+    public Timestamp getDate_scan_complete() { return date_scan_complete; }
+    public void setDate_scan_complete(Timestamp Date_scan) { this.date_scan_complete = Date_scan; }
 
     public Timestamp getCreated_at() { return created_at; }
     public void setCreated_at(Timestamp created_at) { this.created_at = created_at; }

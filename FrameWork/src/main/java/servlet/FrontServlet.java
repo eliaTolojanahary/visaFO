@@ -439,10 +439,11 @@ public class FrontServlet extends HttpServlet {
                         String filename = file.getFilename() != null && !file.getFilename().trim().isEmpty()
                             ? file.getFilename().replace("\"", "")
                             : "document";
+                        boolean inline = contentType.startsWith("image/");
 
                         resp.reset();
                         resp.setContentType(contentType);
-                        resp.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+                        resp.setHeader("Content-Disposition", (inline ? "inline" : "attachment") + "; filename=\"" + filename + "\"");
                         byte[] content = file.getContent() != null ? file.getContent() : new byte[0];
                         resp.setContentLength(content.length);
                         resp.getOutputStream().write(content);

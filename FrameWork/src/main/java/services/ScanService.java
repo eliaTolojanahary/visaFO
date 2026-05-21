@@ -1,6 +1,7 @@
 package services;
 
 import dao.DemandeDao;
+import dao.DossierDemandeDao;
 import dao.PieceFournieDao;
 import dao.PieceJustificativeDao;
 import java.io.File;
@@ -10,10 +11,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -24,9 +27,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import models.Demande;
+import models.DossierDemande;
 import models.PieceFournie;
 import models.PieceJustificative;
+import models.StatutDemande;
 import repo.DemandeRepository;
+import repo.DossierDemandeRepository;
 import repo.PieceFournieRepository;
 import repo.PieceJustificativeRepository;
 import util.DatabaseConnection;
@@ -38,9 +44,9 @@ public class ScanService {
     private static final long MAX_FILE_SIZE = 10L * 1024L * 1024L;
     private static final long MAX_SIGNATURE_SIZE = 1L * 1024L * 1024L;
     private static final String BASE64_PNG_PREFIX = "data:image/png;base64,";
+    private static final String LIBELLE_PHOTO_IDENTITE = "Photo d'identite (webcam)";
     private static final String LIBELLE_SIGNATURE = "Signature numerique";
     private static final Set<String> ALLOWED_MIME_TYPES = new HashSet<>();
-    private static final String LIBELLE_PHOTO_IDENTITE = "Photo d'identite (webcam)";
     static {
         ALLOWED_MIME_TYPES.add("image/jpeg");
         ALLOWED_MIME_TYPES.add("image/png");
@@ -50,11 +56,161 @@ public class ScanService {
     private final DemandeDao demandeDao;
     private final PieceFournieDao pieceFournieDao;
     private final PieceJustificativeDao pieceJustificativeDao;
+    private final DossierDemandeDao dossierDemandeDao;
 
     public ScanService() {
         this.demandeDao = new DemandeRepository();
         this.pieceFournieDao = new PieceFournieRepository();
         this.pieceJustificativeDao = new PieceJustificativeRepository();
+        this.dossierDemandeDao = new DossierDemandeRepository();
+    }
+    
+    /**
+     * 
+     * @param demandeId
+     * @param dossierId
+     * @return
+     */
+    public boolean marquerScanTermine(Long dossierId, Long demandeId) {
+        try {
+            if (!verifierScanComplet(demandeId)) {
+                throw new ScanIncompleteException(
+                    "Impossible de finaliser le scan: toutes les pieces attendues ne sont pas scannees.");
+            }
+
+            DossierDemande dossierDemande = dossierDemandeDao.findDossierDemande(dossierId, demandeId);
+            if (dossierDemande == null) {
+                throw new IllegalArgumentException(
+                    "Liaison dossier_demande introuvable pour dossierId=" + dossierId + ", demandeId=" + demandeId);
+            }
+
+            if (dossierDemande.isScanTermine()) {
+                return true;
+            }
+
+            dossierDemandeDao.updateDossierDemandeScanTermine(dossierDemande.getId());
+            dossierDemande.setScanTermine(true);
+            dossierDemande.setDateScanComplete(new Timestamp(System.currentTimeMillis()));
+
+            verrouillerDemande(demandeId);
+            enregistrerHistoriqueStatut(demandeId, "SCAN_TERMINE");
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la verification du scan complet: " + e.getMessage());
+            return false;
+        }
+    }  
+    
+    /**
+     * Vérifier si une demande a toutes les pièces scannées attendues.
+     * Inclut la photo d'identité, la signature et toutes les pièces obligatoires.
+     * 
+     * @param demandeId ID de la demande
+     * @return true si toutes les pièces attendues sont uploadées, false sinon
+     * @throws SQLException en cas d'erreur base de données
+     */
+    public boolean verifierScanComplet(Long demandeId) throws SQLException {
+        // 1. Récupérer la demande et son type_titre
+        Demande demande = demandeDao.findById(demandeId);
+        if (demande == null) {
+            return false;
+        }
+
+        List<Long> selectedPieceIds = demandeDao.getSelectedPieceIdsByDemandeId(demandeId);
+        if (selectedPieceIds == null) {
+            return false;
+        }
+
+        // 2. Vérifier photo d'identité (piece_ref_id=99)
+        long photoRefId = findPieceRefIdByLibelle(LIBELLE_PHOTO_IDENTITE);
+        if (photoRefId < 0 || !isPieceValidePourDemande(demandeId, selectedPieceIds, photoRefId)) {
+            return false;
+        }
+
+        // 3. Vérifier signature (piece_ref_id=100)
+        long signatureRefId = findPieceRefIdByLibelle(LIBELLE_SIGNATURE);
+        if (signatureRefId < 0 || !isPieceValidePourDemande(demandeId, selectedPieceIds, signatureRefId)) {
+            return false;
+        }
+
+        // 4. Vérifier toutes les autres pièces obligatoires pour ce type de titre
+        List<PieceJustificative> piecesObligatoires = pieceJustificativeDao.findByTypeTitreId(
+            demande.getType_titre() != null ? demande.getType_titre().getId() : null);
+
+        for (PieceJustificative piece : piecesObligatoires) {
+            if (!isPieceValidePourDemande(demandeId, selectedPieceIds, piece.getId())) {
+                return false;
+            }
+        }
+
+        // 5. Si on arrive ici, toutes les pièces sont présentes et cochées
+        return true;
+    }
+
+    /**
+     * Vérifie qu'une pièce fournie existe et est cochée pour une demande.
+     * 
+     * @param demandeId ID de la demande
+     * @param pieceRefId ID de la référence de pièce
+     * @return true si la pièce existe et est uploadée, false sinon
+     * @throws SQLException en cas d'erreur base de données
+     */
+    private boolean isPieceValidePourDemande(long demandeId, List<Long> selectedPieceIds, long pieceRefId) throws SQLException {
+        if (!selectedPieceIds.contains(pieceRefId)) {
+            return false;
+        }
+
+        String sql = "SELECT 1 FROM demande_piece dp "
+            + "LEFT JOIN piece_fournie pf ON pf.demande_id = dp.demande_id AND pf.piece_ref_id = dp.piece_id "
+            + "WHERE dp.demande_id = ? AND dp.piece_id = ? AND dp.cochee = TRUE AND pf.id IS NOT NULL LIMIT 1";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, demandeId);
+            stmt.setLong(2, pieceRefId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    private void enregistrerHistoriqueStatut(long demandeId, String nouveauStatutLibelle) throws SQLException {
+        Demande demande = demandeDao.findById(demandeId);
+        if (demande == null || demande.getStatut() == null) {
+            return;
+        }
+
+        StatutDemande nouveauStatut = findStatutDemandeByLibelle(nouveauStatutLibelle);
+        if (nouveauStatut == null) {
+            return;
+        }
+
+        String sql = "INSERT INTO historique_statut (date_changement, demande_id, statut_id, ancien_statut_id) VALUES (NOW(), ?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, demandeId);
+            stmt.setLong(2, nouveauStatut.getId());
+            stmt.setLong(3, demande.getStatut().getId());
+            stmt.executeUpdate();
+        }
+    }
+
+    private StatutDemande findStatutDemandeByLibelle(String libelle) throws SQLException {
+        String sql = "SELECT id, libelle FROM statut_demande WHERE libelle = ? LIMIT 1";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, libelle);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    StatutDemande statut = new StatutDemande();
+                    statut.setId(rs.getLong("id"));
+                    statut.setLibelle(rs.getString("libelle"));
+                    return statut;
+                }
+            }
+        }
+        return null;
     }
 
     // =========================================================================
@@ -130,7 +286,7 @@ public class ScanService {
         }
 
         // 6. Construction du chemin et écriture sur disque
-        Path targetPath = buildSignaturePath(resolvedDossierId, demandeId, pngBytes);
+        Path targetPath = buildSignaturePath(resolvedDossierId, pngBytes);
         writeFile(targetPath, pngBytes);
 
         // 7. Construction de PieceFournie avec pieceRefId résolu dynamiquement
@@ -216,7 +372,7 @@ public class ScanService {
      * Construit le chemin cible pour la signature :
      * {@code <base>/uploads/pieces/signatures/<dossierId>/<dossierId>_sig_<ts>_<hash>.png}
      */
-    private Path buildSignaturePath(long dossierId, Long demandeId, byte[] content) throws SQLException {
+    private Path buildSignaturePath(long dossierId, byte[] content) throws SQLException {
         String configured = System.getProperty("visa.scan.upload.dir");
         File baseDir;
         if (configured != null && !configured.trim().isEmpty()) {
@@ -242,7 +398,7 @@ public class ScanService {
             byte[] hashBytes = digest.digest(data);
             // Java 17+: HexFormat; sinon utiliser un fallback manuel
             return HexFormat.of().formatHex(hashBytes).substring(0, 8);
-        } catch (Exception e) {
+        } catch (NoSuchAlgorithmException e) {
             return Long.toHexString(System.nanoTime()).substring(0, 8);
         }
     }
@@ -515,6 +671,18 @@ public class ScanService {
                 return data;
             }
         }
+    }
+
+    public List<PieceFournie> getPiecesFourniesByDemande(long demandeId) throws SQLException {
+        return pieceFournieDao.findAllByDemande(demandeId);
+    }
+
+    public long getPhotoIdentiteRefId() throws SQLException {
+        return findPieceRefIdByLibelle(LIBELLE_PHOTO_IDENTITE);
+    }
+
+    public long getSignatureNumeriqueRefId() throws SQLException {
+        return findPieceRefIdByLibelle(LIBELLE_SIGNATURE);
     }
 
     private boolean isPieceAttendue(long demandeId, long pieceRefId) throws SQLException {

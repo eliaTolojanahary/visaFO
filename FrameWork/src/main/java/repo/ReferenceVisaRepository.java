@@ -8,9 +8,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import models.Nationalite;
-import models.StatutDemande;
 import models.SituationFamille;
+import models.StatutDemande;
 import models.TypeDemande;
+import models.TypeDocument;
 import models.TypeTitre;
 import util.DatabaseConnection;
 
@@ -55,6 +56,31 @@ public class ReferenceVisaRepository implements ReferenceVisaDao {
                     typeTitre.setId(rs.getLong("id"));
                     typeTitre.setLibelle(rs.getString("libelle"));
                     return typeTitre;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    public TypeDocument findTypeDocumentById(Long id) throws SQLException {
+        if (id == null) {
+            return null;
+        }
+
+        String sql = "SELECT id, libelle FROM type_document WHERE id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    TypeDocument typeDocument = new TypeDocument();
+                    typeDocument.setId(rs.getLong("id"));
+                    typeDocument.setLibelle(rs.getString("libelle"));
+                    return typeDocument;
                 }
             }
         }

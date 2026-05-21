@@ -8,7 +8,64 @@ import java.sql.SQLException;
 import models.Dossier;
 import util.DatabaseConnection;
 
-public class DossierRepository implements DossierDao {
+public class DossierRepository implements DossierDao { 
+    
+    @Override
+    public Dossier findById(long id) throws SQLException{
+        String sql = "SELECT id, previous_demande_ref, new_demande_ref, mention, visa_approuve_confirme, created_at, updated_at "
+                + "FROM dossier WHERE id = ?";  
+                
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, id);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToDossier(rs);
+                }
+            }
+        }
+        throw new SQLException("Aucun dossier retrouvé pour l'id." + id);
+
+    }
+    
+
+    /**
+     * 
+     */
+    public Dossier update(Dossier dossier) throws SQLException{
+        String sql = "UPDATE dossier set previous_demande_ref = ? AND  new_demande_ref = ?"  
+                + "AND mention = ?  AND  updated_at =  NOW()";
+
+        if (dossier.isScan_termine()) {
+            sql += "AND scan_termine = TRUE AND date_scan_termine = NOW()"; 
+        }
+        if (dossier.isVisa_approuve_confirme()) {
+            sql += "AND visa_approuve_confirme = TRUE";
+        }
+
+        sql += "WHERE id = ? RETURNING id, created_at, updated_at";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, dossier.getPrevious_demande_ref());
+            stmt.setString(2, dossier.getNew_demande_ref());
+            stmt.setString(3, dossier.getMention());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    dossier.setId(rs.getLong("id"));
+                    dossier.setCreated_at(rs.getTimestamp("created_at"));
+                    dossier.setUpdated_at(rs.getTimestamp("updated_at"));
+                    return dossier;
+                }
+            }
+        }
+
+        throw new SQLException("Mis a jour de dossier échouée: aucun id retourné.");
+    }
     /**
      * Trouve le dossier_id lié à une demande via dossier_demande.
      * Retourne demandeId comme fallback si aucun dossier n'est trouvé.
